@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "NestJS (SWC)",
+
+  // ============================================================
+  // TypeScript NestJS Configuration
+  // ============================================================
+  // Use cases:
+  //   - NestJS backend services compiled with SWC
+  //   - TSC emits declarations and source maps
+  //
+  // Key features:
+  //   - NodeNext module resolution for ESM compatibility
+  //   - Decorator and metadata reflection support
+  //   - Declaration files for library consumers
+  // ============================================================
+
+  "extends": "./tsconfig.base.json",
+
+  "compilerOptions": {
+    "module": "NodeNext",
+    "declaration": true,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "noLib": false,
+    "lib": ["ES2022"],
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "ES2022",
+    "sourceMap": true,
+    "strict": true,
+    "allowJs": true,
+    "noEmit": false,
+    "skipLibCheck": true,
+    "incremental": true,
+    // ==========================================================
+    // Target
+    // ==========================================================
+    "resolveJsonModule": true,
+    // Allow importing JSON files
+    "moduleDetection": "force",
+    // Force all files to be modules, avoid global pollution
+    "isolatedModules": true,
+    // Ensure each file can be transpiled independently (esbuild/swc compatible)
+    "noUncheckedIndexedAccess": true,
+    // Index access returns T | undefined, prevents out of bounds
+    "noImplicitOverride": true,
+    // Override keyword required when overriding parent class methods
+    "exactOptionalPropertyTypes": false,
+    // Exact optional property types - disabled by default as it increases complexity with third-party packages
+    // { foo?: string } foo cannot be explicitly set to undefined
+
+    // ==========================================================
+    // Code Quality
+    // ==========================================================
+
+    "noUnusedLocals": true,
+    // Detect unused local variables
+
+    "noUnusedParameters": true,
+    // Detect unused function parameters (use _ prefix to ignore)
+
+    "noFallthroughCasesInSwitch": true,
+    // Prevent switch case fallthrough
+
+    "noImplicitReturns": true,
+    // All function branches must explicitly return
+
+    // ==========================================================
+    // Cross-platform
+    // ==========================================================
+
+    "forceConsistentCasingInFileNames": true
+    // Enforce consistent file name casing
+
+    // ==========================================================
+    // Performance
+    // ==========================================================
+  }
+}

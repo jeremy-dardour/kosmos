@@ -1,0 +1,30 @@
+name: 'CI Monorepo Setup'
+description: 'Shared setup for pnpm + turbo jobs'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 24
+
+    - name: Enable corepack
+      run: corepack enable
+      shell: bash
+
+    - name: Activate pnpm
+      run: corepack prepare pnpm@10.28.1 --activate
+      shell: bash
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      shell: bash
+
+    - name: Restore turbo cache
+      uses: actions/cache@v4
+      with:
+        path: .turbo
+        key: turbo-${{ runner.os }}-${{ github.ref_name }}
+        restore-keys: |
+          turbo-${{ runner.os }}-

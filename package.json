@@ -1,0 +1,61 @@
+{
+  "name": "typescript-fullstack-template",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "db:start": "docker-compose up -d",
+    "db:stop": "docker-compose down",
+    "db:migrate:up": "pnpm --filter api db:migrate:up",
+    "fix:all": "pnpm lint:fix && pnpm format && pnpm format:top",
+    "dev": "pnpm db:start && turbo run dev",
+    "build": "turbo run build",
+    "build:api:docker": "DOCKER_BUILDKIT=1 docker build -f apps/api/deployment/Dockerfile -t template-api:local .",
+    "run:api:docker": "docker run -p 3000:3000 --env-file apps/api/.env.docker.local template-api:local",
+    "dependencies:check": "syncpack lint",
+    "dependencies:fix": "syncpack fix",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "turbo run format",
+    "format:top": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md}\"",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test",
+    "test:cov": "turbo run test:cov",
+    "test:e2e": "turbo run test:e2e",
+    "prepare": "node -e \"if (process.env.CI !== 'true' && process.env.HUSKY !== '0') require('child_process').execSync('husky')\"",
+    "generate:api-types": "openapi-typescript http://localhost:3000/openapi.yaml -o ./packages/api-contracts/src/openapi.d.ts && pnpm format --filter @workspace/api-contracts"
+  },
+  "devDependencies": {
+    "@types/node": "26.0.0",
+    "eslint": "^10.5.0",
+    "globals": "17.7.0",
+    "husky": "^9.1.7",
+    "jiti": "2.7.0",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.8.4",
+    "prettier-plugin-embed": "^0.5.1",
+    "prettier-plugin-sql": "^0.20.0",
+    "syncpack": "15.3.2",
+    "turbo": "^2.9.18",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10"
+  },
+  "packageManager": "pnpm@10.28.1+sha512.7d7dbbca9e99447b7c3bf7a73286afaaf6be99251eb9498baefa7d406892f67b879adb3a1d7e687fc4ccc1a388c7175fbaae567a26ab44d1067b54fcb0d6a316",
+  "pnpm": {
+    "peerDependencyRules": {},
+    "ignoredBuiltDependencies": [],
+    "overrides": {
+      "@types/node": "26.0.0",
+      "js-yaml@>=4.0.0 <4.1.1": ">=4.1.1",
+      "qs@<6.14.1": ">=6.14.1",
+      "lodash@>=4.0.0 <=4.17.22": ">=4.17.23",
+      "diff@<4.0.4": ">=4.0.4",
+      "basic-ftp@<5.2.0": ">=5.2.1"
+    }
+  }
+}

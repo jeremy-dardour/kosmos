@@ -1,0 +1,25 @@
+{
+  "extends": "@workspace/typescript-config/tsconfig.nestjs.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "outDir": "./dist"
+  },
+  "include": [
+    "./src/**/*",
+    "./scripts/**/*",
+    "./*.config.ts",
+    "./*.config.mts",
+    "./src/__tests__",
+    "vitest.constant.ts"
+  ],
+  "exclude": [
+    "**/*.e2e-spec.ts",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/__tests__/**/*",
+    "eslint.config.mts",
+    "**node_modules"
+  ]
+}

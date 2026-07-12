@@ -1,0 +1,409 @@
+name: CI
+run-name: 'CI - ${{ github.ref_name }}'
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - ci/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  TURBO_CONFIG: turbo.ci.json
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Quality Checks
+  # ----------------------------------------------------------------------------
+  format:
+    name: Format Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup monorepo
+        uses: ./.github/actions/ci-setup
+
+      - name: Check formatting
+        run: pnpm format:check
+
+  check-dependencies:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup monorepo
+        uses: ./.github/actions/ci-setup
+
+      - name: Check dependencies
+        run: pnpm dependencies:check
+
+  check-types:
+    name: Check Types
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup monorepo
+        uses: ./.github/actions/ci-setup
+
+      - name: Check types
+        run: pnpm check-types
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup monorepo
+        uses: ./.github/actions/ci-setup
+
+      - name: Run linter
+        run: pnpm lint
+
+  # ----------------------------------------------------------------------------
+  # 📑 Check that API contract is up to date
+  # ----------------------------------------------------------------------------
+  api-contract-check:
+    name: 📑 API Contract Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres-ci
+          POSTGRES_PASSWORD: postgres-ci
+          POSTGRES_DB: postgres-ci
+
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres-ci -d postgres-ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 2
+
+    steps:
+      - name: 🌱 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup monorepo
+        uses: ./.github/actions/ci-setup
+
+      - name: ⏳ Wait for Postgres
+        run: |
+          echo "Waiting for Postgres to be ready..."
+          for i in {1..10}; do
+            pg_isready -h localhost -p 5433 -U postgres-ci && break
+            echo "Postgres not ready yet, retrying in 2s..."
+            sleep 2
+          done
+
+      - name: 🗃️ Run migrations
+        run: pnpm --filter=api db:migrate:up
+        env:
+          DATABASE_URL: postgresql://postgres-ci:postgres-ci@localhost:5433/postgres-ci
+
+      - name: Build shared packages
+        run: pnpm turbo run build --filter=@workspace/shared
+
+      - name: 📑 Generate API types and ensure clean state
+        run: |
+          pnpm --filter=api start &
+          API_PID=$!
+
+          cleanup() {
+            if kill -0 "$API_PID" 2>/dev/null; then
+              kill "$API_PID"
+            fi
+          }
+
+          trap cleanup EXIT
+
+          echo "Waiting for API OpenAPI endpoint to be ready..."
+          for i in {1..30}; do
+            if curl --silent --fail http://localhost:3000/openapi.yaml > /dev/null; then
+              break
+            fi
+            echo "API not ready yet, retrying in 2s..."
+            sleep 2
+          done
+
+          pnpm generate:api-types
+
+          git --no-pager diff -- packages/api-contracts/src/openapi.d.ts
+          git diff --quiet --exit-code -- packages/api-contracts/src/openapi.d.ts
+        env:
+          DATABASE_URL: postgresql://postgres-ci:postgres-ci@localhost:5433/postgres-ci
+          FAKE_AUTH: true
+          AUTH_CLIENT_ID: e2e-test-client-id
+          AUTH_OIDC_DISCOVERY_URL: https://auth.example.com/.well-known/openid-configuration
+          AUTH_ACCEPTED_SCOPES: api.read
+
+  # ----------------------------------------------------------------------------
+  # Unit Tests (Matrix)
+  # ----------------------------------------------------------------------------
+  tests:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - task: test:cov --filter=api...
+            label: Unit Tests API
+            artifact: coverage-api-unit
+            coverage-path: apps/api/coverage/unit
+          - task: test:cov --filter=web...
+            label: Unit Tests Web
+            artifact: coverage-web-unit
+            coverage-path: apps/web/coverage
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup monorepo
+        uses: ./.github/actions/ci-setup
+
+      - name: Run ${{ matrix.label }}
+        run: pnpm turbo run ${{ matrix.task }}
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.coverage-path }}
+          retention-days: 7
+
+  # ----------------------------------------------------------------------------
+  # API E2E Tests (Postgres)
+  # ----------------------------------------------------------------------------
+  api-e2e:
+    name: API E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres-ci
+          POSTGRES_PASSWORD: postgres-ci
+          POSTGRES_DB: postgres-ci
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres-ci -d postgres-ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup monorepo
+        uses: ./.github/actions/ci-setup
+
+      - name: Wait for Postgres
+        run: |
+          echo "Waiting for Postgres to be ready..."
+          for i in {1..10}; do
+            pg_isready -h localhost -p 5433 -U postgres-ci && break
+            echo "Postgres not ready yet, retrying in 2s..."
+            sleep 2
+          done
+
+      - name: Run migrations
+        run: pnpm --filter=api db:migrate:up
+        env:
+          DATABASE_URL: postgresql://postgres-ci:postgres-ci@localhost:5433/postgres-ci
+
+      - name: Build shared packages
+        run: pnpm turbo run build --filter=@workspace/shared
+
+      - name: Run E2E tests (with coverage)
+        run: pnpm --filter=api test:cov:e2e
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres-ci:postgres-ci@localhost:5433/postgres-ci
+
+      - name: Upload E2E coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-api-e2e
+          path: apps/api/coverage/e2e
+          retention-days: 7
+
+  # ----------------------------------------------------------------------------
+  # Coverage Report (merged API unit+E2E, web unit) — PR comment with evolution
+  # ----------------------------------------------------------------------------
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [tests, api-e2e]
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup monorepo
+        uses: ./.github/actions/ci-setup
+
+      - name: Download API unit coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-api-unit
+          path: apps/api/coverage/unit
+
+      - name: Download API E2E coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-api-e2e
+          path: apps/api/coverage/e2e
+
+      - name: Download web coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-web-unit
+          path: apps/web/coverage
+
+      - name: Merge API unit + E2E coverage
+        run: pnpm --filter=api coverage:merge && pnpm --filter=api coverage:report
+
+      # Baseline saved by main builds; on a cache miss (first run, eviction)
+      # the comments render without evolution deltas
+      - name: Restore main coverage baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: coverage-baseline
+          key: coverage-baseline-
+          restore-keys: coverage-baseline-
+
+      - name: Comment API coverage
+        if: github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: API (unit + E2E merged)
+          json-summary-path: apps/api/coverage/final/coverage-summary.json
+          json-final-path: apps/api/coverage/merged/coverage-final.json
+          json-summary-compare-path: ${{ hashFiles('coverage-baseline/api/coverage-summary.json') != '' && 'coverage-baseline/api/coverage-summary.json' || '' }}
+
+      - name: Comment web coverage
+        if: github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: Web (unit)
+          json-summary-path: apps/web/coverage/coverage-summary.json
+          json-final-path: apps/web/coverage/coverage-final.json
+          json-summary-compare-path: ${{ hashFiles('coverage-baseline/web/coverage-summary.json') != '' && 'coverage-baseline/web/coverage-summary.json' || '' }}
+
+      - name: Prepare baseline for cache
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p coverage-baseline/api coverage-baseline/web
+          cp apps/api/coverage/final/coverage-summary.json coverage-baseline/api/
+          cp apps/web/coverage/coverage-summary.json coverage-baseline/web/
+
+      - name: Save main coverage baseline
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: coverage-baseline
+          key: coverage-baseline-${{ github.sha }}
+
+  # ----------------------------------------------------------------------------
+  # Web E2E Tests (Playwright)
+  # ----------------------------------------------------------------------------
+  web-e2e:
+    name: Web E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup monorepo
+        uses: ./.github/actions/ci-setup
+
+      - name: Build shared packages
+        run: pnpm turbo run build --filter=@workspace/shared
+
+      - name: Build web app (e2e mode)
+        run: pnpm --filter=web exec vite build --mode e2e
+
+      - name: Serve production build
+        run: pnpm --filter=web exec vite preview --port 5173 &
+
+      - name: cache playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright Browsers
+        run: pnpm --filter=web exec playwright install chromium
+        env:
+          DEBUG: pw:install
+
+      - name: Wait for web server
+        run: pnpm --filter=web wait-on http://localhost:5173
+
+      - name: Run Playwright tests
+        run: pnpm --filter=web test:e2e
+        env:
+          CI: true
+          PLAYWRIGHT_APP_BASE_URL: http://localhost:5173
+          PLAYWRIGHT_APP_PORT: 5173
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 30
+
+      - name: Upload Playwright screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots
+          path: apps/web/screenshots/
+          retention-days: 30

@@ -1,0 +1,10 @@
+{
+  "extends": "@workspace/typescript-config/tsconfig.vitest.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["vite.config.ts"],
+  "exclude": ["node_modules"]
+}

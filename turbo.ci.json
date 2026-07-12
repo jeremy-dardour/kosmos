@@ -1,0 +1,6 @@
+{
+  "extends": ["./turbo.json"],
+  "tasks": {
+    "dev": { "persistent": false }
+  }
+}

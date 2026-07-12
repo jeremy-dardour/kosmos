@@ -1,0 +1,5 @@
+{
+  "extends": "@workspace/typescript-config/tsconfig.vite.json",
+  "include": ["**/*.ts", "**/*.d.ts", "**/*.tsx", "**/*.mts"],
+  "exclude": ["node_modules", "dist"]
+}

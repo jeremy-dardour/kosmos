@@ -1,0 +1,18 @@
+{
+  "ignore": [
+    "node_modules/**",
+    ".turbo/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "pnpm-lock.yaml",
+    "apps/api/dist/**",
+    "apps/web/dist/**",
+    "**/*.log",
+    ".git/**",
+    ".vscode/**"
+  ],
+  "hooks": {
+    "pre-commit": "pnpm lint:fix && pnpm check-types"
+  }
+}
