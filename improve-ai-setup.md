@@ -1,0 +1,4 @@
+- store sessions in structured way every session alonside code
+- move all doc to /docs (appart claude.md)
+- memory inside project
+- structure of doc overall

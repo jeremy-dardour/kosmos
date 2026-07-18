@@ -4,6 +4,38 @@ Production-ready fullstack monorepo template: NestJS API + React SPA + shared to
 
 See [README.md](./README.md) for project overview, setup, and CI pipeline.
 
+## Documentation map
+
+Project knowledge — one home per fact. Read these to get oriented:
+
+| Doc | Holds |
+|-----|-------|
+| [docs/project-purpose.md](./docs/project-purpose.md) | Why the project exists, who it's for, scope boundaries |
+| [CONTEXT.md](./CONTEXT.md) | Domain glossary — entities, statuses, rules |
+| [docs/domain-decisions.md](./docs/domain-decisions.md) | Domain/design decisions + rationale (append-only) |
+| [docs/current-state.md](./docs/current-state.md) | The live "where we are" — phase, status, next steps, open questions |
+| [docs/sessions/](./docs/sessions/) | One dated summary per session (what was done, learnings, status) |
+| [docs/prototype/](./docs/prototype/) | Chosen UI design spec (Pipeline Stack wireframe) |
+| [docs/adr/](./docs/adr/) | Technical/architectural decisions |
+
+**Always loaded at session start** (imported so they're in context from the start):
+
+@docs/project-purpose.md
+@CONTEXT.md
+@docs/current-state.md
+
+Documentation conventions:
+
+- **Project memory lives in-repo** (the docs above). Do **not** create external
+  memory files for this project — record durable project facts here instead.
+- **Single home per fact.** Live status lives only in `current-state.md`; domain
+  decisions only in `docs/domain-decisions.md`; session files record what
+  happened + learnings and link out rather than restating current truth.
+- **Session summaries.** When logging or closing a session, add a summary in
+  `docs/sessions/` using the template and instructions there
+  ([docs/sessions/README.md](./docs/sessions/README.md)). Update
+  `current-state.md` at session end.
+
 ## Monorepo structure
 
 ```
