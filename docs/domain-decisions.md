@@ -19,18 +19,33 @@ superseded rows rather than deleting them. The entities and rules in
 | 8 | Group is a visual label/tag/color only | Clustering and sorting on the overview; no behavior needed |
 | 9 | No separate "unordered" workstream mode — use Checklist Steps | One pipeline model with a checklist escape hatch |
 | 10 | Checklist sub-items are lightweight (name + done/skipped only) | Full step machinery (owner/deadline/links) is unnecessary for sub-items |
-| 11 | Dependencies are visual-only, no enforcement | Real dependencies are fuzzy; enforcement adds friction without value at this scale |
-| 12 | Dependency granularity is Workstream → Workstream | Step-level dependencies are too granular for the overview |
+| 11 | ~~Dependencies are visual-only, no enforcement~~ | *Deferred out of V1 — see Decision 36* |
+| 12 | ~~Dependency granularity is Workstream → Workstream~~ | *Deferred out of V1 — see Decision 36* |
 | 13 | Overview shows each Workstream as its full pipeline, color-coded by status | See all work and its status at a glance |
 | 14 | ~~Deadline-steps anchored on a shared time axis~~ | *Superseded by Decision 24 — a shared axis didn't scale to 20–50 rows* |
 | 15 | No milestone flag — any step with a deadline is implicitly a milestone | Avoids a redundant concept |
-| 16 | Links only in V1 (URL + label), no file uploads | Uploads add storage/complexity; URLs cover Drive docs, vendor sites, contracts |
-| 17 | Notes are an append-only timestamped log, not a single field | Preserves the history of decisions and interactions |
+| 16 | Links only in V1 (URLs), no file uploads | Uploads add storage/complexity; URLs cover Drive docs, vendor sites, contracts. *The separate Link entity was later dropped — see Decision 40* |
+| 17 | Notes are a timestamped **thread** of entries, not a single overwritable field | Preserves the structure/history of decisions and interactions. *Per-entry immutability was later relaxed — see Decision 39* |
 | 18 | All users equal in V1 (no roles) | 2–6 trusted users; roles are premature. Future: admin + workstream-owner roles |
-| 19 | Access control via in-app email whitelist, not Google Groups | Consumer Gmail Groups API access is awkward; a whitelist is simpler |
+| 19 | ~~Access control via in-app email whitelist, not Google Groups~~ | *Superseded by Decision 26* |
 | 20 | Overview layout: two-panel "Pipeline Stack" — grouped cards left, slide-over detail right | Chosen in the wireframe prototype (turn 3 / option 3a) over alternatives |
 | 21 | Advance directly from the card; richer edits (notes, links, owner) in the detail panel | Keep the most frequent action one-click; focus the detailed edits |
 | 22 | Detail view is a slide-over panel, not a separate page or inline expand | Keeps overview context visible while drilling into one workstream |
-| 23 | Dependencies shown as a "depends on" text list in the detail panel | Arrows (explored in wireframe 1a) cluttered the 20–50 workstream overview |
+| 23 | ~~Dependencies shown as a "depends on" text list in the detail panel~~ | *Deferred out of V1 — see Decision 36* |
 | 24 | Deadlines shown as a per-card countdown badge + date-ticks; 7-day urgency threshold (red < 7d, grey ≥ 7d, solid red overdue). No shared time axis | A shared time axis didn't scale to 20–50 rows; per-card countdown reads clearer |
 | 25 | Each Workstream has an icon | Quick visual identification in the card list |
+| 26 | Access gated outside the app — no in-app whitelist. Prefer the Google OAuth app's allowed-users list; fall back to a static `.env` allow-list | 2–6 trusted users; managing access in the OAuth console/config avoids building whitelist CRUD. Supersedes Decision 19 |
+| 27 | Notifications are pull-only in V1 — no email/push | Users check the overview; deadlines already surface as countdown badges (Decision 24). Avoids email/scheduling infra |
+| 28 | Model a generic Project that Workstreams belong to; "wedding" is not hardcoded | Only one Project exists in V1, but the seam keeps the model reusable and avoids a later migration |
+| 29 | Workstream has 3 lifecycle states — NotStarted, Active, Complete — with NotStarted a **visible** status on the overview | "We haven't even opened Flowers yet" is a useful glance signal for wedding prep. Represented via a `start` + `advance` state machine ([ADR 0005](./adr/0005-workstream-pipeline-state-machine.md)) |
+| 30 | Checklist Step is **derived**, not a type — a Step is a checklist iff it has ≥1 sub-item | Avoids a discriminator every consumer branches on; an empty checklist is indistinguishable from a normal step anyway |
+| 31 | Checklist sub-items are **informational**, not a gate — progress is shown but does not block advancing | Consistent with Blocked (Decision 5): the tool informs, never obstructs. **Revises** the earlier hard-gate wording in CONTEXT.md. Result: there are **no** hard gates anywhere |
+| 32 | `advance` is a **single** action taking an outcome (Done default \| Skipped); no separate skip action or persistent skip flag | Done vs Skipped is information about how a step ended, not control flow — both just move the pointer forward. A step you'll never reach is deleted (future steps are mutable), not pre-skipped |
+| 33 | Pipeline is mutable only in the **future** — past steps frozen (notes still appendable), current step editable but not structurally movable, future steps fully mutable | You re-plan the part you haven't done yet; the past is settled history. Also guarantees the pointer is never orphaned. Matrix in [ADR 0005](./adr/0005-workstream-pipeline-state-machine.md) |
+| 34 | `User` is a real entity, rows created on **first OAuth login** (email, name, avatar); `owner` is a nullable FK on Workstream (default) and Step (override), `null` = inherit/unassigned | Real identities (avatar/name) for the overview with referential integrity; the 2–6 people all sign in early, so "assignable only after login" is barely a constraint |
+| 35 | `Group` is a real entity (name + color + Project scope); Workstream has a **nullable, single** group FK (Ungrouped allowed); color lives on the Group | Color defined once, not repeated per workstream; forcing a group on creation is friction; `CONTEXT.md` says "belongs to *a* Group" (singular) |
+| 36 | **No Dependency entity in V1** — cross-step waits are expressed informally via a Step's `blocked` flag + an explanatory note, not structured data | For simplicity, and the need is unproven at 2–6 users; the flag + note already says "blocked by step X of workflow Y" in words. Adding structure (workstream- or step-level) is a cheap migration once the lack is actually felt. Supersedes/defers Decisions 11, 12, 23 |
+| 37 | Project carries an optional `eventDate` (the wedding day); no owner and no per-project User membership in V1 | One anchoring date powers a global "N days to go" countdown and is often the last step's deadline; nullable keeps the model generic. Access is external + all-equal, so no owner; one Project means Users are effectively global |
+| 38 | "Last step has a deadline" is a **soft convention** (nudge), not enforced | Consistent with the no-hard-gates stance; you often don't know the date yet, and the "last step" moves as future steps are edited (Decision 33). Workstreams without a terminal deadline are surfaced as "needs a date" |
+| 39 | Notes are **editable/deletable by their author** (with `authorId` + timestamps) | Low complexity (a nullable `updatedAt` + author-guarded edit); the trusted 2–6 user context doesn't need an immutable audit log. Relaxes Decision 17's immutability; the thread-of-entries model stands |
+| 40 | **No Link entity** — URLs written in note bodies render as clickable links | One fewer entity/CRUD surface; a note already carries the label as text, and editable notes let you fix a dead URL. The "URLs only, no file uploads" rule (Decision 16) still holds. Add a real Link entity later only if a scannable resource list is missed |

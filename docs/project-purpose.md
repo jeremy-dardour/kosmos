@@ -20,8 +20,7 @@ For the current UI direction, see [docs/prototype/timeline/](./prototype/timelin
 ## Who it's for
 
 2–6 users total: the couple as primary users, plus a few helpers. Everyone has
-equal access in V1 (no roles). Identity via Google OAuth; access gated by an
-in-app email whitelist.
+equal access in V1 (no roles).
 
 ## Scope boundaries (V1)
 
