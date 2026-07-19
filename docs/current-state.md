@@ -5,15 +5,17 @@ change — it always reflects *now*. For the history of how we got here, see
 [docs/sessions/](./sessions/); for domain decisions and rationale, see
 [docs/domain-decisions.md](./domain-decisions.md).
 
-_Last updated: 2026-07-18_
+_Last updated: 2026-07-19_
 
 ## Phase
 
-**Pre-implementation, domain model complete.** UI direction and the full domain
-model are settled — the Workstream state machine is specified in
-[ADR 0005](./adr/0005-workstream-pipeline-state-machine.md) and all entities are
-pinned down (Decisions 29–40). No open questions. No domain code written yet
-(still the monorepo template); next is data-model / schema design.
+**Pre-implementation, domain model complete — now planning the V1 build.** The
+full domain model is settled (Workstream state machine in
+[ADR 0005](./adr/0005-workstream-pipeline-state-machine.md); all entities pinned,
+Decisions 29–40) with no open domain questions. The V1 build is being planned via
+the wayfinder map at [docs/wayfinder/v1-build/](./wayfinder/v1-build/map.md) —
+decompose V1 into buildable increment-specs. No domain code written yet (still the
+monorepo template).
 
 ## Done
 
@@ -32,6 +34,9 @@ pinned down (Decisions 29–40). No open questions. No domain code written yet
 - Closed the remaining entity questions (Decisions 36–40): no Dependency entity,
   Project holds an optional event date, "last-step deadline" is a soft nudge,
   notes are author-editable, and Link is folded into notes (clickable URLs).
+- Set up the agent tooling (`docs/agents/`, `CLAUDE.md` § Agent skills) and
+  charted the **V1-build wayfinder map** (8 tickets; frontier: schema, auth
+  research, hosting research).
 
 ## Open questions
 
@@ -39,5 +44,11 @@ _None — the V1 domain model is fully specified._
 
 ## Next steps
 
-1. Data-model design — translate CONTEXT.md + ADR 0005 into DB schema + API shape.
-2. Break implementation into buildable increments.
+Work the [V1-build wayfinder map](./wayfinder/v1-build/map.md), one ticket per
+session (frontier first):
+
+1. **Ticket 01 — data-model & schema** (grilling): translate CONTEXT.md + ADR 0005
+   into the MikroORM schema + API shape.
+2. **Tickets 02 / 03 — auth & hosting research** (AFK, Sonnet 5): can run in
+   parallel; unblock the auth and deployment decisions.
+3. Downstream: API contract → UI slices → sequence V1 into increment-specs.
