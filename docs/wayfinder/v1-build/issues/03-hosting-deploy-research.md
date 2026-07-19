@@ -25,3 +25,27 @@ budget-sensitive, solo project — weight simplicity + cost over sophistication.
 
 Output: a markdown comparison (linked from this ticket). Input to _Deployment &
 hosting approach_.
+
+## Known context / constraints (added by owner)
+
+- **Existing AWS free-tier account** — treat AWS as a serious option (e.g.
+  EC2/Lightsail + RDS for the backend, **S3 + CloudFront** for a static
+  frontend; note Fargate/ECS is not free-tier). **Caveat:** the large AWS free
+  tier is **12 months only** — price the *after-free-tier* steady state too,
+  since this tool outlives a year. Still compare non-AWS (Fly / Render / Railway
+  for the app; Neon / Supabase for Postgres; Cloudflare Pages / Netlify for
+  static frontend).
+- **Frontend serving strategy — compare the two explicitly, with cost:**
+  1. **Single deployable** — Vite *builds* the SPA to static files; the
+     NestJS/Node server serves that build alongside `/api` (one container, one
+     origin, no CORS, one deploy). NB: Vite is dev-only — prod serves the
+     *build*, never a running Vite.
+  2. **Split** — containerised backend + frontend as static assets on a CDN /
+     static host (S3+CloudFront, Cloudflare Pages, Netlify). Edge caching,
+     independent deploys, often free frontend hosting; costs CORS/subdomain
+     setup + two deploy targets.
+  Gather facts, trade-offs, and monthly cost for **both**; the choice is a close
+  judgment call and is **decided in ticket 06**, not here. Weight simplicity for
+  a 2–6 user tool, but note the split option doubles as a cleaner portfolio
+  signal.
+
