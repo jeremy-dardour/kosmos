@@ -80,3 +80,22 @@ kind as the next numbered ADR.
 - After changing entities or endpoints: regenerate migration / API types (see
   [apps/api/README.md](./apps/api/README.md)); never hand-edit
   `packages/api-contracts/src/openapi.d.ts`
+
+## Agent skills
+
+### Issue tracker
+
+Local markdown, committed under `docs/` — PRDs in `docs/specs/<feature>/`,
+wayfinder maps in `docs/wayfinder/<effort>/`. No GitHub Issues; no external PR
+triage surface. See [docs/agents/issue-tracker.md](./docs/agents/issue-tracker.md).
+
+### Triage labels
+
+The five canonical roles, default strings (`needs-triage`, `needs-info`,
+`ready-for-agent`, `ready-for-human`, `wontfix`), written on a `Status:` line.
+See [docs/agents/triage-labels.md](./docs/agents/triage-labels.md).
+
+### Domain docs
+
+Single-context — one root `CONTEXT.md` + `docs/adr/`; `CLAUDE.md` is the
+documentation map. See [docs/agents/domain.md](./docs/agents/domain.md).
