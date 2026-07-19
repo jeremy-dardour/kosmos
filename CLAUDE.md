@@ -4,6 +4,13 @@ Production-ready fullstack monorepo template: NestJS API + React SPA + shared to
 
 See [README.md](./README.md) for project overview, setup, and CI pipeline.
 
+## Visibility
+
+**This repository may be made public.** Do not commit personal information —
+names of the couple or helpers, private career/life plans, or anything similar.
+Use generic placeholders instead ("the couple", "a partner", "a helper"); Jeremy's
+own first name is acceptable. When in doubt, grep the change before committing.
+
 ## Documentation map
 
 Project knowledge — one home per fact. Read these to get oriented:
