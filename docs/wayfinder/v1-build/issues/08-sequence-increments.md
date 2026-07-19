@@ -1,4 +1,5 @@
 <!-- wayfinder:task -->
+
 # Sequence V1 into ordered increment-specs
 
 Type: task
@@ -12,6 +13,7 @@ slices), decompose V1 into an **ordered sequence of buildable increments** — t
 map's destination.
 
 Do:
+
 - Order the work **walking-skeleton-first**: stand up a thin end-to-end vertical
   early (deploy + auth + one real Workstream advancing through the API and
   rendering on the overview), then fill features increment by increment.

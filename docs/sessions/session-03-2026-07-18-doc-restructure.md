@@ -26,7 +26,7 @@ home.
 
 ## Decisions
 
-No new *domain* decisions. Documentation conventions established (see
+No new _domain_ decisions. Documentation conventions established (see
 `CLAUDE.md`): single-home-per-fact; live state in `current-state.md`; append-only
 domain decisions in `docs/domain-decisions.md`; one dated session summary per
 session named `session-NN-YYYY-MM-DD-slug.md`; project memory lives in-repo.

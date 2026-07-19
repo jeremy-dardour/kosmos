@@ -1,4 +1,5 @@
 <!-- wayfinder:grilling -->
+
 # API contract: pipeline actions & overview read model
 
 Type: grilling
@@ -12,6 +13,7 @@ Design the REST API for V1, following the template's DTO/module conventions
 ticket 01.
 
 Decide:
+
 - **State-machine actions** — how `start` and `advance(outcome)` are expressed
   (e.g. `POST /workstreams/:id/advance` with an outcome body, `POST .../start`)
   vs. pure-REST patching. Keep the "one authoritative module" as the only writer

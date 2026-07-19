@@ -12,7 +12,7 @@
   `docs/agents/{issue-tracker,triage-labels,domain}.md` + an `## Agent skills`
   block in `CLAUDE.md`.
 - Charted the **V1-build wayfinder map** ([docs/wayfinder/v1-build/](../wayfinder/v1-build/map.md)):
-  a *planning* destination — decompose V1 into buildable increment-specs — with
+  a _planning_ destination — decompose V1 into buildable increment-specs — with
   8 tickets (frontier: 01 schema · 02 auth research · 03 hosting research).
   Deployment / hosting / CI folded into scope on request.
 - Enriched the two AFK research tickets with owner context: **auth** (research
@@ -27,14 +27,14 @@
 - **Domain:** [Decision 36](../domain-decisions.md) — no Dependency entity in V1
   (closes the last open thread; full set 26–40 recorded in session 04).
 - **Process / tooling** (not domain decisions): local-markdown issue tracker under
-  `docs/`; wayfinder *planning* destination for the V1 build. See
+  `docs/`; wayfinder _planning_ destination for the V1 build. See
   `CLAUDE.md` § Agent skills and the map.
 
 ## Learnings / tensions surfaced
 
 - **Single-home discipline caught a live duplication** — `docs/agents/domain.md`
   had re-listed the domain docs that `CLAUDE.md`'s documentation map already owns.
-  Fixed by splitting the doc *inventory* (map) from the *consumption rules*
+  Fixed by splitting the doc _inventory_ (map) from the _consumption rules_
   (domain.md).
 - **Privacy:** personal info (partner's name, career/life plans) must never reach
   a repo that might become public. Scrubbed the partner's name (never committed),

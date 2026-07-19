@@ -19,14 +19,18 @@ The wireframe file contains three turns of exploration. **Turn 3 (option 3a) is 
 ## Architecture: Core Entities
 
 ### Workstream
+
 A named track of preparation work (e.g. "Venue", "Catering"). Contains an ordered pipeline of Steps. Has:
+
 - `name`, `icon`, `group` (category), `defaultOwner` (user)
 - Ordered list of `Step` objects
 - `currentStepIndex` (pointer to active step)
 - `dependencies` (list of other Workstream IDs — visual only, no enforcement)
 
 ### Step
+
 An individual action within a Workstream pipeline. Has:
+
 - `name`, `status` (see below), `owner` (inherits from Workstream if unset)
 - Optional `deadline` (date)
 - Optional `completionDate` (auto-set when Done/Skipped)
@@ -35,18 +39,21 @@ An individual action within a Workstream pipeline. Has:
 - Optional `isChecklist` flag → contains `subItems[]` (name + done boolean)
 
 ### Step Statuses
-| Status | Visual | Meaning |
-|--------|--------|---------|
-| Not Started | Grey outlined circle | Ahead of current position |
+
+| Status      | Visual                                  | Meaning                                   |
+| ----------- | --------------------------------------- | ----------------------------------------- |
+| Not Started | Grey outlined circle                    | Ahead of current position                 |
 | In Progress | Large blue filled circle with glow ring | The current step — most prominent element |
-| Done | Green filled circle | Completed |
-| Skipped | Dashed outlined circle | Intentionally bypassed |
-| Blocked | Red filled circle with glow ring | Stuck — informational flag |
+| Done        | Green filled circle                     | Completed                                 |
+| Skipped     | Dashed outlined circle                  | Intentionally bypassed                    |
+| Blocked     | Red filled circle with glow ring        | Stuck — informational flag                |
 
 ### Group
+
 A category label on Workstreams for visual clustering. Has `name` and `color`. No behavior or roll-up status.
 
 ### User
+
 Identified by Google email. All users have equal access (no roles). 2–6 users per instance.
 
 ---
@@ -71,12 +78,14 @@ Identified by Google email. All users have equal access (no roles). 2–6 users 
 ```
 
 ### Left Panel — Header Bar
+
 - **Title**: "Wedding Prep"
 - **Countdown badge**: "147 days" (days until wedding date) — light grey pill
 - **Filter: "My Tasks ▾"** — dropdown filtering by current user's assigned steps
 - **Filter: "All Groups ▾"** — dropdown filtering by workstream group/category
 
 ### Left Panel — Workstream Card List
+
 Cards are grouped by category with section headers.
 
 **Group header**: uppercase label + small colored square (group color).
@@ -88,7 +97,7 @@ Cards are grouped by category with section headers.
    - Right: **countdown badge** (pill shape) + **Advance → button**
 
 2. **Countdown badge logic**:
-   - Shows the *nearest upcoming deadline* for that workstream: `"{stepName} in {N}d"`
+   - Shows the _nearest upcoming deadline_ for that workstream: `"{stepName} in {N}d"`
    - Urgency threshold at 7 days: `< 7d` → red background (`#fce8e6` bg, `#d45a4a` text), warning icon
    - `≥ 7d` → grey background (`#f3f2ef` bg, `#888` text)
    - **Overdue**: solid red background (`#d45a4a` bg, white text), `"{stepName} {N}d overdue"`
@@ -106,11 +115,13 @@ Cards are grouped by category with section headers.
    - **Overdue**: 1.5px red border, light red background (same as blocked but with overdue countdown)
 
 ### Right Panel — Detail Slide-Over
+
 Opens when a card is clicked. Shows full detail for one workstream.
 
 **Header**: icon + workstream name + close button (✕)
 
 **Vertical step pipeline** (top section):
+
 - Each step as a vertical list item with a connecting line between circles
 - Done steps: strike-through text + completion date
 - Current step: larger blue dot, bold blue text, "CURRENT" badge
@@ -118,15 +129,18 @@ Opens when a card is clicked. Shows full detail for one workstream.
 - If current step is a **checklist step**: inline card showing sub-items with checkboxes and completion count ("CHECKLIST — 2/4")
 
 **Notes section** (middle):
+
 - Header: "NOTES" + "+ Add note" action
 - Reverse-chronological list of timestamped entries: `"Jul 10 · AL"` + note text
 - Append-only
 
 **Links section** (bottom left):
+
 - Header: "LINKS"
 - List of clickable URL + label pairs
 
 **Dependencies section** (bottom right):
+
 - Header: "DEPENDS ON"
 - List of workstream names this one depends on (visual info only)
 
@@ -135,6 +149,7 @@ Opens when a card is clicked. Shows full detail for one workstream.
 ## Key Interactions
 
 ### 1. Advance a Workstream (most frequent)
+
 - **From card**: click "Advance →" button directly on the card
 - Moves `currentStepIndex` forward by one
 - If current step is **Blocked**: button changes to "Resolve ▾" dropdown with options "Mark Done" / "Mark Skipped", then advances
@@ -142,24 +157,29 @@ Opens when a card is clicked. Shows full detail for one workstream.
 - Auto-records `completionDate` on the step being completed
 
 ### 2. Zoom Into Workstream
+
 - Click anywhere on the card (except Advance button) → opens detail slide-over panel on right
 - Card gets blue selected border
 - Clicking ✕ or another card dismisses/swaps
 
 ### 3. Add a Note
+
 - In detail panel → click "+ Add note" → inline text input
 - Saves with timestamp + current user
 
 ### 4. Add a Link
+
 - In detail panel → similar add action
 - URL + label input
 
 ### 5. Filter by Owner
+
 - "My Tasks ▾" dropdown in header
 - Filters card list to workstreams where the current step's owner matches selected user
 - "All" option to show everything
 
 ### 6. Filter by Group
+
 - "All Groups ▾" dropdown
 - Shows/hides groups
 
@@ -184,29 +204,33 @@ Derived:
 ## Design Tokens (wireframe reference values — adapt to your system)
 
 ### Status Colors
-| Token | Hex | Usage |
-|-------|-----|-------|
-| done | `#6aae7e` | Completed step circles |
-| inProgress | `#4a7fd4` | Current step, selected card border, CTA buttons |
-| inProgressGlow | `rgba(74,127,212,0.2)` | Glow ring on current step |
-| notStarted | `#ccc` | Future step circle borders |
-| blocked | `#d45a4a` | Blocked/overdue steps, urgent deadlines |
-| blockedGlow | `rgba(212,90,74,0.2)` | Glow ring on blocked step |
-| skipped | `#aaa` dashed | Skipped step circle borders |
+
+| Token          | Hex                    | Usage                                           |
+| -------------- | ---------------------- | ----------------------------------------------- |
+| done           | `#6aae7e`              | Completed step circles                          |
+| inProgress     | `#4a7fd4`              | Current step, selected card border, CTA buttons |
+| inProgressGlow | `rgba(74,127,212,0.2)` | Glow ring on current step                       |
+| notStarted     | `#ccc`                 | Future step circle borders                      |
+| blocked        | `#d45a4a`              | Blocked/overdue steps, urgent deadlines         |
+| blockedGlow    | `rgba(212,90,74,0.2)`  | Glow ring on blocked step                       |
+| skipped        | `#aaa` dashed          | Skipped step circle borders                     |
 
 ### Group Colors (sample)
-| Group | Color |
-|-------|-------|
-| Logistics | `#8b6cc1` |
+
+| Group        | Color     |
+| ------------ | --------- |
+| Logistics    | `#8b6cc1` |
 | Food & Drink | `#e09850` |
-| Vendors | `#5a9e6f` |
+| Vendors      | `#5a9e6f` |
 
 ### Urgency Thresholds
+
 - **Comfortable** (≥ 7 days): grey badge (`#f3f2ef` bg, `#888` text)
 - **Urgent** (< 7 days): red badge (`#fce8e6` bg, `#d45a4a` text)
 - **Overdue**: solid red badge (`#d45a4a` bg, `#fff` text), card gets red border treatment
 
 ### Typography (wireframe used system-ui — choose your own)
+
 - App title: 600 15px
 - Card workstream name: 600 12px
 - Step labels under dots: 400 7px
@@ -216,6 +240,7 @@ Derived:
 - Section headers (NOTES, LINKS): 500 10px uppercase tracking
 
 ### Spacing
+
 - Card padding: 14–16px
 - Card gap (vertical): 10px
 - Group header margin-bottom: 8px
@@ -264,8 +289,8 @@ Derived:
 
 ## Files
 
-| File | Description |
-|------|-------------|
+| File                                 | Description                                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | `Wedding Tracker Wireframes.dc.html` | Full wireframe prototype. **Turn 3, option 3a** is the final direction. Open in browser to view. |
 
 ---

@@ -1,6 +1,6 @@
 # Domain Docs — consumer rules
 
-How the engineering skills should *consume* this repo's domain documentation.
+How the engineering skills should _consume_ this repo's domain documentation.
 This repo is **single-context** (one root `CONTEXT.md` + one `docs/adr/`).
 
 This file is deliberately **not** an inventory of the docs — that has a single

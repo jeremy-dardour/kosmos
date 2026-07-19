@@ -1,4 +1,5 @@
 <!-- wayfinder:map -->
+
 # Map: V1 Build
 
 ## Destination
@@ -9,7 +10,7 @@ cross-cutting decision resolved first: the concrete data model/schema, the API
 contract, Google-OAuth + `.env`-allowlist auth, the overview UI build slices, and
 **deployment/hosting/CI/infra** (V1 is not "done" until it can be stood up).
 
-This is a **planning** destination: tickets *decide and spec*; they do not build.
+This is a **planning** destination: tickets _decide and spec_; they do not build.
 The map is complete when nothing is left to decide and the increment PRDs are
 written.
 

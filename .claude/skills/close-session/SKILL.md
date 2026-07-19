@@ -17,7 +17,7 @@ defines its format and rules — follow those, don't restate them here.
    open questions / next steps). Don't copy status into the session log; link.
 
 3. **Extract candidate memories — ask before persisting.** Review the session for
-   durable, reusable facts *not already written down*: user or working-style
+   durable, reusable facts _not already written down_: user or working-style
    preferences, project constraints, external references. **Propose them to the
    user and persist only the ones they approve**, each in its correct single home:
    project facts in-repo (`CLAUDE.md` / `docs/`), cross-project working

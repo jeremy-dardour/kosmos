@@ -1,4 +1,5 @@
 <!-- wayfinder:grilling -->
+
 # Overview UI build slices
 
 Type: grilling
@@ -13,6 +14,7 @@ the web build into buildable increments (design is already decided — this is
 build-order, not redesign).
 
 Decide the slices and their order across:
+
 - **Overview** — grouped Workstream cards, color-coded status, Ungrouped bucket.
 - **Advance interaction** — the one-click advance + skip from the card (Decision
   21), outcome selection, NotStarted `start`.

@@ -1,4 +1,5 @@
 <!-- wayfinder:grilling -->
+
 # Auth approach: Google OAuth + email allowlist
 
 Type: grilling
@@ -10,6 +11,7 @@ Blocked by: 02
 Given the research from ticket 02, decide the concrete auth wiring for V1.
 
 Decide:
+
 - **Google identity** — how it's obtained on the web and validated by the API
   (Google ID token vs. full OIDC provider config against the existing flow).
 - **Allowlist gate** — where the `.env` email-allowlist check lives (guard vs.

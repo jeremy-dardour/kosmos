@@ -1,4 +1,5 @@
 <!-- wayfinder:grilling -->
+
 # Concrete data model & MikroORM schema
 
 Type: grilling
@@ -21,7 +22,7 @@ ready for the API-contract ticket. Resolve the choices the domain spec left open
   guarded.
 - **Entities & relations** — Project (name + optional `eventDate`), Group
   (nullable, single per Workstream), User (created on first login), Note (author
-  + timestamps, editable). Nullability per the standards (TS-driven).
+  - timestamps, editable). Nullability per the standards (TS-driven).
 - **Cascades & indexes** — delete Workstream → Steps/Notes; delete Project → all;
   indexes for the single overview read.
 - **Module boundary** — where the invariant-enforcing Workstream domain module

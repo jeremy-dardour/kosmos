@@ -1,4 +1,5 @@
 <!-- wayfinder:grilling -->
+
 # Deployment & hosting approach
 
 Type: grilling
@@ -10,6 +11,7 @@ Blocked by: 03
 Given the options from ticket 03, decide how V1 is stood up and shipped.
 
 Decide:
+
 - **App host** and **managed Postgres** provider.
 - **CD pipeline** — how a merge reaches production (build image → run migrations
   at container start → deploy), building on whatever CI already exists.

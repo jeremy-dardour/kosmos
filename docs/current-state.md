@@ -1,7 +1,7 @@
 # Current State
 
 The single live snapshot of where the project is. Overwrite this as things
-change — it always reflects *now*. For the history of how we got here, see
+change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for domain decisions and rationale, see
 [docs/domain-decisions.md](./domain-decisions.md).
 
