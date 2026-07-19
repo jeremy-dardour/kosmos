@@ -3,6 +3,7 @@
 ## What was done
 
 **1. Closed the last three open product questions** from `current-state.md`:
+
 - Access control, notifications, single-vs-generic scope.
 - Introduced a top-level **Project** entity ([CONTEXT.md](../../CONTEXT.md)) as the
   container all Workstreams belong to; "wedding" is no longer hardcoded.
@@ -12,6 +13,7 @@ and pinned down the Workstream **state machine**. Walked the design tree
 decision-by-decision; the full representation, invariants, and consequences are
 captured in **[ADR 0005](../adr/0005-workstream-pipeline-state-machine.md)**.
 Headlines:
+
 - **Pointer is the source of truth** for position (not a status enum per step);
   a step stores only its outcome once passed. Illegal states (two "In Progress",
   gaps) become unrepresentable.
@@ -31,6 +33,7 @@ FKs with inheritance), `Group` (real entity, nullable + single per workstream,
 color on the group).
 
 **5. Finished the tree — remaining entity questions** (Decisions 36–40):
+
 - **No Dependency entity in V1** (for simplicity) — cross-step waits are a
   `blocked` flag + note. Defers Decisions 11/12/23.
 - **Project** holds an optional `eventDate` (wedding day → global countdown); no

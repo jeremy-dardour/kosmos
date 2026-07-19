@@ -17,19 +17,19 @@ domain module.
 
 Three fields on the Workstream, no stored status enum:
 
-| Field | Type | Meaning |
-|-------|------|---------|
-| `startedAt` | nullable timestamp | when work began (set by `start`) |
-| `completedAt` | nullable timestamp | when the last step was passed (set by final `advance`) |
-| `currentStepId` | nullable FK → Step | which step is current; non-null **iff** Active |
+| Field           | Type               | Meaning                                                |
+| --------------- | ------------------ | ------------------------------------------------------ |
+| `startedAt`     | nullable timestamp | when work began (set by `start`)                       |
+| `completedAt`   | nullable timestamp | when the last step was passed (set by final `advance`) |
+| `currentStepId` | nullable FK → Step | which step is current; non-null **iff** Active         |
 
 Lifecycle is **derived** from the timestamp pair, never persisted as an enum:
 
-| `startedAt` | `completedAt` | `currentStepId` | Derived state |
-|:---:|:---:|:---:|---|
-| null | null | null | **NotStarted** |
-| set | null | set | **Active** |
-| set | set | null | **Complete** |
+| `startedAt` | `completedAt` | `currentStepId` | Derived state  |
+| :---------: | :-----------: | :-------------: | -------------- |
+|    null     |     null      |      null       | **NotStarted** |
+|     set     |     null      |       set       | **Active**     |
+|     set     |      set      |      null       | **Complete**   |
 
 **Core invariant:** `currentStepId` is non-null **⟺** Active (`startedAt` set,
 `completedAt` null). The other corners — `completedAt` set while `startedAt`
@@ -48,7 +48,8 @@ its **outcome** once passed:
 - `outcome` ∈ { `Done`, `Skipped`, `null` }, plus `outcomeAt` (auto-recorded).
 - `blocked` boolean — meaningful **only** while the step is current (informational).
 
-A Step's *status* is **derived**, never stored:
+A Step's _status_ is **derived**, never stored:
+
 - before the pointer → `Done` / `Skipped` (its recorded outcome)
 - at the pointer → `InProgress` (or shown as Blocked if `blocked`)
 - after the pointer → `NotStarted`
@@ -73,6 +74,7 @@ Complete on the first `advance`.
 ### No hard gates
 
 `advance` is **always permitted from Active**. Nothing blocks it:
+
 - `blocked` is informational (Decision 5).
 - Checklist sub-items are informational — progress is shown, not enforced
   (Decision 31). Advancing past a checklist step with unresolved sub-items
@@ -86,11 +88,11 @@ NotStarted or Complete Workstream, or `start` on a non-NotStarted one).
 Steps are ordered by an integer `position`. What can change depends on where the
 step sits relative to the pointer:
 
-| | Structure (move / delete / insert) | Attributes (name, deadline, owner, blocked, checklist items) | Append a note |
-|---|:---:|:---:|:---:|
-| **Past** (Done/Skipped) | ✗ frozen | ✗ frozen | ✓ |
-| **Current** | ✗ frozen | ✓ | ✓ |
-| **Future** (NotStarted) | ✓ | ✓ | ✓ |
+|                         | Structure (move / delete / insert) | Attributes (name, deadline, owner, blocked, checklist items) | Append a note |
+| ----------------------- | :--------------------------------: | :----------------------------------------------------------: | :-----------: |
+| **Past** (Done/Skipped) |              ✗ frozen              |                           ✗ frozen                           |       ✓       |
+| **Current**             |              ✗ frozen              |                              ✓                               |       ✓       |
+| **Future** (NotStarted) |                 ✓                  |                              ✓                               |       ✓       |
 
 Reordering happens **only among future steps** and is implemented as renumbering
 that tail in one transaction. Because you can neither insert behind the pointer
@@ -122,12 +124,12 @@ small (`start`, `advance`, `state`); the invariant-heavy internals are hidden.
   than overloading `advance` with a "were we NotStarted?" branch, and it earns
   its keep by making "NotStarted / untouched" a visible status on the overview
   ("we haven't even opened Flowers yet").
-- **One action with an outcome parameter:** Done vs Skipped is *information about
-  how a step ended*, not control flow — both simply move the pointer. Collapsing
+- **One action with an outcome parameter:** Done vs Skipped is _information about
+  how a step ended_, not control flow — both simply move the pointer. Collapsing
   them to `advance(outcome)` avoids a limbo "pre-marked skipped but still current"
   state and a second source of truth.
-- **No hard gates:** consistent with Blocked (Decision 5) — the tool *informs*,
-  never *obstructs*. For a 2–6 person trusted tool, enforcement is friction with
+- **No hard gates:** consistent with Blocked (Decision 5) — the tool _informs_,
+  never _obstructs_. For a 2–6 person trusted tool, enforcement is friction with
   no payoff, and it keeps `advance` free of rejection logic.
 - **Freeze the past, edit the future:** you re-plan the part you haven't done yet
   (that's what you learn as you go); the past is settled history. This also

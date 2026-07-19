@@ -11,11 +11,13 @@ A **timeline + pipeline hybrid view** showing 20-50 workstreams at a glance.
 ### Workstream row
 
 Each workstream is a horizontal row containing:
+
 - **Identity:** name, icon, group color, default owner (avatar)
 - **Pipeline:** a sequence of **3-10 step circles**, color-coded by status
 - **Current step pointer:** one step is always "active" — this is the most important visual element, the "you are here" marker that needs strong emphasis
 
 Step statuses and their colors:
+
 - Not Started (grey) — ahead of current
 - **In Progress (blue) — the current step, visually prominent**
 - Done (green) — behind current
