@@ -75,19 +75,19 @@ Visual/organizational label for clustering Workstreams on the overview.
 A named track of wedding preparation work. Owns the pipeline state machine
 (ADR 0005).
 
-| Column           | Type           | Constraints / Notes                                                           |
-| ---------------- | -------------- | ----------------------------------------------------------------------------- |
-| `id`             | `uuid`         | PK, `defaultRaw: gen_random_uuid()`                                           |
-| `name`           | `varchar(255)` |                                                                               |
-| `icon`           | `varchar(255)` | Emoji or icon name (Decision 25 — representation TBD; `varchar` covers both). |
-| `projectId`      | `uuid`         | FK → Project. `ON DELETE CASCADE`.                                            |
-| `groupId`        | `uuid`         | Nullable. FK → Group. `ON DELETE SET NULL`.                                   |
-| `defaultOwnerId` | `uuid`         | Nullable. FK → User. `ON DELETE SET NULL`.                                    |
-| `startedAt`      | `timestamptz`  | Nullable. Set by `start()`.                                                   |
-| `completedAt`    | `timestamptz`  | Nullable. Set by final `advance()`.                                           |
-| `currentStepId`  | `uuid`         | Nullable. FK → Step. `ON DELETE RESTRICT` (must not orphan a live pointer).   |
-| `createdAt`      | `timestamptz`  | `defaultRaw: now()`                                                           |
-| `updatedAt`      | `timestamptz`  | `defaultRaw: now()`                                                           |
+| Column          | Type           | Constraints / Notes                                                           |
+| --------------- | -------------- | ----------------------------------------------------------------------------- |
+| `id`            | `uuid`         | PK, `defaultRaw: gen_random_uuid()`                                           |
+| `name`          | `varchar(255)` |                                                                               |
+| `icon`          | `varchar(255)` | Emoji or icon name (Decision 25 — representation TBD; `varchar` covers both). |
+| `projectId`     | `uuid`         | FK → Project. `ON DELETE CASCADE`.                                            |
+| `groupId`       | `uuid`         | Nullable. FK → Group. `ON DELETE SET NULL`.                                   |
+| `ownerId`       | `uuid`         | Nullable. FK → User. `ON DELETE SET NULL`.                                    |
+| `startedAt`     | `timestamptz`  | Nullable. Set by `start()`.                                                   |
+| `completedAt`   | `timestamptz`  | Nullable. Set by final `advance()`.                                           |
+| `currentStepId` | `uuid`         | Nullable. FK → Step. `ON DELETE RESTRICT` (must not orphan a live pointer).   |
+| `createdAt`     | `timestamptz`  | `defaultRaw: now()`                                                           |
+| `updatedAt`     | `timestamptz`  | `defaultRaw: now()`                                                           |
 
 **Core invariant (ADR 0005):** `currentStepId` is non-null **⟺** Active
 (`startedAt` set, `completedAt` null). Guarded in the domain service, not by a
@@ -101,19 +101,19 @@ DB constraint.
 
 An individual action within a Workstream's pipeline. Ordered by `position`.
 
-| Column         | Type           | Constraints / Notes                                                                                      |
-| -------------- | -------------- | -------------------------------------------------------------------------------------------------------- |
-| `id`           | `uuid`         | PK, `defaultRaw: gen_random_uuid()`                                                                      |
-| `workstreamId` | `uuid`         | FK → Workstream. `ON DELETE CASCADE`.                                                                    |
-| `position`     | `integer`      | 1-indexed, contiguous. See unique constraint below.                                                      |
-| `name`         | `varchar(255)` |                                                                                                          |
-| `deadline`     | `date`         | Nullable. Calendar day.                                                                                  |
-| `ownerId`      | `uuid`         | Nullable. FK → User. `ON DELETE SET NULL`. Inherits from Workstream.defaultOwnerId at read time if null. |
-| `outcome`      | `step_outcome` | Nullable. Enum: `done` / `skipped`. Null while not yet passed.                                           |
-| `outcomeAt`    | `timestamptz`  | Nullable. Auto-recorded when `advance()` records the outcome.                                            |
-| `blocked`      | `boolean`      | Default `false`. Meaningful only on the current step. Not auto-cleared on advance (historical record).   |
-| `createdAt`    | `timestamptz`  | `defaultRaw: now()`                                                                                      |
-| `updatedAt`    | `timestamptz`  | `defaultRaw: now()`                                                                                      |
+| Column         | Type           | Constraints / Notes                                                                                    |
+| -------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| `id`           | `uuid`         | PK, `defaultRaw: gen_random_uuid()`                                                                    |
+| `workstreamId` | `uuid`         | FK → Workstream. `ON DELETE CASCADE`.                                                                  |
+| `position`     | `integer`      | 1-indexed, contiguous. See unique constraint below.                                                    |
+| `name`         | `varchar(255)` |                                                                                                        |
+| `deadline`     | `date`         | Nullable. Calendar day.                                                                                |
+| `ownerId`      | `uuid`         | Nullable. FK → User. `ON DELETE SET NULL`. Inherits from Workstream.ownerId at read time if null.      |
+| `outcome`      | `step_outcome` | Nullable. Enum: `done` / `skipped`. Null while not yet passed.                                         |
+| `outcomeAt`    | `timestamptz`  | Nullable. Auto-recorded when `advance()` records the outcome.                                          |
+| `blocked`      | `boolean`      | Default `false`. Meaningful only on the current step. Not auto-cleared on advance (historical record). |
+| `createdAt`    | `timestamptz`  | `defaultRaw: now()`                                                                                    |
+| `updatedAt`    | `timestamptz`  | `defaultRaw: now()`                                                                                    |
 
 **Unique constraint:**
 `UNIQUE (workstream_id, position) DEFERRABLE INITIALLY DEFERRED`
@@ -178,7 +178,7 @@ content render as clickable links in the UI (Decision 40).
 | Step → ChecklistItem              | CASCADE   |
 | Step → Note                       | CASCADE   |
 | Group → Workstream                | SET NULL  |
-| User → Workstream (owner)         | SET NULL  |
+| User → Workstream (ownerId)       | SET NULL  |
 | User → Step (owner)               | SET NULL  |
 | User → Note (author)              | SET NULL  |
 | Workstream → Step (currentStepId) | RESTRICT  |
@@ -196,43 +196,6 @@ No other indexes needed at this data volume (20–50 workstreams × ~10 steps).
 
 ---
 
-## Module layout
-
-One NestJS module — `workstream` — owns the entire aggregate:
-
-```
-src/modules/workstream/
-  workstream.module.ts
-  workstream.controller.ts        ← Workstream CRUD + start/advance
-  step.controller.ts              ← Step CRUD (scoped to workstream)
-  note.controller.ts              ← Note CRUD (scoped to step)
-  checklist-item.controller.ts    ← ChecklistItem CRUD (scoped to step)
-  workstream.service.ts           ← Workstream CRUD + pipeline transitions (start/advance/state)
-  step.service.ts                 ← Step CRUD (future-only mutation, position management)
-  note.service.ts                 ← Note CRUD
-  checklist-item.service.ts       ← ChecklistItem CRUD
-  dtos/
-    input/                        ← Create/Update DTOs (class-validator)
-    output/                       ← Response DTOs (@ApiProperty)
-```
-
-**Boundary rules:**
-
-- Sub-entity services are internal to the module (not exported).
-- `workstream.service` is the single authority for pipeline transitions
-  (ADR 0005). Nothing outside this module writes `startedAt`, `completedAt`,
-  `currentStepId`, or Step `outcome`/`outcomeAt`.
-- Controllers call the matching service directly.
-- No new ADR needed — ADR 0005 covers the "one authoritative module" decision.
-
-**Other modules** (registered separately, not inside workstream):
-
-- `project` — Project CRUD. Thin module.
-- `group` — Group CRUD. Thin module.
-- `user` — User upsert-on-login, lookup. Thin module.
-
----
-
 ## Relationship diagram
 
 ```
@@ -242,7 +205,7 @@ Project ──1:N──→ Workstream ──1:N──→ Step ──1:N──→
     │                │
     └──1:N──→ Group ←──N:1── Workstream (optional)
 
-User ←── Workstream.defaultOwnerId (optional)
+User ←── Workstream.ownerId (optional)
 User ←── Step.ownerId (optional, inherits if null)
 User ←── Note.authorId
 User ←── Workstream.currentStepId → Step (optional, circular)
@@ -253,7 +216,7 @@ User ←── Workstream.currentStepId → Step (optional, circular)
 ## Notes on implementation
 
 - **Owner inheritance** is read-time: if `step.ownerId` is null, the UI/API
-  response fills it from `workstream.defaultOwnerId`. No DB-level default.
+  response fills it from `workstream.ownerId`. No DB-level default.
 - **Step status** is derived from pointer position (ADR 0005), never stored.
 - **Workstream lifecycle** is derived from `(startedAt, completedAt)`, never
   stored as an enum.
