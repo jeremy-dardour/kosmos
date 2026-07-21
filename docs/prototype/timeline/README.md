@@ -22,7 +22,7 @@ The wireframe file contains three turns of exploration. **Turn 3 (option 3a) is 
 
 A named track of preparation work (e.g. "Venue", "Catering"). Contains an ordered pipeline of Steps. Has:
 
-- `name`, `icon`, `group` (category), `defaultOwner` (user)
+- `name`, `icon`, `group` (category), `owner` (user)
 - Ordered list of `Step` objects
 - `currentStepIndex` (pointer to active step)
 - `dependencies` (list of other Workstream IDs — visual only, no enforcement)

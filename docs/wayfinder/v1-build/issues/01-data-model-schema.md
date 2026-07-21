@@ -3,7 +3,7 @@
 # Concrete data model & MikroORM schema
 
 Type: grilling
-Status: open
+Status: done
 
 ## Question
 
@@ -30,3 +30,11 @@ ready for the API-contract ticket. Resolve the choices the domain spec left open
 
 Output: an agreed entity/schema design (not necessarily code). Consider whether
 the "one authoritative Workstream module" warrants its own ADR.
+
+## Output
+
+[docs/entity-schema-design.md](../../../entity-schema-design.md) — the full
+schema spec (entities, columns, constraints, cascades, indexes, module layout).
+All 16 design questions resolved in
+[session 06](../../sessions/session-06-2026-07-19-schema-grilling.md#decisions).
+ADR 0005 was deemed sufficient — no new ADR for the module shape.

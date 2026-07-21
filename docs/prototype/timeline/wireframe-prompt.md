@@ -12,7 +12,7 @@ A **timeline + pipeline hybrid view** showing 20-50 workstreams at a glance.
 
 Each workstream is a horizontal row containing:
 
-- **Identity:** name, icon, group color, default owner (avatar)
+- **Identity:** name, icon, group color, owner (avatar)
 - **Pipeline:** a sequence of **3-10 step circles**, color-coded by status
 - **Current step pointer:** one step is always "active" — this is the most important visual element, the "you are here" marker that needs strong emphasis
 

@@ -34,7 +34,7 @@ written.
 
 ## Decisions so far
 
-<!-- one line per resolved ticket: gist + link. Empty until the first resolves. -->
+- **Ticket 01 — Data model & schema:** resolved. 7 entities (User, Project, Group, Workstream, Step, ChecklistItem, Note), one `workstream` NestJS module with sub-entity services, DB-level cascades, deferred unique constraints on positions. → [entity-schema-design.md](../../entity-schema-design.md)
 
 ## Not yet specified
 
