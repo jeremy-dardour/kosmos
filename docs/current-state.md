@@ -5,17 +5,15 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for domain decisions and rationale, see
 [docs/domain-decisions.md](./domain-decisions.md).
 
-_Last updated: 2026-07-20_
+_Last updated: 2026-07-21_
 
 ## Phase
 
-**Pre-implementation — schema designed, research done, ready for API contract.**
-The domain model is fully settled. Ticket 01 (data-model & schema) is complete —
-all 16 design questions resolved, entity/schema design document written
-([entity-schema-design.md](./entity-schema-design.md),
-[session 06](./sessions/session-06-2026-07-19-schema-grilling.md)). Research for
-Tickets 02 and 03 (auth internals, hosting/deploy) is complete and awaiting
-review. No domain code written yet (still the monorepo template).
+**Pre-implementation — auth, API contract, and schema designed; deploy and state
+machine implementation still to decide.** The domain model is fully settled.
+Auth approach decided (GIS + `.env` allow-list). API contract designed (endpoints,
+DTOs, overview read model). No domain code written yet (still the monorepo
+template).
 
 ## Done
 
@@ -39,24 +37,32 @@ review. No domain code written yet (still the monorepo template).
   research, hosting research).
 - **Ticket 01 complete — entity/schema design written**
   ([entity-schema-design.md](./entity-schema-design.md)). All 16 schema
-  decisions resolved; full list in
+  decisions resolved in
   [session 06](./sessions/session-06-2026-07-19-schema-grilling.md#decisions).
 - **Ticket 02 — auth research complete:**
-  [docs/research/auth-internals.md](./research/auth-internals.md). Key finding:
-  Google Groups not viable on consumer Gmail; GIS + static/DB allow-list is the
-  front-runner.
+  [docs/research/auth-internals.md](./research/auth-internals.md).
 - **Ticket 03 — hosting research complete:**
-  [docs/research/hosting-deploy.md](./research/hosting-deploy.md). Key finding:
-  Cloud Run + Neon + single deployable recommended.
+  [docs/research/hosting-deploy.md](./research/hosting-deploy.md).
+- **Ticket 05 — auth approach resolved:** GIS + `.env` allow-list, consent
+  screen "In production" with non-sensitive scopes. PRD at
+  [docs/specs/auth/PRD.md](./specs/auth/PRD.md).
+- **Ticket 04 — API contract resolved:** one overview aggregate read, named
+  RPCs for start/advance, flat CRUD, derived state server-side. PRD at
+  [docs/specs/api-contract/PRD.md](./specs/api-contract/PRD.md).
 
 ## Open questions
 
 _None at the domain or schema level._
 
+- **State machine implementation** (ticket 09): how `start`/`advance` work
+  transactionally with MikroORM — flush ordering, pointer update, position
+  lookup, validation placement.
+
 ## Next steps
 
-1. **Review research docs** — read `auth-internals.md` and `hosting-deploy.md` in
-   detail; feed into Tickets 05 (auth approach) and 06 (deployment approach).
-2. Continue the [V1-build wayfinder map](./wayfinder/v1-build/map.md): API
-   contract (04) → auth/deploy decisions (05/06) → UI slices (07) → sequence
-   increments (08).
+1. **Review hosting research** — read `hosting-deploy.md`; feed into a deploy
+   PRD when ready.
+2. **Grill state machine implementation** (ticket 09) — transactional logic for
+   `start`/`advance` with MikroORM.
+3. Sequence the build increments (walking-skeleton-first) and write per-increment
+   PRDs.
