@@ -15,15 +15,16 @@ own first name is acceptable. When in doubt, grep the change before committing.
 
 Project knowledge — one home per fact. Read these to get oriented:
 
-| Doc                                                    | Holds                                                               |
-| ------------------------------------------------------ | ------------------------------------------------------------------- |
-| [docs/project-purpose.md](./docs/project-purpose.md)   | Why the project exists, who it's for, scope boundaries              |
-| [CONTEXT.md](./CONTEXT.md)                             | Domain glossary — entities, statuses, rules                         |
-| [docs/domain-decisions.md](./docs/domain-decisions.md) | Domain/design decisions + rationale (append-only)                   |
-| [docs/current-state.md](./docs/current-state.md)       | The live "where we are" — phase, status, next steps, open questions |
-| [docs/sessions/](./docs/sessions/)                     | One dated summary per session (what was done, learnings, status)    |
-| [docs/prototype/](./docs/prototype/)                   | Chosen UI design spec (Pipeline Stack wireframe)                    |
-| [docs/adr/](./docs/adr/)                               | Technical/architectural decisions                                   |
+| Doc                                                            | Holds                                                                         |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [docs/project-purpose.md](./docs/project-purpose.md)           | Why the project exists, who it's for, scope boundaries                        |
+| [CONTEXT.md](./CONTEXT.md)                                     | Domain glossary — entities, statuses, rules                                   |
+| [docs/domain-decisions.md](./docs/domain-decisions.md)         | Domain/design decisions + rationale (append-only)                             |
+| [docs/current-state.md](./docs/current-state.md)               | The live "where we are" — phase, status, next steps, open questions           |
+| [docs/sessions/](./docs/sessions/)                             | One dated summary per session (what was done, learnings, status)              |
+| [docs/prototype/](./docs/prototype/)                           | Chosen UI design spec (Pipeline Stack wireframe)                              |
+| [docs/entity-schema-design.md](./docs/entity-schema-design.md) | Concrete MikroORM schema spec (entities, columns, constraints, module layout) |
+| [docs/adr/](./docs/adr/)                                       | Technical/architectural decisions                                             |
 
 **Always loaded at session start** (imported so they're in context from the start):
 

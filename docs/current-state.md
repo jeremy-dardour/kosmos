@@ -5,17 +5,17 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for domain decisions and rationale, see
 [docs/domain-decisions.md](./domain-decisions.md).
 
-_Last updated: 2026-07-19_
+_Last updated: 2026-07-20_
 
 ## Phase
 
-**Pre-implementation, domain model complete — now planning the V1 build.** The
-full domain model is settled (Workstream state machine in
-[ADR 0005](./adr/0005-workstream-pipeline-state-machine.md); all entities pinned,
-Decisions 29–40) with no open domain questions. The V1 build is being planned via
-the wayfinder map at [docs/wayfinder/v1-build/](./wayfinder/v1-build/map.md) —
-decompose V1 into buildable increment-specs. No domain code written yet (still the
-monorepo template).
+**Pre-implementation — schema designed, research done, ready for API contract.**
+The domain model is fully settled. Ticket 01 (data-model & schema) is complete —
+all 16 design questions resolved, entity/schema design document written
+([entity-schema-design.md](./entity-schema-design.md),
+[session 06](./sessions/session-06-2026-07-19-schema-grilling.md)). Research for
+Tickets 02 and 03 (auth internals, hosting/deploy) is complete and awaiting
+review. No domain code written yet (still the monorepo template).
 
 ## Done
 
@@ -37,18 +37,26 @@ monorepo template).
 - Set up the agent tooling (`docs/agents/`, `CLAUDE.md` § Agent skills) and
   charted the **V1-build wayfinder map** (8 tickets; frontier: schema, auth
   research, hosting research).
+- **Ticket 01 complete — entity/schema design written**
+  ([entity-schema-design.md](./entity-schema-design.md)). All 16 schema
+  decisions resolved; full list in
+  [session 06](./sessions/session-06-2026-07-19-schema-grilling.md#decisions).
+- **Ticket 02 — auth research complete:**
+  [docs/research/auth-internals.md](./research/auth-internals.md). Key finding:
+  Google Groups not viable on consumer Gmail; GIS + static/DB allow-list is the
+  front-runner.
+- **Ticket 03 — hosting research complete:**
+  [docs/research/hosting-deploy.md](./research/hosting-deploy.md). Key finding:
+  Cloud Run + Neon + single deployable recommended.
 
 ## Open questions
 
-_None — the V1 domain model is fully specified._
+_None at the domain or schema level._
 
 ## Next steps
 
-Work the [V1-build wayfinder map](./wayfinder/v1-build/map.md), one ticket per
-session (frontier first):
-
-1. **Ticket 01 — data-model & schema** (grilling): translate CONTEXT.md + ADR 0005
-   into the MikroORM schema + API shape.
-2. **Tickets 02 / 03 — auth & hosting research** (AFK, Sonnet 5): can run in
-   parallel; unblock the auth and deployment decisions.
-3. Downstream: API contract → UI slices → sequence V1 into increment-specs.
+1. **Review research docs** — read `auth-internals.md` and `hosting-deploy.md` in
+   detail; feed into Tickets 05 (auth approach) and 06 (deployment approach).
+2. Continue the [V1-build wayfinder map](./wayfinder/v1-build/map.md): API
+   contract (04) → auth/deploy decisions (05/06) → UI slices (07) → sequence
+   increments (08).
