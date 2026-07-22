@@ -9,11 +9,11 @@ _Last updated: 2026-07-22_
 
 ## Phase
 
-**Pre-implementation — V1 fully specified; deploy and state machine
-implementation still to decide.** The domain model is settled. Auth approach
-decided. API contract designed. V1 Product PRD written (the single behavioral
-spec with inlined rationale). No domain code written yet (still the monorepo
-template).
+**Pre-implementation — V1 fully specified; state machine implementation still
+to decide.** The domain model is settled. Auth, API contract, UI build slices,
+and deployment approach all decided. V1 Product PRD written (the single
+behavioral spec with inlined rationale). No domain code written yet (still the
+monorepo template).
 
 ## Done
 
@@ -28,9 +28,9 @@ template).
   charted the **V1-build wayfinder map** (9 tickets).
 - **Ticket 01 — entity/schema design written**
   ([entity-schema-design.md](./entity-schema-design.md)).
-- **Ticket 02 — auth research complete:**
+- **Ticket 02 — auth research resolved:**
   [docs/research/auth-internals.md](./research/auth-internals.md).
-- **Ticket 03 — hosting research complete:**
+- **Ticket 03 — hosting research resolved:**
   [docs/research/hosting-deploy.md](./research/hosting-deploy.md).
 - **Ticket 05 — auth approach resolved:** GIS + `.env` allow-list, consent
   screen "In production" with non-sensitive scopes. PRD at
@@ -40,6 +40,13 @@ template).
   [docs/specs/api-contract/PRD.md](./specs/api-contract/PRD.md).
 - **V1 Product PRD written** — consolidates all 40 domain decisions with
   rationale; `domain-decisions.md` retired.
+- **Ticket 07 — Overview UI build slices:** resolved. 7 ordered increments
+  from layout shell through write actions. English-first i18n, same
+  `openapi-react-query` data-fetching pattern. →
+  [issue 07](../docs/wayfinder/v1-build/issues/07-ui-build-slices.md)
+- **Tickets 03 + 06 — Hosting & deployment:** resolved. Cloud Run + Neon +
+  single deployable. ~$0/mo steady state, indefinite free tiers. →
+  [issue 06](../docs/wayfinder/v1-build/issues/06-deployment-approach.md)
 
 ## Open questions
 
@@ -51,11 +58,6 @@ _None at the domain or schema level._
 
 ## Next steps
 
-1. **Close tickets 02 and 03** — research is done but tickets need formal
-   resolution in the tracker (which unblocks ticket 06).
-2. **Ticket 06 — Deployment & hosting approach** — blocked by 03; unblocks once
-   03 is closed.
-3. **Ticket 07 — Overview UI build slices** — unblocked (04 resolved).
-4. **Ticket 09 — State machine implementation** — unblocked (04 resolved).
-5. Sequence the build increments (ticket 08, blocked by 06 + 07) and write
-   per-increment PRDs.
+1. **Ticket 09 — State machine implementation** — unblocked (04 resolved).
+2. **Ticket 08 — Sequence V1 into ordered increment-specs** — unblocked
+   (06 + 07 both resolved). This is the last planning ticket before building.

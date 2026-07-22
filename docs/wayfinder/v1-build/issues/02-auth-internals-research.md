@@ -3,7 +3,7 @@
 # Template auth internals & Google-OAuth options
 
 Type: research
-Status: open
+Status: resolved
 
 ## Question
 
