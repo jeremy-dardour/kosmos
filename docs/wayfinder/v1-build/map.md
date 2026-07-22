@@ -18,9 +18,9 @@ written.
 
 - **Domain:** wedding-planner — a pipeline tracker for wedding-prep workstreams.
   Read [CLAUDE.md](../../../CLAUDE.md) (documentation map), [CONTEXT.md](../../../CONTEXT.md)
-  (glossary), [docs/domain-decisions.md](../../domain-decisions.md) (Decisions
-  1–40), and [ADR 0005](../../adr/0005-workstream-pipeline-state-machine.md) (the
-  pipeline state machine — the heart of the model). The domain model is
+  (glossary), [V1 Product PRD](../../specs/v1-product/PRD.md) (full behavioral
+  spec with rationale), and [ADR 0005](../../adr/0005-workstream-pipeline-state-machine.md)
+  (the pipeline state machine — the heart of the model). The domain model is
   **complete**; no open domain questions.
 - **Skills per ticket type:** grilling → `/grilling` + `/domain-modeling`;
   research → `/research`; UI shape → `/prototype`; graduated PRDs → `/to-spec`.

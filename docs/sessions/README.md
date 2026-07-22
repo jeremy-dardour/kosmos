@@ -5,8 +5,9 @@ what was learned, and the status at the time. These are immutable records: don't
 edit past sessions when things later change.
 
 - **Naming:** `session-NN-YYYY-MM-DD-slug.md`
-- **Link, don't restate:** domain decisions live in
-  [../domain-decisions.md](../domain-decisions.md); live status lives in
+- **Link, don't restate:** product decisions live in the
+  [V1 Product PRD](../specs/v1-product/PRD.md); technical decisions in
+  [../adr/](../adr/); live status lives in
   [../current-state.md](../current-state.md).
 
 ## Template
@@ -23,7 +24,7 @@ in as you go; finalize it at session end.
 
 ## Decisions
 
-- <domain decisions → link to the ../domain-decisions.md rows they added;
+- <product decisions → link to the V1 PRD section they affect;
   technical decisions → ../adr/. Write "None" if the session made none.>
 
 ## Learnings / tensions surfaced
@@ -37,6 +38,6 @@ in as you go; finalize it at session end.
 ```
 
 How to fill it: keep bullets terse and factual; **link, don't restate** —
-decisions live in `../domain-decisions.md` / `../adr/`, live status lives in
-`../current-state.md`. The session file is an immutable record of _what
-happened_, so don't edit past sessions when things later change.
+product decisions live in the V1 PRD, technical decisions in `../adr/`, live
+status lives in `../current-state.md`. The session file is an immutable record
+of _what happened_, so don't edit past sessions when things later change.
