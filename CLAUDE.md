@@ -17,9 +17,9 @@ Project knowledge — one home per fact. Read these to get oriented:
 
 | Doc                                                            | Holds                                                               |
 | -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| [docs/specs/v1-product/PRD.md](./docs/specs/v1-product/PRD.md) | **V1 Product PRD** — what V1 does, behavior, edge cases, rationale  |
 | [docs/project-purpose.md](./docs/project-purpose.md)           | Why the project exists, who it's for, scope boundaries              |
 | [CONTEXT.md](./CONTEXT.md)                                     | Domain glossary — entities, statuses, rules                         |
-| [docs/domain-decisions.md](./docs/domain-decisions.md)         | Domain/design decisions + rationale (append-only)                   |
 | [docs/current-state.md](./docs/current-state.md)               | The live "where we are" — phase, status, next steps, open questions |
 | [docs/sessions/](./docs/sessions/)                             | One dated summary per session (what was done, learnings, status)    |
 | [docs/prototype/](./docs/prototype/)                           | Chosen UI design spec (Pipeline Stack wireframe)                    |

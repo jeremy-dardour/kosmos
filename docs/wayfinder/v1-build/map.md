@@ -18,9 +18,9 @@ written.
 
 - **Domain:** wedding-planner — a pipeline tracker for wedding-prep workstreams.
   Read [CLAUDE.md](../../../CLAUDE.md) (documentation map), [CONTEXT.md](../../../CONTEXT.md)
-  (glossary), [docs/domain-decisions.md](../../domain-decisions.md) (Decisions
-  1–40), and [ADR 0005](../../adr/0005-workstream-pipeline-state-machine.md) (the
-  pipeline state machine — the heart of the model). The domain model is
+  (glossary), [V1 Product PRD](../../specs/v1-product/PRD.md) (full behavioral
+  spec with rationale), and [ADR 0005](../../adr/0005-workstream-pipeline-state-machine.md)
+  (the pipeline state machine — the heart of the model). The domain model is
   **complete**; no open domain questions.
 - **Skills per ticket type:** grilling → `/grilling` + `/domain-modeling`;
   research → `/research`; UI shape → `/prototype`; graduated PRDs → `/to-spec`.
@@ -35,6 +35,8 @@ written.
 ## Decisions so far
 
 - **Ticket 01 — Data model & schema:** resolved. 7 entities (User, Project, Group, Workstream, Step, ChecklistItem, Note), one `workstream` NestJS module with sub-entity services, DB-level cascades, deferred unique constraints on positions. → [entity-schema-design.md](../../entity-schema-design.md)
+- **Ticket 05 — Auth approach:** resolved. GIS + static `.env` allow-list, consent screen published "In production" (non-sensitive scopes only). → [docs/specs/auth/PRD.md](../../specs/auth/PRD.md)
+- **Ticket 04 — API contract:** resolved. One overview aggregate read, named RPCs for start/advance, flat CRUD for sub-entities, derived state server-side. → [docs/specs/api-contract/PRD.md](../../specs/api-contract/PRD.md)
 
 ## Not yet specified
 

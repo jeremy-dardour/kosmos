@@ -4,8 +4,8 @@
 
 Context for the domain terms here: [CONTEXT.md](../../CONTEXT.md). This ADR is the
 single home for **how the pipeline is represented and mutated**; the domain-level
-rules it implements are rows in [domain-decisions.md](../domain-decisions.md)
-(Decisions 29–35).
+rules it implements are documented in the
+[V1 Product PRD](../specs/v1-product/PRD.md).
 
 ## Decision
 

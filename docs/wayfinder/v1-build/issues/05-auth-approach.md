@@ -3,7 +3,7 @@
 # Auth approach: Google OAuth + email allowlist
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 02
 
 ## Question
@@ -25,3 +25,9 @@ Decide:
 
 Output: the auth wiring decision (candidate ADR) + any schema/API follow-ons.
 Input to _Sequence V1_.
+
+## Answer
+
+Decision: **GIS + static `.env` allow-list**, consent screen published "In
+production" (non-sensitive scopes only: `openid email profile`). Full details in
+the implementation spec: [docs/specs/auth/PRD.md](../../../specs/auth/PRD.md).

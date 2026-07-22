@@ -3,7 +3,7 @@
 # API contract: pipeline actions & overview read model
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 01
 
 ## Question
@@ -31,3 +31,9 @@ Decide:
 
 Output: the endpoint list + DTO shapes. Input to _Overview UI build slices_ and
 _Sequence V1_.
+
+## Answer
+
+Full API contract in [docs/specs/api-contract/PRD.md](../../../specs/api-contract/PRD.md).
+One overview aggregate read, named RPC actions for start/advance, flat CRUD for
+sub-entities, all derived state computed server-side.

@@ -2,61 +2,60 @@
 
 The single live snapshot of where the project is. Overwrite this as things
 change — it always reflects _now_. For the history of how we got here, see
-[docs/sessions/](./sessions/); for domain decisions and rationale, see
-[docs/domain-decisions.md](./domain-decisions.md).
+[docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
+the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-20_
+_Last updated: 2026-07-22_
 
 ## Phase
 
-**Pre-implementation — schema designed, research done, ready for API contract.**
-The domain model is fully settled. Ticket 01 (data-model & schema) is complete —
-all 16 design questions resolved, entity/schema design document written
-([entity-schema-design.md](./entity-schema-design.md),
-[session 06](./sessions/session-06-2026-07-19-schema-grilling.md)). Research for
-Tickets 02 and 03 (auth internals, hosting/deploy) is complete and awaiting
-review. No domain code written yet (still the monorepo template).
+**Pre-implementation — V1 fully specified; deploy and state machine
+implementation still to decide.** The domain model is settled. Auth approach
+decided. API contract designed. V1 Product PRD written (the single behavioral
+spec with inlined rationale). No domain code written yet (still the monorepo
+template).
 
 ## Done
 
 - Domain model defined and agreed — entities, statuses, and rules in
-  [CONTEXT.md](../CONTEXT.md); the decisions behind them in
-  [docs/domain-decisions.md](./domain-decisions.md).
+  [CONTEXT.md](../CONTEXT.md); full behavioral spec with rationale in the
+  [V1 Product PRD](./specs/v1-product/PRD.md).
 - UI direction chosen: the two-panel "Pipeline Stack" wireframe
   ([docs/prototype/timeline/](./prototype/timeline/), turn 3 / option 3a).
-- Documentation restructured and CONTEXT.md reconciled with the chosen prototype.
-- Closed the last three open product questions (Decisions 26–28): access gated
-  outside the app (no in-app whitelist), notifications pull-only, and a generic
-  Project container so "wedding" isn't hardcoded.
 - Specified the Workstream **pipeline state machine** end-to-end
-  ([ADR 0005](./adr/0005-workstream-pipeline-state-machine.md); Decisions 29–33)
-  and modelled the `User` and `Group` entities (Decisions 34–35).
-- Closed the remaining entity questions (Decisions 36–40): no Dependency entity,
-  Project holds an optional event date, "last-step deadline" is a soft nudge,
-  notes are author-editable, and Link is folded into notes (clickable URLs).
+  ([ADR 0005](./adr/0005-workstream-pipeline-state-machine.md)).
 - Set up the agent tooling (`docs/agents/`, `CLAUDE.md` § Agent skills) and
-  charted the **V1-build wayfinder map** (8 tickets; frontier: schema, auth
-  research, hosting research).
-- **Ticket 01 complete — entity/schema design written**
-  ([entity-schema-design.md](./entity-schema-design.md)). All 16 schema
-  decisions resolved; full list in
-  [session 06](./sessions/session-06-2026-07-19-schema-grilling.md#decisions).
+  charted the **V1-build wayfinder map** (9 tickets).
+- **Ticket 01 — entity/schema design written**
+  ([entity-schema-design.md](./entity-schema-design.md)).
 - **Ticket 02 — auth research complete:**
-  [docs/research/auth-internals.md](./research/auth-internals.md). Key finding:
-  Google Groups not viable on consumer Gmail; GIS + static/DB allow-list is the
-  front-runner.
+  [docs/research/auth-internals.md](./research/auth-internals.md).
 - **Ticket 03 — hosting research complete:**
-  [docs/research/hosting-deploy.md](./research/hosting-deploy.md). Key finding:
-  Cloud Run + Neon + single deployable recommended.
+  [docs/research/hosting-deploy.md](./research/hosting-deploy.md).
+- **Ticket 05 — auth approach resolved:** GIS + `.env` allow-list, consent
+  screen "In production" with non-sensitive scopes. PRD at
+  [docs/specs/auth/PRD.md](./specs/auth/PRD.md).
+- **Ticket 04 — API contract resolved:** one overview aggregate read, named
+  RPCs for start/advance, flat CRUD, derived state server-side. PRD at
+  [docs/specs/api-contract/PRD.md](./specs/api-contract/PRD.md).
+- **V1 Product PRD written** — consolidates all 40 domain decisions with
+  rationale; `domain-decisions.md` retired.
 
 ## Open questions
 
 _None at the domain or schema level._
 
+- **State machine implementation** (ticket 09): how `start`/`advance` work
+  transactionally with MikroORM — flush ordering, pointer update, position
+  lookup, validation placement.
+
 ## Next steps
 
-1. **Review research docs** — read `auth-internals.md` and `hosting-deploy.md` in
-   detail; feed into Tickets 05 (auth approach) and 06 (deployment approach).
-2. Continue the [V1-build wayfinder map](./wayfinder/v1-build/map.md): API
-   contract (04) → auth/deploy decisions (05/06) → UI slices (07) → sequence
-   increments (08).
+1. **Close tickets 02 and 03** — research is done but tickets need formal
+   resolution in the tracker (which unblocks ticket 06).
+2. **Ticket 06 — Deployment & hosting approach** — blocked by 03; unblocks once
+   03 is closed.
+3. **Ticket 07 — Overview UI build slices** — unblocked (04 resolved).
+4. **Ticket 09 — State machine implementation** — unblocked (04 resolved).
+5. Sequence the build increments (ticket 08, blocked by 06 + 07) and write
+   per-increment PRDs.
