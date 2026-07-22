@@ -8,9 +8,7 @@ description: Wrap up a working session — write the dated session log, refresh 
 End a working session in these steps. Each artifact has a home that already
 defines its format and rules — follow those, don't restate them here.
 
-1. **Write the session log.** Follow the template, naming, and conventions in
-   [docs/sessions/README.md](../../../docs/sessions/README.md). Add a new file;
-   never edit past ones.
+1. **Write the session log.** Use the global `log-session` skill.
 
 2. **Refresh the live status.** Update [docs/current-state.md](../../../docs/current-state.md)
    — the single home for "where we are" (bump its date; revise phase / done /
