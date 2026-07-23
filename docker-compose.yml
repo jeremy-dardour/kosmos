@@ -14,26 +14,20 @@ services:
 
   postgres:
     image: postgres:18
-    container_name: postgres
     restart: unless-stopped
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=nestjs
-    ports:
-      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql
   postgres-test:
     image: postgres:18
-    container_name: postgres-test
     restart: unless-stopped
     environment:
       - POSTGRES_USER=postgres-test
       - POSTGRES_PASSWORD=postgres-test
       - POSTGRES_DB=nestjs
-    ports:
-      - '5433:5432'
     volumes:
       - postgres-test_data:/var/lib/postgresql
 
