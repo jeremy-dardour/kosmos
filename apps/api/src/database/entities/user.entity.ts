@@ -3,15 +3,18 @@ import { Entity, PrimaryKey, Property } from '@mikro-orm/decorators/legacy';
 import type { Opt } from '@mikro-orm/core';
 
 @Entity()
-export class Item {
+export class User {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: Opt<string>;
+
+  @Property({ unique: true })
+  email!: string;
 
   @Property()
   name!: string;
 
   @Property({ type: 'text' })
-  description?: Opt<string | null>;
+  avatarUrl?: Opt<string | null>;
 
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })
   createdAt!: Opt<Date>;

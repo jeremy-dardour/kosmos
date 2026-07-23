@@ -23,6 +23,9 @@ export default defineConfig({
   }),
 
   metadataProvider: TsMorphMetadataProvider,
+  discovery: {
+    tsConfigPath: './tsconfig.mikro-cli.json',
+  },
   extensions: [Migrator, SeedManager],
   entities: ['./dist/**/*.entity.js'],
   entitiesTs: ['./src/**/*.entity.ts'],
