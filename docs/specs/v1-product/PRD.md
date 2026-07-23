@@ -211,8 +211,9 @@ There is no backward move. There is no undo in V1.
 - Moves a Workstream from NotStarted to Active.
 - Sets the first step as the current step.
 - Valid **only** when the Workstream is NotStarted.
-- An empty Workstream (zero steps) goes NotStarted → Complete on the first
-  advance (there is nothing to work through).
+- An empty Workstream (zero steps) **cannot be started** — rejected with a
+  conflict error. Completing with zero work done would mask a setup mistake;
+  add at least one step first.
 
 ### Advance a Workstream
 
@@ -407,8 +408,9 @@ state as part of the step's history.
 
 ### Empty Workstream
 
-A Workstream with zero steps can be started. The first advance transitions it
-directly to Complete (there are no steps to work through).
+A Workstream with zero steps **cannot be started** — the system rejects the
+attempt with a conflict error. Completing with no work done would mask a setup
+mistake; the user must add at least one step before starting.
 
 ### Last step has no deadline
 

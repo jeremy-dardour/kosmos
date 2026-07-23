@@ -89,17 +89,26 @@ endpoint the Pipeline Stack overview calls on load.
 
 ### Workstream
 
-| Method   | Path                               | Body                  | Response        | Notes                                         |
-| -------- | ---------------------------------- | --------------------- | --------------- | --------------------------------------------- |
-| `POST`   | `/projects/:projectId/workstreams` | `CreateWorkstreamDto` | `WorkstreamDto` |                                               |
-| `PATCH`  | `/workstreams/:id`                 | `UpdateWorkstreamDto` | `WorkstreamDto` |                                               |
-| `DELETE` | `/workstreams/:id`                 | —                     | `204`           | Cascades steps, notes, checklist items        |
-| `POST`   | `/workstreams/:id/start`           | —                     | `WorkstreamDto` | Pipeline action: NotStarted → Active          |
-| `POST`   | `/workstreams/:id/advance`         | `AdvanceDto`          | `WorkstreamDto` | Pipeline action: record outcome, move pointer |
+| Method   | Path                               | Body                  | Response        | Notes                                  |
+| -------- | ---------------------------------- | --------------------- | --------------- | -------------------------------------- |
+| `POST`   | `/projects/:projectId/workstreams` | `CreateWorkstreamDto` | `WorkstreamDto` |                                        |
+| `PATCH`  | `/workstreams/:id`                 | `UpdateWorkstreamDto` | `WorkstreamDto` |                                        |
+| `DELETE` | `/workstreams/:id`                 | —                     | `204`           | Cascades steps, notes, checklist items |
+| `POST`   | `/workstreams/:id/advance`         | `AdvanceDto`          | `WorkstreamDto` | Pipeline action — see below            |
 
 No standalone `GET` for workstreams — the overview endpoint provides all
 workstream data. Mutations return the updated `WorkstreamDto` for the client to
 patch its local state.
+
+**`advance` is the single pipeline action.** The server dispatches by lifecycle:
+
+- **NotStarted → Active:** starts the workstream (sets first step current).
+  `outcome` must not be provided (400 if present — nothing has finished yet).
+  Rejected with 409 if the workstream has zero steps.
+- **Active → Active / Complete:** records the outcome on the current step
+  (defaults to `done`), moves the pointer. On the last step, completes the
+  workstream instead.
+- **Complete → 409:** workstream is already finished.
 
 ### Step
 
@@ -215,6 +224,8 @@ ownerId?: string | null;             // null to unassign
 
 ```ts
 outcome?: 'done' | 'skipped';       // @IsOptional, @IsEnum — defaults to 'done'
+                                     // Must not be provided when workstream is NotStarted
+                                     // (nothing has finished — 400 if present).
 ```
 
 ### CreateStepDto
@@ -449,8 +460,9 @@ error cases:
 | Status | When                                                     | `type` slug                  |
 | ------ | -------------------------------------------------------- | ---------------------------- |
 | 404    | Entity not found                                         | (MikroORM `NotFoundError`)   |
-| 409    | `start` on non-NotStarted workstream                     | `workstream-not-startable`   |
-| 409    | `advance` on non-Active workstream                       | `workstream-not-advanceable` |
+| 409    | `advance` on Complete workstream                         | `workstream-not-advanceable` |
+| 409    | `advance` on empty workstream (zero steps)               | `workstream-empty`           |
+| 400    | `advance` with outcome on NotStarted workstream          | (validation error)           |
 | 409    | Any mutation on a past step (attributes or structure)    | `step-frozen`                |
 | 409    | Structural mutation (delete/reorder) on current step     | `step-not-deletable`         |
 | 409    | Mutation on a checklist item whose parent step is frozen | `step-frozen`                |
