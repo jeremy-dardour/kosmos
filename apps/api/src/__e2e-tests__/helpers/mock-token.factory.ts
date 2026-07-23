@@ -8,16 +8,10 @@ import type { GenerateKeyPairResult } from 'jose';
 export class MockTokenFactory {
   private readonly privateKey: GenerateKeyPairResult['privateKey'];
   private readonly audience: string;
-  private readonly defaultScope: string;
 
-  constructor(
-    mockOidc: MockOidcService,
-    audience: string,
-    acceptedScope: string,
-  ) {
+  constructor(mockOidc: MockOidcService, audience: string) {
     this.privateKey = mockOidc.getPrivateKey();
     this.audience = audience;
-    this.defaultScope = acceptedScope;
   }
 
   async createToken(
@@ -31,8 +25,9 @@ export class MockTokenFactory {
     const {
       sub = 'e2e-user-123',
       email = 'e2e@example.com',
+      email_verified = true,
       name = 'E2E Test User',
-      scp = this.defaultScope,
+      picture = 'https://example.com/avatar.jpg',
       aud = this.audience,
       iss = MockOidcService.ISSUER,
       expiresInSeconds = 3600,
@@ -45,9 +40,9 @@ export class MockTokenFactory {
     return new SignJWT({
       sub,
       email,
+      email_verified,
       name,
-      preferred_username: email,
-      scp,
+      picture,
     })
       .setProtectedHeader({
         alg: 'RS256',
@@ -68,8 +63,12 @@ export class MockTokenFactory {
     return this.createToken({ expired: true });
   }
 
-  async wrongScopeToken(): Promise<string> {
-    return this.createToken({ scp: 'unrelated.scope' });
+  async disallowedEmailToken(): Promise<string> {
+    return this.createToken({ email: 'not-allowed@example.com' });
+  }
+
+  async unverifiedEmailToken(): Promise<string> {
+    return this.createToken({ email_verified: false });
   }
 
   async wrongAudienceToken(): Promise<string> {

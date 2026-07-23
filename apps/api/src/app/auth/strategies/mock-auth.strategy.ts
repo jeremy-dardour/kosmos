@@ -26,8 +26,6 @@ export class MockAuthStrategy implements AuthStrategy {
     return {
       email: 'mock@example.com',
       name: 'MockUser',
-      preferred_username: 'mock@example.com',
-      roles: ['user'],
     };
   }
 }

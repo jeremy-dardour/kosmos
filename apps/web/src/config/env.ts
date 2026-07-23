@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   VITE_API_URL: z.url().optional(),
+  VITE_GOOGLE_CLIENT_ID: z.string().optional(),
   DEV: z.boolean(),
   VITE_FAKE_AUTH: z
     .string()
@@ -49,5 +50,16 @@ export const env = {
   },
   get fakeAuth() {
     return getEnv().VITE_FAKE_AUTH;
+  },
+  get googleClientId() {
+    const clientId = getEnv().VITE_GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+      throw new Error(
+        'VITE_GOOGLE_CLIENT_ID is required when fake auth is disabled',
+      );
+    }
+
+    return clientId;
   },
 } as const;

@@ -14,8 +14,8 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export interface AuthenticatedUser {
-  email?: string;
+  id?: string;
+  email: string;
   name?: string;
-  preferred_username?: string;
-  roles?: string[];
+  avatarUrl?: string;
 }
