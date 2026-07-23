@@ -3,7 +3,7 @@
 # Hosting & deploy options
 
 Type: research
-Status: open
+Status: resolved
 
 ## Question
 
