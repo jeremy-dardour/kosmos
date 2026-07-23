@@ -68,8 +68,9 @@ future step) unrepresentable rather than merely discouraged.
   persistent "skipped" flag and no separate `skip` action.
 
 The pointer only ever moves **forward**. There is no backward move and no undo
-in V1 (see Consequences). An empty Workstream (zero steps) goes NotStarted →
-Complete on the first `advance`.
+in V1 (see Consequences). An empty Workstream (zero steps) **cannot be started**
+— `advance` is rejected with 409. Completing with no work done would mask a
+setup mistake; add at least one step first.
 
 ### No hard gates
 

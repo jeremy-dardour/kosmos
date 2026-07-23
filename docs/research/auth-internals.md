@@ -1,7 +1,8 @@
 # Auth research: Google identity + allow-list options
 
-Research for wayfinder ticket 02 (auth). Feeds the decision in ticket 05; this
-doc does not decide, it lays out the ground truth. 2–6 users, all personal
+Auth options research. Feeds the decision in the
+[Auth PRD](../specs/auth/PRD.md); this doc does not decide, it lays out the
+ground truth. 2–6 users, all personal
 Gmail accounts (no Google Workspace domain), solo dev, cost-sensitive.
 
 ## 1. Existing auth mechanism in the codebase
