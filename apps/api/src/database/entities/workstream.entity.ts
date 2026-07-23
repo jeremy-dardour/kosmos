@@ -3,7 +3,6 @@ import {
   Entity,
   ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryKey,
   Property,
 } from '@mikro-orm/decorators/legacy';
@@ -29,7 +28,12 @@ export class Workstream {
   @ManyToOne(() => Project, { deleteRule: 'cascade' })
   project!: Project;
 
-  @ManyToOne(() => Group, { deleteRule: 'set null' })
+  @ManyToOne(() => Group, {
+    deleteRule: 'set null',
+    joinColumns: ['project_id', 'group_id'],
+    ownColumns: ['group_id'],
+    referencedColumnNames: ['project_id', 'id'],
+  })
   group?: Group | null;
 
   @ManyToOne(() => User, { deleteRule: 'set null' })
@@ -41,15 +45,15 @@ export class Workstream {
   @Property({ type: 'timestamptz' })
   completedAt?: Opt<Date | null>;
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  @OneToOne(() => require('./step.entity').Step, {
+  @ManyToOne(() => 'Step', {
     deleteRule: 'restrict',
-    owner: true,
+    joinColumns: ['id', 'current_step_id'],
+    ownColumns: ['current_step_id'],
+    referencedColumnNames: ['workstream_id', 'id'],
   })
   currentStep?: Step | null;
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  @OneToMany(() => require('./step.entity').Step, (s: Step) => s.workstream)
+  @OneToMany(() => 'Step', (s: Step) => s.workstream)
   steps = new Collection<Step>(this);
 
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })

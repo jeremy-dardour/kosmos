@@ -26,6 +26,7 @@ export enum StepOutcome {
   properties: ['workstream', 'position'],
   options: { deferMode: 'deferred' },
 })
+@Unique({ properties: ['workstream', 'id'] })
 export class Step {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: Opt<string>;
@@ -51,18 +52,13 @@ export class Step {
   @Property({ type: 'timestamptz' })
   outcomeAt?: Opt<Date | null>;
 
-  @Property({ default: false })
+  @Property({ defaultRaw: 'false' })
   blocked!: Opt<boolean>;
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  @OneToMany(
-    () => require('./checklist-item.entity').ChecklistItem,
-    (ci: ChecklistItem) => ci.step,
-  )
+  @OneToMany(() => 'ChecklistItem', (ci: ChecklistItem) => ci.step)
   checklistItems = new Collection<ChecklistItem>(this);
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  @OneToMany(() => require('./note.entity').Note, (n: Note) => n.step)
+  @OneToMany(() => 'Note', (n: Note) => n.step)
   notes = new Collection<Note>(this);
 
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })

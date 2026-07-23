@@ -9,8 +9,8 @@ _Last updated: 2026-07-23_
 
 ## Phase
 
-**Building.** First build slice (#17 — entities + migration) complete, PR #28
-open. 9 issues remaining.
+**Building.** First build slice (#17 — entities + migration) is in PR #28, but
+review fix-up is still in progress. 9 issues remaining after #17 merges.
 
 ## Done
 
@@ -40,9 +40,11 @@ open. 9 issues remaining.
 - **10 GitHub issues created** (end-to-end build slices):
   [#17](https://github.com/jeremy-dardour/wedding-planner/issues/17)–[#26](https://github.com/jeremy-dardour/wedding-planner/issues/26).
 - **Wayfinder map complete** — all 9 tickets resolved.
-- **#17 — Entities + initial migration** — 7 entities defined, migration
-  verified, PR #28 open
-  ([session 11](./sessions/session-11-2026-07-23-entities-migration.md)).
+- **#17 — Entities + initial migration** — 7 entities defined and PR #28 open,
+  but review found entity decorator, e2e, schema-integrity, and API contract
+  follow-up work before merge
+  ([session 11](./sessions/session-11-2026-07-23-entities-migration.md),
+  [session 12](./sessions/session-12-2026-07-23-pr-28-review-fix-wip.md)).
 
 ## Open questions
 
@@ -50,6 +52,9 @@ None.
 
 ## Next steps
 
-**#18 — Layout shell + overview data + card list** — backend overview endpoint
+Finish PR #28 review fix-up before starting #18:
 
-- frontend two-panel layout with grouped workstream cards.
+- resolve MikroORM entity circular-reference pattern across TypeScript, ESLint,
+  e2e runtime, and CLI metadata discovery.
+- regenerate/verify migration and API contracts.
+- rerun `pnpm check-types && pnpm lint && pnpm test`.

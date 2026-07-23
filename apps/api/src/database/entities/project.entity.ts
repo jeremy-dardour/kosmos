@@ -21,15 +21,10 @@ export class Project {
   @Property({ type: 'date' })
   eventDate?: Opt<string | null>;
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  @OneToMany(
-    () => require('./workstream.entity').Workstream,
-    (w: Workstream) => w.project,
-  )
+  @OneToMany(() => 'Workstream', (w: Workstream) => w.project)
   workstreams = new Collection<Workstream>(this);
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  @OneToMany(() => require('./group.entity').Group, (g: Group) => g.project)
+  @OneToMany(() => 'Group', (g: Group) => g.project)
   groups = new Collection<Group>(this);
 
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })

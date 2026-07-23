@@ -1,3 +1,4 @@
+import { Controller, Get } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
 import { OidcDiscoveryService } from '@/app/auth/strategies/jwt/oidc-discovery.service';
@@ -10,6 +11,14 @@ import { AppModule } from '@/app.module';
 import type { INestApplication } from '@nestjs/common';
 import type { TestingModule } from '@nestjs/testing';
 
+@Controller('__e2e__/protected')
+class ProtectedE2eController {
+  @Get()
+  getProtected(): { ok: true } {
+    return { ok: true };
+  }
+}
+
 export async function createTestApp({
   oidcOverride,
 }: {
@@ -17,6 +26,7 @@ export async function createTestApp({
 }): Promise<INestApplication> {
   const testModuleBuilder = Test.createTestingModule({
     imports: [AppModule],
+    controllers: [ProtectedE2eController],
   });
 
   if (oidcOverride) {

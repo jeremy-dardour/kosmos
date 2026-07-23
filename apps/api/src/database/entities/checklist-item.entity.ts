@@ -30,7 +30,7 @@ export class ChecklistItem {
   @Property()
   name!: string;
 
-  @Property({ default: false })
+  @Property({ defaultRaw: 'false' })
   done!: Opt<boolean>;
 
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })
