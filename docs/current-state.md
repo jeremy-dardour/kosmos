@@ -9,9 +9,8 @@ _Last updated: 2026-07-23_
 
 ## Phase
 
-**Ready to build.** All planning complete. V1 is fully specified — domain model,
-schema, API contract, state machine implementation, auth, deployment, UI slices.
-10 GitHub issues created as end-to-end build slices. No open design questions.
+**Building.** First build slice (#17 — entities + migration) complete, PR #28
+open. 9 issues remaining.
 
 ## Done
 
@@ -41,6 +40,9 @@ schema, API contract, state machine implementation, auth, deployment, UI slices.
 - **10 GitHub issues created** (end-to-end build slices):
   [#17](https://github.com/jeremy-dardour/wedding-planner/issues/17)–[#26](https://github.com/jeremy-dardour/wedding-planner/issues/26).
 - **Wayfinder map complete** — all 9 tickets resolved.
+- **#17 — Entities + initial migration** — 7 entities defined, migration
+  verified, PR #28 open
+  ([session 11](./sessions/session-11-2026-07-23-entities-migration.md)).
 
 ## Open questions
 
@@ -48,4 +50,6 @@ None.
 
 ## Next steps
 
-Start building. First issue: **#17 — Entities + initial migration**.
+**#18 — Layout shell + overview data + card list** — backend overview endpoint
+
+- frontend two-panel layout with grouped workstream cards.
