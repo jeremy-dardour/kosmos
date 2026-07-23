@@ -14,7 +14,6 @@ services:
 
   postgres:
     image: postgres:18
-    container_name: postgres
     restart: unless-stopped
     environment:
       - POSTGRES_USER=postgres
@@ -26,7 +25,6 @@ services:
       - postgres_data:/var/lib/postgresql
   postgres-test:
     image: postgres:18
-    container_name: postgres-test
     restart: unless-stopped
     environment:
       - POSTGRES_USER=postgres-test
