@@ -6,8 +6,11 @@
 import { config } from 'dotenv';
 import { afterAll, beforeAll } from 'vitest';
 
-// Load .env.e2e environment variables
+// Load .env.e2e environment variables, then an untracked local override
+// (e.g. a per-workspace DATABASE_URL port — see
+// scripts/setup_parallel_workspace.sh) if present.
 config({ path: '.env.e2e' });
+config({ path: '.env.e2e.local', override: true });
 
 // Set test timeout
 beforeAll(() => {

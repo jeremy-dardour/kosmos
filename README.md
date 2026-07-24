@@ -56,6 +56,22 @@ The API runs at `http://localhost:3000/api` and the frontend at `http://localhos
 - Swagger UI: `http://localhost:3000/api/docs`
 - OpenAPI spec: `http://localhost:3000/openapi.yaml`
 
+### Running Parallel Workspaces
+
+Postgres, the API, and the Vite dev server all read their ports from `.env`
+files, so multiple checkouts of this repo (e.g. parallel conductor
+workspaces) can run `pnpm dev` at the same time without fighting over host
+ports. To set one up:
+
+```bash
+scripts/setup_parallel_workspace.sh
+```
+
+This copies `.env.example` → `.env` for the root, `apps/api`, and
+`apps/web`, filling in random free ports for Postgres, the API, and the web
+dev server. The E2E test database port is handled separately — see
+[apps/api/README.md](./apps/api/README.md#parallel-workspace-ports).
+
 ## What's Included
 
 ### Item CRUD Example
