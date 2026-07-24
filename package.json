@@ -5,8 +5,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "db:start": "docker-compose up -d",
-    "db:stop": "docker-compose down",
+    "db:start": "docker compose -p \"$(basename \"$PWD\")\" up -d",
+    "db:stop": "docker compose -p \"$(basename \"$PWD\")\" down",
     "db:migrate:up": "pnpm --filter api db:migrate:up",
     "fix:all": "pnpm lint:fix && pnpm format && pnpm format:top",
     "dev": "pnpm db:start && turbo run dev",

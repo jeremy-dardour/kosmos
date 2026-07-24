@@ -87,9 +87,13 @@ kind as the next numbered ADR.
 ## Workflow
 
 - Before declaring work done: `pnpm check-types && pnpm lint && pnpm test`
-- After changing entities or endpoints: regenerate migration / API types (see
-  [apps/api/README.md](./apps/api/README.md)); never hand-edit
-  `packages/api-contracts/src/openapi.d.ts`
+- After changing entities: regenerate and verify migrations (see
+  [apps/api/README.md](./apps/api/README.md)).
+- After adding, removing, renaming, or changing API controllers, routes, DTOs,
+  Swagger decorators, auth responses, or any endpoint behavior: run
+  `pnpm generate:api-types` and commit the regenerated
+  `packages/api-contracts/src/openapi.d.ts`. Never hand-edit that generated
+  file.
 
 ## Agent skills
 

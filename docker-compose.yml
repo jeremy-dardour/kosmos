@@ -20,7 +20,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=nestjs
     ports:
-      - '5432:5432'
+      - '${DATABASE_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql
   postgres-test:
@@ -31,7 +31,7 @@ services:
       - POSTGRES_PASSWORD=postgres-test
       - POSTGRES_DB=nestjs
     ports:
-      - '5433:5432'
+      - '${DATABASE_TEST_PORT:-5433}:5432'
     volumes:
       - postgres-test_data:/var/lib/postgresql
 

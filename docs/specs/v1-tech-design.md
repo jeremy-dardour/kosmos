@@ -87,6 +87,11 @@ DEFERRABLE INITIALLY DEFERRED` — allows bulk position reassignment within a
 - **Cascades:** Project → Workstream/Group (CASCADE), Workstream → Step
   (CASCADE), Step → ChecklistItem/Note (CASCADE), Group/User → SET NULL on
   optional FKs.
+- **Same-parent integrity (service-layer):** Two constraints that can't be
+  expressed as simple FKs without composite keys (unsupported by MikroORM's
+  metadata pipeline): (1) `Workstream.groupId` must reference a Group in the
+  same Project, (2) `Workstream.currentStepId` must reference a Step belonging
+  to that Workstream. Both are enforced as guards in `WorkstreamService`.
 
 ---
 

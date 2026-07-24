@@ -28,7 +28,7 @@ describe('Auth E2E Tests', () => {
     tokenFactory = new MockTokenFactory(mockOidc, audience, acceptedScope);
   });
 
-  const PROTECTED_ENDPOINT = '/items';
+  const PROTECTED_ENDPOINT = '/__e2e__/protected';
 
   describe('with valid OIDC configuration', () => {
     let app: INestApplication;

@@ -46,6 +46,22 @@ NestJS backend for the fullstack template. Exposes a typed, contract-first REST 
 
 > Always review generated migrations before applying to production.
 
+## Parallel Workspace Ports
+
+Running multiple workspaces in parallel (e.g. via conductor)? Run
+`../../scripts/setup_parallel_workspace.sh` from the repo root — it writes
+random free ports into the root `.env`, `apps/api/.env`, and `apps/web/.env`
+(see the root [README](../../README.md#running-parallel-workspaces)).
+
+The E2E test database port is handled separately, since `.env.e2e` is a
+tracked fixture (default port `5433`) shared across workspaces and CI. The
+script never edits it — instead it writes an **untracked**
+`apps/api/.env.e2e.local` containing just the workspace's `DATABASE_URL`.
+This is loaded after `.env.e2e` (`src/__e2e-tests__/setup.ts`, `override:
+true`) and by the `db-e2e:*` scripts, so it wins when present and falls back
+to the default otherwise. CI is unaffected: it injects its own `DATABASE_URL`
+directly via the workflow, and never reads either file.
+
 ## CLI Commands
 
 The template includes a `nest-commander` CLI shell for background jobs or one-off scripts:

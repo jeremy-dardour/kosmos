@@ -5,13 +5,12 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-23_
+_Last updated: 2026-07-24_
 
 ## Phase
 
-**Ready to build.** All planning complete. V1 is fully specified — domain model,
-schema, API contract, state machine implementation, auth, deployment, UI slices.
-10 GitHub issues created as end-to-end build slices. No open design questions.
+**Building.** First build slice (#17 — entities + migration) is in PR #28, but
+review fix-up is still in progress. 9 issues remaining after #17 merges.
 
 ## Done
 
@@ -41,11 +40,31 @@ schema, API contract, state machine implementation, auth, deployment, UI slices.
 - **10 GitHub issues created** (end-to-end build slices):
   [#17](https://github.com/jeremy-dardour/wedding-planner/issues/17)–[#26](https://github.com/jeremy-dardour/wedding-planner/issues/26).
 - **Wayfinder map complete** — all 9 tickets resolved.
+- **#17 — Entities + initial migration** — 7 entities defined and PR #28 open,
+  but review found entity decorator, e2e, schema-integrity, and API contract
+  follow-up work before merge
+  ([session 11](./sessions/session-11-2026-07-23-entities-migration.md),
+  [session 12](./sessions/session-12-2026-07-23-pr-28-review-fix-wip.md)).
+- Path-scoped `.claude/rules/` added for API, web, and entity files; ported
+  to sibling template repo. Entity standards extracted to
+  [ENTITIES_STANDARDS.md](../apps/api/ENTITIES_STANDARDS.md), type errors
+  fixed, `updatedAt` onUpdate added, composite FKs removed (service-layer
+  guards instead, [ADR 0006](./adr/0006-same-parent-integrity-in-service-layer.md)).
+  Parallel workspace ports fixed and documented. Dead template items files
+  removed. All lint/type/test checks pass
+  ([session 13](./sessions/session-13-2026-07-24-rules-entities-ports.md)).
 
 ## Open questions
 
-None.
+- `deferMode: 'deferred'` on `@Unique` constraints (Step, ChecklistItem) does
+  not produce `DEFERRABLE INITIALLY DEFERRED` in MikroORM's generated SQL.
+  Service layer will need to handle constraint ordering for bulk reorder.
 
 ## Next steps
 
-Start building. First issue: **#17 — Entities + initial migration**.
+Finish PR #28 review fix-up before starting #18:
+
+- Entity definitions are type-clean, lint-clean, documented.
+- Migration verified against `schema:update --dump` — matches exactly.
+- Regenerate migration (fresh, post-composite-FK removal) if needed.
+- PR #28 ready for final review pass.

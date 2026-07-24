@@ -223,6 +223,9 @@ User ←── Workstream.currentStepId → Step (optional, circular)
 - **`currentStepId` circular FK**: Create Workstream first (currentStepId null),
   create Steps, then set currentStepId on `start()`. MikroORM handles this via
   `flush()` ordering or explicit `em.flush()` calls.
+- **`updatedAt` auto-update**: `defaultRaw: now()` sets the initial value;
+  MikroORM's `onUpdate: () => new Date()` keeps it current on every flush. No
+  DB trigger needed.
 - **Icon representation** (Decision 25): stored as `varchar`. Whether the value
   is an emoji character or a named icon is a UI decision — the schema supports
   both.
