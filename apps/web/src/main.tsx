@@ -7,7 +7,7 @@ import { AppProvider } from '@/app/app-provider';
 import { ErrorFallback } from '@/app/components/error/error-fallback';
 import { GlobalApiErrorDialog } from '@/app/components/error/global-api-error-dialog';
 import { router } from '@/app/router';
-import { AuthContext } from '@/auth';
+import { AuthProviderBoundary } from '@/auth';
 import { bootstrap } from '@/bootstrap';
 import { ApiErrorProvider } from '@/errors/api-error-provider';
 import '@/i18n/i18n';
@@ -19,14 +19,14 @@ const { authProvider } = bootstrap();
 createRoot(document.querySelector('#root')!).render(
   <StrictMode>
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <AuthContext value={authProvider}>
+      <AuthProviderBoundary authProvider={authProvider}>
         <ApiErrorProvider>
           <AppProvider>
             <GlobalApiErrorDialog />
             <RouterProvider router={router} />
           </AppProvider>
         </ApiErrorProvider>
-      </AuthContext>
+      </AuthProviderBoundary>
     </ErrorBoundary>
   </StrictMode>,
 );

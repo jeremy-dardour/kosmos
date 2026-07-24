@@ -29,7 +29,6 @@ export class AuthUserProvisionerService {
       email,
       name: authenticatedUser.name ?? email,
       avatarUrl: authenticatedUser.avatarUrl ?? null,
-      updatedAt: new Date(),
     });
 
     await this.userRepository.getEntityManager().flush();

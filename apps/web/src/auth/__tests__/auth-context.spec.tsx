@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AuthContext, useAuth } from '@/auth/auth-context';
+import { AuthProviderBoundary } from '@/auth/auth-provider-boundary';
 
 import type { AuthProvider } from '@/auth/auth-provider.interface';
 
@@ -17,6 +19,20 @@ function LoginButton() {
     <button onClick={() => auth.login()} type="button">
       Login
     </button>
+  );
+}
+
+function LogoutStatus() {
+  const auth = useAuth();
+  return (
+    <>
+      <span>
+        {auth.isAuthenticated() ? 'Authenticated' : 'Not authenticated'}
+      </span>
+      <button onClick={() => auth.logout()} type="button">
+        Logout
+      </button>
+    </>
   );
 }
 
@@ -80,6 +96,32 @@ describe('authContext', () => {
       button.click();
 
       expect(mockAuthProvider.login).toHaveBeenCalledOnce();
+    });
+
+    it('should refresh consumers after auth boundary logout', async () => {
+      let isAuthenticated = true;
+      const authProvider: AuthProvider = {
+        initialize: vi.fn(),
+        login: vi.fn(),
+        isAuthenticated: vi.fn(() => isAuthenticated),
+        getAuthenticatedUser: vi.fn().mockReturnValue(null),
+        logout: vi.fn(() => {
+          isAuthenticated = false;
+        }),
+        getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
+      };
+
+      render(
+        <AuthProviderBoundary authProvider={authProvider}>
+          <LogoutStatus />
+        </AuthProviderBoundary>,
+      );
+
+      expect(screen.getByText('Authenticated')).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Logout' }));
+
+      expect(screen.getByText('Not authenticated')).toBeInTheDocument();
     });
   });
 });

@@ -1,38 +1,41 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useReducer } from 'react';
 
-import { AuthEvent, useAuth } from '@/auth';
+import { useAuth } from '@/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-}
-
-function subscribeToAuthEvents(onStoreChange: () => void): () => void {
-  globalThis.addEventListener(AuthEvent.LOGIN_SUCCESS, onStoreChange);
-  globalThis.addEventListener(AuthEvent.LOGOUT_SUCCESS, onStoreChange);
-
-  return () => {
-    globalThis.removeEventListener(AuthEvent.LOGIN_SUCCESS, onStoreChange);
-    globalThis.removeEventListener(AuthEvent.LOGOUT_SUCCESS, onStoreChange);
-  };
 }
 
 export function ProtectedRoute({
   children,
 }: ProtectedRouteProps): React.JSX.Element {
   const auth = useAuth();
-  const isAuthenticated = useSyncExternalStore(
-    subscribeToAuthEvents,
-    () => auth.isAuthenticated(),
-    () => auth.isAuthenticated(),
-  );
+  const [, rerender] = useReducer((revision: number) => revision + 1, 0);
+  const isAuthenticated = auth.isAuthenticated();
 
   useEffect(() => {
-    if (auth.isAuthenticated()) {
+    if (isAuthenticated) {
       return;
     }
 
-    void Promise.resolve(auth.login());
-  }, [auth]);
+    let isMounted = true;
+
+    void Promise.resolve(auth.login())
+      .then(() => {
+        if (isMounted) {
+          rerender();
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          rerender();
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [auth, isAuthenticated]);
 
   if (isAuthenticated) {
     return <>{children}</>;

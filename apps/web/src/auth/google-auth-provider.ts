@@ -1,7 +1,5 @@
 import { env } from '@/config/env';
 
-import { AuthEvent } from './types';
-
 import type { AuthProvider } from '@/auth/auth-provider.interface';
 import type { AuthenticatedUser } from '@/auth/types';
 
@@ -90,7 +88,6 @@ export class GoogleAuthProvider implements AuthProvider {
     this.idToken = null;
     this.authenticatedUser = null;
     this.getGoogle()?.accounts.id.disableAutoSelect();
-    this.dispatch(AuthEvent.LOGOUT_SUCCESS);
   }
 
   isAuthenticated(): boolean {
@@ -134,7 +131,6 @@ export class GoogleAuthProvider implements AuthProvider {
     };
     this.pendingLogin?.resolve();
     this.pendingLogin = null;
-    this.dispatch(AuthEvent.LOGIN_SUCCESS);
   }
 
   private async initializeGoogleIdentity(): Promise<void> {
@@ -219,9 +215,5 @@ export class GoogleAuthProvider implements AuthProvider {
 
   private getGoogle(): GoogleIdentityGlobal | undefined {
     return (globalThis as GoogleGlobal).google;
-  }
-
-  private dispatch(type: AuthEvent): void {
-    globalThis.dispatchEvent(new CustomEvent(type));
   }
 }

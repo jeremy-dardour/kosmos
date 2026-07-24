@@ -1,7 +1,5 @@
 import { generateFakeJwt } from '@/auth/utils/generate-fake-jwt';
 
-import { AuthEvent } from './types';
-
 import type { AuthenticatedUser } from './types';
 import type { AuthProvider } from '@/auth/auth-provider.interface';
 
@@ -12,17 +10,14 @@ export class FakeAuthProvider implements AuthProvider {
 
   initialize(): void {
     this.authenticated = true;
-    this.dispatch(AuthEvent.LOGIN_SUCCESS);
   }
 
   login(): void {
     this.authenticated = true;
-    this.dispatch(AuthEvent.LOGIN_SUCCESS);
   }
 
   logout(): void {
     this.authenticated = false;
-    this.dispatch(AuthEvent.LOGOUT_SUCCESS);
   }
 
   isAuthenticated(): boolean {
@@ -50,9 +45,5 @@ export class FakeAuthProvider implements AuthProvider {
       username: 'dev.user@example.com',
       name: 'DevUser',
     };
-  }
-
-  private dispatch(type: AuthEvent): void {
-    globalThis.dispatchEvent(new CustomEvent(type));
   }
 }
