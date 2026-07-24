@@ -1,6 +1,6 @@
 import { Migration } from '@mikro-orm/migrations';
 
-export class Migration20260723191701 extends Migration {
+export class Migration20260724074224 extends Migration {
   override up(): void | Promise<void> {
     this.addSql(`create type "step_outcome" as enum ('done', 'skipped');`);
     this.addSql(
@@ -21,15 +21,12 @@ export class Migration20260723191701 extends Migration {
     this.addSql(
       `create table "workstream" ("id" uuid not null default gen_random_uuid(), "name" varchar(255) not null, "icon" varchar(255) not null, "project_id" uuid not null, "group_id" uuid null, "owner_id" uuid null, "started_at" timestamptz null, "completed_at" timestamptz null, "current_step_id" uuid null, "created_at" timestamptz not null default now(), "updated_at" timestamptz not null default now(), primary key ("id"));`,
     );
-    this.addSql(
-      `alter table "workstream" add constraint "workstream_current_step_id_unique" unique ("current_step_id");`,
-    );
 
     this.addSql(
       `create table "step" ("id" uuid not null default gen_random_uuid(), "workstream_id" uuid not null, "position" int not null, "name" varchar(255) not null, "deadline" date null, "owner_id" uuid null, "outcome" "step_outcome" null, "outcome_at" timestamptz null, "blocked" boolean not null default false, "created_at" timestamptz not null default now(), "updated_at" timestamptz not null default now(), primary key ("id"));`,
     );
     this.addSql(
-      `alter table "step" add constraint "step_workstream_id_position_unique" unique ("workstream_id", "position") deferrable initially deferred;`,
+      `alter table "step" add constraint "step_workstream_id_position_unique" unique ("workstream_id", "position");`,
     );
 
     this.addSql(
@@ -44,7 +41,7 @@ export class Migration20260723191701 extends Migration {
       `create index "checklist_item_step_id_index" on "checklist_item" ("step_id");`,
     );
     this.addSql(
-      `alter table "checklist_item" add constraint "checklist_item_step_id_position_unique" unique ("step_id", "position") deferrable initially deferred;`,
+      `alter table "checklist_item" add constraint "checklist_item_step_id_position_unique" unique ("step_id", "position");`,
     );
 
     this.addSql(
@@ -84,13 +81,39 @@ export class Migration20260723191701 extends Migration {
   }
 
   override down(): void | Promise<void> {
-    this.addSql(`drop table if exists "checklist_item" cascade;`);
-    this.addSql(`drop table if exists "note" cascade;`);
-    this.addSql(`drop table if exists "step" cascade;`);
-    this.addSql(`drop table if exists "workstream" cascade;`);
+    this.addSql(
+      `alter table "group" drop constraint "group_project_id_foreign";`,
+    );
+    this.addSql(
+      `alter table "workstream" drop constraint "workstream_project_id_foreign";`,
+    );
+    this.addSql(
+      `alter table "workstream" drop constraint "workstream_group_id_foreign";`,
+    );
+    this.addSql(
+      `alter table "workstream" drop constraint "workstream_owner_id_foreign";`,
+    );
+    this.addSql(`alter table "step" drop constraint "step_owner_id_foreign";`);
+    this.addSql(`alter table "note" drop constraint "note_author_id_foreign";`);
+    this.addSql(
+      `alter table "step" drop constraint "step_workstream_id_foreign";`,
+    );
+    this.addSql(
+      `alter table "workstream" drop constraint "workstream_current_step_id_foreign";`,
+    );
+    this.addSql(`alter table "note" drop constraint "note_step_id_foreign";`);
+    this.addSql(
+      `alter table "checklist_item" drop constraint "checklist_item_step_id_foreign";`,
+    );
+
+    this.addSql(`drop table if exists "project" cascade;`);
     this.addSql(`drop table if exists "group" cascade;`);
     this.addSql(`drop table if exists "user" cascade;`);
-    this.addSql(`drop table if exists "project" cascade;`);
-    this.addSql(`drop type if exists "step_outcome";`);
+    this.addSql(`drop table if exists "workstream" cascade;`);
+    this.addSql(`drop table if exists "step" cascade;`);
+    this.addSql(`drop table if exists "note" cascade;`);
+    this.addSql(`drop table if exists "checklist_item" cascade;`);
+
+    this.addSql(`drop type "step_outcome";`);
   }
 }

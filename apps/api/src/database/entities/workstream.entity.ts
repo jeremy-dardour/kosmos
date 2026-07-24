@@ -28,12 +28,7 @@ export class Workstream {
   @ManyToOne(() => Project, { deleteRule: 'cascade' })
   project!: Project;
 
-  @ManyToOne(() => Group, {
-    deleteRule: 'set null',
-    joinColumns: ['project_id', 'group_id'],
-    ownColumns: ['group_id'],
-    referencedColumnNames: ['project_id', 'id'],
-  })
+  @ManyToOne(() => Group, { deleteRule: 'set null' })
   group?: Group | null;
 
   @ManyToOne(() => User, { deleteRule: 'set null' })
@@ -45,20 +40,19 @@ export class Workstream {
   @Property({ type: 'timestamptz' })
   completedAt?: Opt<Date | null>;
 
-  @ManyToOne(() => 'Step', {
-    deleteRule: 'restrict',
-    joinColumns: ['id', 'current_step_id'],
-    ownColumns: ['current_step_id'],
-    referencedColumnNames: ['workstream_id', 'id'],
-  })
+  @ManyToOne(() => 'Step' as any, { deleteRule: 'restrict' })
   currentStep?: Step | null;
 
-  @OneToMany(() => 'Step', (s: Step) => s.workstream)
+  @OneToMany(() => 'Step' as any, (s: Step) => s.workstream)
   steps = new Collection<Step>(this);
 
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })
   createdAt!: Opt<Date>;
 
-  @Property({ type: 'timestamptz', defaultRaw: 'now()' })
+  @Property({
+    type: 'timestamptz',
+    defaultRaw: 'now()',
+    onUpdate: () => new Date(),
+  })
   updatedAt!: Opt<Date>;
 }

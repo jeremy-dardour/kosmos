@@ -21,15 +21,19 @@ export class Project {
   @Property({ type: 'date' })
   eventDate?: Opt<string | null>;
 
-  @OneToMany(() => 'Workstream', (w: Workstream) => w.project)
+  @OneToMany(() => 'Workstream' as any, (w: Workstream) => w.project)
   workstreams = new Collection<Workstream>(this);
 
-  @OneToMany(() => 'Group', (g: Group) => g.project)
+  @OneToMany(() => 'Group' as any, (g: Group) => g.project)
   groups = new Collection<Group>(this);
 
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })
   createdAt!: Opt<Date>;
 
-  @Property({ type: 'timestamptz', defaultRaw: 'now()' })
+  @Property({
+    type: 'timestamptz',
+    defaultRaw: 'now()',
+    onUpdate: () => new Date(),
+  })
   updatedAt!: Opt<Date>;
 }

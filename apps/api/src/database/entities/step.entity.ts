@@ -26,7 +26,6 @@ export enum StepOutcome {
   properties: ['workstream', 'position'],
   options: { deferMode: 'deferred' },
 })
-@Unique({ properties: ['workstream', 'id'] })
 export class Step {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: Opt<string>;
@@ -55,15 +54,19 @@ export class Step {
   @Property({ defaultRaw: 'false' })
   blocked!: Opt<boolean>;
 
-  @OneToMany(() => 'ChecklistItem', (ci: ChecklistItem) => ci.step)
+  @OneToMany(() => 'ChecklistItem' as any, (ci: ChecklistItem) => ci.step)
   checklistItems = new Collection<ChecklistItem>(this);
 
-  @OneToMany(() => 'Note', (n: Note) => n.step)
+  @OneToMany(() => 'Note' as any, (n: Note) => n.step)
   notes = new Collection<Note>(this);
 
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })
   createdAt!: Opt<Date>;
 
-  @Property({ type: 'timestamptz', defaultRaw: 'now()' })
+  @Property({
+    type: 'timestamptz',
+    defaultRaw: 'now()',
+    onUpdate: () => new Date(),
+  })
   updatedAt!: Opt<Date>;
 }

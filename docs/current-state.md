@@ -5,7 +5,7 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-23_
+_Last updated: 2026-07-24_
 
 ## Phase
 
@@ -45,6 +45,14 @@ review fix-up is still in progress. 9 issues remaining after #17 merges.
   follow-up work before merge
   ([session 11](./sessions/session-11-2026-07-23-entities-migration.md),
   [session 12](./sessions/session-12-2026-07-23-pr-28-review-fix-wip.md)).
+- Added path-scoped `.claude/rules/` for API/web app docs and ported them
+  (plus the compose per-workspace isolation fix) to the sibling template repo
+  ([session 13](./sessions/session-13-2026-07-24-claude-rules-and-template-sync.md)).
+- Entity standards extracted to
+  [ENTITIES_STANDARDS.md](../apps/api/ENTITIES_STANDARDS.md), type errors fixed,
+  `updatedAt` onUpdate added, composite FKs removed (service-layer guards
+  instead, [ADR 0006](./adr/0006-same-parent-integrity-in-service-layer.md))
+  ([session 14](./sessions/session-14-2026-07-24-entity-standards-and-fixes.md)).
 
 ## Open questions
 
@@ -54,7 +62,9 @@ None.
 
 Finish PR #28 review fix-up before starting #18:
 
-- resolve MikroORM entity circular-reference pattern across TypeScript, ESLint,
-  e2e runtime, and CLI metadata discovery.
-- regenerate/verify migration and API contracts.
-- rerun `pnpm check-types && pnpm lint && pnpm test`.
+- Entity type errors resolved; circular-reference pattern fixed (type-only
+  imports + string entity names for inverse/circular sides).
+- Composite FKs removed; simple FKs restored. Schema generator no longer
+  crashes.
+- Regenerate/verify migration.
+- Rerun `pnpm check-types && pnpm lint && pnpm test`.

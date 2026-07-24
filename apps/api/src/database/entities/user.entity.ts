@@ -19,6 +19,10 @@ export class User {
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })
   createdAt!: Opt<Date>;
 
-  @Property({ type: 'timestamptz', defaultRaw: 'now()' })
+  @Property({
+    type: 'timestamptz',
+    defaultRaw: 'now()',
+    onUpdate: () => new Date(),
+  })
   updatedAt!: Opt<Date>;
 }

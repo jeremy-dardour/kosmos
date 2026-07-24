@@ -30,66 +30,7 @@ ESLint `boundaries` plugin enforces module isolation:
 
 ## Entity definitions (MikroORM 7)
 
-This project uses `TsMorphMetadataProvider` — TypeScript types are the single source of truth for entity metadata. Never duplicate in decorators what TsMorph can infer from the TS type.
-
-### Decorator imports
-
-```typescript
-import { Entity, PrimaryKey, Property } from '@mikro-orm/decorators/legacy';
-import type { Opt } from '@mikro-orm/core';
-```
-
-Legacy decorator mode is required by NestJS. Decorators come from `@mikro-orm/decorators/legacy`, types from `@mikro-orm/core`.
-
-### Nullability
-
-Let TypeScript drive nullable inference. Do NOT add `nullable: true` in decorators.
-
-```typescript
-@Property({ type: 'text' })
-description?: Opt<string | null>;
-```
-
-- `?` — property omittable in `em.create()`
-- `| null` — database column is nullable
-- `Opt<T>` — property has a default or is optional in create operations
-
-### Explicit vs inferred decorator options
-
-| Scenario               | Explicit?             | Why                                       |
-| ---------------------- | --------------------- | ----------------------------------------- | ----- |
-| `string` property      | No                    | Maps to `varchar(255)` by default         |
-| `string` → `text`      | `type: 'text'`        | TsMorph can't distinguish varchar vs text |
-| UUID primary key       | `type: 'uuid'`        | TS type is `string`, can't infer UUID     |
-| `Date` → `timestamptz` | `type: 'timestamptz'` | Explicit DB type for schema stability     |
-| Nullable               | No                    | TsMorph infers from `?` / `               | null` |
-| `length: 255`          | No                    | Default for varchar                       |
-| `defaultRaw`           | Always                | Database-level default, not type info     |
-
-### Example entity
-
-```typescript
-import { Entity, PrimaryKey, Property } from '@mikro-orm/decorators/legacy';
-import type { Opt } from '@mikro-orm/core';
-
-@Entity()
-export class Item {
-  @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
-  id!: Opt<string>;
-
-  @Property()
-  name!: string;
-
-  @Property({ type: 'text' })
-  description?: Opt<string | null>;
-
-  @Property({ type: 'timestamptz', defaultRaw: 'now()' })
-  createdAt!: Opt<Date>;
-
-  @Property({ type: 'timestamptz', defaultRaw: 'now()' })
-  updatedAt!: Opt<Date>;
-}
-```
+See [ENTITIES_STANDARDS.md](./ENTITIES_STANDARDS.md).
 
 ### Migrations
 
