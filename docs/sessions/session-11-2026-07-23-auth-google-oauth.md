@@ -11,7 +11,7 @@
   - static `AUTH_ALLOWED_EMAILS` allow-list with 403 rejection for valid but
     unauthorized tokens
 - Added auth-time User provisioning:
-  - new `User` entity and migration
+  - initially added a `User` entity and migration on the auth branch
   - upsert by normalized email on authenticated requests
   - refresh name and avatar from Google claims
   - attach persisted user id to `request.user`
@@ -19,7 +19,8 @@
   - `GoogleAuthProvider` using the GIS JS SDK
   - `VITE_GOOGLE_CLIENT_ID`
   - env-driven `FakeAuthProvider` vs `GoogleAuthProvider` selection
-  - auth events so protected routes re-render after async login/logout
+  - initially used auth events so protected routes re-render after async
+    login/logout
 - Updated API e2e token factories and tests to Google ID-token claims.
 - Updated README, env examples, and CI env config for the new auth variables.
 
@@ -39,8 +40,10 @@
 ## Notes
 
 - API e2e used the already-running `postgres-test` container on port `5433`.
-- The e2e migration refresh applied both the initial item migration and the new
-  user migration.
+- The original auth branch added its own user migration before the entity PR was
+  merged.
+- Session 14 supersedes the auth-event implementation and duplicate user
+  migration notes after rebasing onto `main`.
 
 ## Status after session
 
