@@ -38,6 +38,15 @@
 - Removed manual `updatedAt` assignment from the provisioner.
 - Relied on `User.updatedAt`'s MikroORM `onUpdate` from `main`.
 
+## API type generation port fix
+
+- Updated root `pnpm generate:api-types` to source `apps/api/.env` before
+  running `openapi-typescript`.
+- The command now uses `http://localhost:${PORT:-3000}/openapi.yaml`, so
+  workspaces created by `scripts/setup_parallel_workspace.sh` generate types
+  from the API's configured port instead of hardcoded port `3000`.
+- Updated `packages/api-contracts/README.md` to document the dynamic port.
+
 ## Validation
 
 - `pnpm --filter web test`
@@ -49,6 +58,7 @@
 - `pnpm db:start`
 - `pnpm --filter api db-e2e:migrate:fresh`
 - `pnpm --filter api test:e2e`
+- `pnpm generate:api-types`
 - `git diff --check`
 
 ## Notes
@@ -57,10 +67,12 @@
   bind to `0.0.0.0` (`listen EPERM`). Rerunning outside the sandbox worked.
 - The next API e2e run failed because the test database schema had not been
   migrated. After `db-e2e:migrate:fresh`, all API e2e tests passed.
+- `pnpm generate:api-types` was verified against the already-running API on
+  port `26873`.
 - The local Postgres containers were started during validation and left running.
 
 ## Status at end of session
 
 `fix-auth` is rebased on `main`, auth event overengineering is removed, the
 duplicate user migration/snapshot changes are gone, and the branch passes unit,
-type, lint, and API e2e verification.
+type, lint, API e2e, and API type generation verification.

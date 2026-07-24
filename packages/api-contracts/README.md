@@ -16,7 +16,9 @@ From the **monorepo root** (requires the API to be running):
 pnpm generate:api-types
 ```
 
-This runs `openapi-typescript` against `http://localhost:3000/openapi.yaml` and outputs to `src/openapi.d.ts`.
+This reads the API port from `apps/api/.env` (`PORT`, default `3000`), runs
+`openapi-typescript` against that API's `/openapi.yaml`, and outputs to
+`src/openapi.d.ts`.
 
 ## Scripts
 
