@@ -45,26 +45,26 @@ review fix-up is still in progress. 9 issues remaining after #17 merges.
   follow-up work before merge
   ([session 11](./sessions/session-11-2026-07-23-entities-migration.md),
   [session 12](./sessions/session-12-2026-07-23-pr-28-review-fix-wip.md)).
-- Added path-scoped `.claude/rules/` for API/web app docs and ported them
-  (plus the compose per-workspace isolation fix) to the sibling template repo
-  ([session 13](./sessions/session-13-2026-07-24-claude-rules-and-template-sync.md)).
-- Entity standards extracted to
-  [ENTITIES_STANDARDS.md](../apps/api/ENTITIES_STANDARDS.md), type errors fixed,
-  `updatedAt` onUpdate added, composite FKs removed (service-layer guards
-  instead, [ADR 0006](./adr/0006-same-parent-integrity-in-service-layer.md))
-  ([session 14](./sessions/session-14-2026-07-24-entity-standards-and-fixes.md)).
+- Path-scoped `.claude/rules/` added for API, web, and entity files; ported
+  to sibling template repo. Entity standards extracted to
+  [ENTITIES_STANDARDS.md](../apps/api/ENTITIES_STANDARDS.md), type errors
+  fixed, `updatedAt` onUpdate added, composite FKs removed (service-layer
+  guards instead, [ADR 0006](./adr/0006-same-parent-integrity-in-service-layer.md)).
+  Parallel workspace ports fixed and documented. Dead template items files
+  removed. All lint/type/test checks pass
+  ([session 13](./sessions/session-13-2026-07-24-rules-entities-ports.md)).
 
 ## Open questions
 
-None.
+- `deferMode: 'deferred'` on `@Unique` constraints (Step, ChecklistItem) does
+  not produce `DEFERRABLE INITIALLY DEFERRED` in MikroORM's generated SQL.
+  Service layer will need to handle constraint ordering for bulk reorder.
 
 ## Next steps
 
 Finish PR #28 review fix-up before starting #18:
 
-- Entity type errors resolved; circular-reference pattern fixed (type-only
-  imports + string entity names for inverse/circular sides).
-- Composite FKs removed; simple FKs restored. Schema generator no longer
-  crashes.
-- Regenerate/verify migration.
-- Rerun `pnpm check-types && pnpm lint && pnpm test`.
+- Entity definitions are type-clean, lint-clean, documented.
+- Migration verified against `schema:update --dump` — matches exactly.
+- Regenerate migration (fresh, post-composite-FK removal) if needed.
+- PR #28 ready for final review pass.

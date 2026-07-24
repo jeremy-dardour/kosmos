@@ -123,9 +123,11 @@ workstream!: Workstream;
 // workstream.entity.ts — inverse side uses type-only import + string
 import type { Step } from '@/database/entities/step.entity';
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
 @OneToMany(() => 'Step' as any, (s: Step) => s.workstream)
 steps = new Collection<Step>(this);
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
 @ManyToOne(() => 'Step' as any, { deleteRule: 'restrict', ... })
 currentStep?: Step | null;
 ```
@@ -133,7 +135,8 @@ currentStep?: Step | null;
 The `as any` is needed because MikroORM 7's legacy decorator types don't accept
 string entity names from callbacks (`EntityName<T>` requires a class), but the
 runtime resolves strings from its entity registry. The cast is narrow — only on
-the string literal.
+the string literal. Every `as any` line requires an eslint-disable comment for
+`no-unsafe-return` and `no-explicit-any`.
 
 ### Same-parent integrity
 

@@ -26,6 +26,7 @@ export class Group {
   @ManyToOne(() => Project, { deleteRule: 'cascade' })
   project!: Project;
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any -- MikroORM 7 legacy decorators don't type string entity names; runtime resolves them
   @OneToMany(() => 'Workstream' as any, (w: Workstream) => w.group)
   workstreams = new Collection<Workstream>(this);
 

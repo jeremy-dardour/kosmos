@@ -21,9 +21,11 @@ export class Project {
   @Property({ type: 'date' })
   eventDate?: Opt<string | null>;
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any -- MikroORM 7 legacy decorators don't type string entity names; runtime resolves them
   @OneToMany(() => 'Workstream' as any, (w: Workstream) => w.project)
   workstreams = new Collection<Workstream>(this);
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
   @OneToMany(() => 'Group' as any, (g: Group) => g.project)
   groups = new Collection<Group>(this);
 

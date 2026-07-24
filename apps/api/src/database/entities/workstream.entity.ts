@@ -40,9 +40,11 @@ export class Workstream {
   @Property({ type: 'timestamptz' })
   completedAt?: Opt<Date | null>;
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any -- MikroORM 7 legacy decorators don't type string entity names; runtime resolves them
   @ManyToOne(() => 'Step' as any, { deleteRule: 'restrict' })
   currentStep?: Step | null;
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
   @OneToMany(() => 'Step' as any, (s: Step) => s.workstream)
   steps = new Collection<Step>(this);
 

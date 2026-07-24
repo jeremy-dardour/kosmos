@@ -54,9 +54,11 @@ export class Step {
   @Property({ defaultRaw: 'false' })
   blocked!: Opt<boolean>;
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any -- MikroORM 7 legacy decorators don't type string entity names; runtime resolves them
   @OneToMany(() => 'ChecklistItem' as any, (ci: ChecklistItem) => ci.step)
   checklistItems = new Collection<ChecklistItem>(this);
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
   @OneToMany(() => 'Note' as any, (n: Note) => n.step)
   notes = new Collection<Note>(this);
 
