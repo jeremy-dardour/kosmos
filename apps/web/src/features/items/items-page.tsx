@@ -1,3 +1,6 @@
+// @ts-nocheck -- depends on use-items.ts, whose /api/items endpoints were
+// removed with the example entities; kept as reference until the first
+// frontend ticket wires real ones.
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

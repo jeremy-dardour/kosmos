@@ -1,3 +1,5 @@
+// @ts-nocheck -- placeholder /api/items endpoints removed with the example
+// entities; kept as reference until the first frontend ticket wires real ones.
 import { useQueryClient } from '@tanstack/react-query';
 
 import { $api } from '@/api/api-client';
