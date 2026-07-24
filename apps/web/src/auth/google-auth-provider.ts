@@ -10,6 +10,7 @@ interface GoogleCredentialResponse {
 interface GooglePromptMomentNotification {
   isNotDisplayed(): boolean;
   isSkippedMoment(): boolean;
+  isDismissedMoment(): boolean;
 }
 
 interface GoogleAccountsId {
@@ -48,6 +49,7 @@ interface GoogleIdTokenPayload {
 export class GoogleAuthProvider implements AuthProvider {
   private readonly clientId: string;
   private initializePromise: Promise<void> | null = null;
+  private loginPromise: Promise<void> | null = null;
   private idToken: string | null = null;
   private authenticatedUser: AuthenticatedUser | null = null;
   private pendingLogin: {
@@ -62,26 +64,72 @@ export class GoogleAuthProvider implements AuthProvider {
   async initialize(): Promise<void> {
     this.initializePromise ??= this.initializeGoogleIdentity();
 
-    return this.initializePromise;
+    try {
+      await this.initializePromise;
+    } catch (error) {
+      this.initializePromise = null;
+      throw error;
+    }
   }
 
-  async login(): Promise<void> {
+  login(): Promise<void> {
     if (this.isAuthenticated()) {
-      return;
+      return Promise.resolve();
     }
 
-    await this.initialize();
+    this.loginPromise ??= this.startLogin();
 
-    return new Promise((resolve, reject) => {
-      this.pendingLogin = { resolve, reject };
-      this.getGoogle()?.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          this.rejectPendingLogin(
-            new Error('Google sign-in prompt was dismissed'),
-          );
+    return this.loginPromise;
+  }
+
+  private async startLogin(): Promise<void> {
+    try {
+      await this.initialize();
+      const google = this.getGoogle();
+
+      if (!google?.accounts.id) {
+        throw new Error('Google Identity Services is not available');
+      }
+
+      let timeout: ReturnType<typeof globalThis.setTimeout> | undefined;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          timeout = globalThis.setTimeout(() => {
+            this.rejectPendingLogin(
+              new Error('Google sign-in prompt did not return a credential'),
+            );
+          }, 60_000);
+
+          this.pendingLogin = { resolve, reject };
+
+          try {
+            google.accounts.id.prompt((notification) => {
+              if (
+                notification.isNotDisplayed() ||
+                notification.isSkippedMoment() ||
+                notification.isDismissedMoment()
+              ) {
+                this.rejectPendingLogin(
+                  new Error('Google sign-in prompt was dismissed'),
+                );
+              }
+            });
+          } catch (error) {
+            this.rejectPendingLogin(
+              error instanceof Error
+                ? error
+                : new Error('Google sign-in prompt failed'),
+            );
+          }
+        });
+      } finally {
+        if (timeout) {
+          globalThis.clearTimeout(timeout);
         }
-      });
-    });
+      }
+    } finally {
+      this.loginPromise = null;
+    }
   }
 
   logout(): void {
@@ -116,7 +164,18 @@ export class GoogleAuthProvider implements AuthProvider {
       return;
     }
 
-    const payload = this.decodePayload(response.credential);
+    let payload: GoogleIdTokenPayload;
+    try {
+      payload = this.decodePayload(response.credential);
+    } catch (error) {
+      this.rejectPendingLogin(
+        error instanceof Error
+          ? error
+          : new Error('Google credential response was invalid'),
+      );
+      return;
+    }
+
     if (!payload.email) {
       this.rejectPendingLogin(
         new Error('Google credential response had no email'),
@@ -158,7 +217,10 @@ export class GoogleAuthProvider implements AuthProvider {
         });
         existingScript.addEventListener(
           'error',
-          () => reject(new Error('Failed to load Google Identity Services')),
+          () => {
+            existingScript.remove();
+            reject(new Error('Failed to load Google Identity Services'));
+          },
           {
             once: true,
           },
@@ -173,7 +235,10 @@ export class GoogleAuthProvider implements AuthProvider {
       script.addEventListener('load', () => resolve(), { once: true });
       script.addEventListener(
         'error',
-        () => reject(new Error('Failed to load Google Identity Services')),
+        () => {
+          script.remove();
+          reject(new Error('Failed to load Google Identity Services'));
+        },
         { once: true },
       );
       globalThis.document.head.append(script);

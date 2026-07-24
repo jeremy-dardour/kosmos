@@ -6,10 +6,11 @@ import { GoogleAuthProvider } from './google-auth-provider';
 import type { AuthProvider } from '@/auth';
 
 export function createAuthProvider(): AuthProvider {
-  const provider = env.fakeAuth
-    ? new FakeAuthProvider()
-    : new GoogleAuthProvider();
+  if (!env.fakeAuth) {
+    return new GoogleAuthProvider();
+  }
 
+  const provider = new FakeAuthProvider();
   void provider.initialize();
   return provider;
 }
