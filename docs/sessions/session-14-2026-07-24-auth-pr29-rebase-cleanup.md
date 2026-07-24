@@ -47,6 +47,15 @@
   from the API's configured port instead of hardcoded port `3000`.
 - Updated `packages/api-contracts/README.md` to document the dynamic port.
 
+## CI fake-auth boot fix
+
+- Fixed API boot in CI contract generation when `FAKE_AUTH=true`.
+- `OidcDiscoveryService` no longer parses `AUTH_OIDC_DISCOVERY_URL` in its
+  constructor. URL parsing is now lazy inside `init()`, which
+  `AuthInitializerService` already skips for fake auth.
+- This allows CI to start the API for `/openapi.yaml` without providing real
+  OIDC configuration.
+
 ## Validation
 
 - `pnpm --filter web test`
@@ -59,6 +68,9 @@
 - `pnpm --filter api db-e2e:migrate:fresh`
 - `pnpm --filter api test:e2e`
 - `pnpm generate:api-types`
+- `pnpm --filter api check-types`
+- `pnpm --filter api lint`
+- `pnpm --filter api test`
 - `git diff --check`
 
 ## Notes
@@ -69,6 +81,9 @@
   migrated. After `db-e2e:migrate:fresh`, all API e2e tests passed.
 - `pnpm generate:api-types` was verified against the already-running API on
   port `26873`.
+- CI contract generation was failing because the API instantiated
+  `OidcDiscoveryService` with no `AUTH_OIDC_DISCOVERY_URL` under
+  `FAKE_AUTH=true`. Lazy URL parsing fixes that startup path.
 - The local Postgres containers were started during validation and left running.
 
 ## Status at end of session

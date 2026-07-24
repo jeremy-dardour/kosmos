@@ -11,21 +11,23 @@ import type { Env } from '@/app/config/env.schema';
 export class OidcDiscoveryService {
   private issuer: string | null = null;
   private jwksFunction: ReturnType<typeof createRemoteJWKSet> | null = null;
-  private readonly discoveryUrl: URL;
 
-  constructor(private readonly configService: ConfigService<Env, true>) {
-    const discoveryUrl: string = this.configService.get(
-      'AUTH_OIDC_DISCOVERY_URL',
-    );
-    this.discoveryUrl = new URL(discoveryUrl);
-  }
+  constructor(private readonly configService: ConfigService<Env, true>) {}
 
   async init(): Promise<void> {
     try {
-      const clientId: string = this.configService.get('AUTH_CLIENT_ID');
+      const discoveryUrl: string | undefined = this.configService.get(
+        'AUTH_OIDC_DISCOVERY_URL',
+      );
+      const clientId: string | undefined =
+        this.configService.get('AUTH_CLIENT_ID');
+
+      if (!discoveryUrl || !clientId) {
+        throw new Error('Missing OIDC discovery URL or client ID');
+      }
 
       const config = await oidc.discovery(
-        this.discoveryUrl,
+        new URL(discoveryUrl),
         clientId,
         undefined,
         oidc.None(),
