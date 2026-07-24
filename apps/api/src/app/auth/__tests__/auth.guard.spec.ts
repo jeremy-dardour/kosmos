@@ -4,11 +4,12 @@ import { AuthGuard } from '@/app/auth/auth.guard';
 import { IS_PUBLIC_KEY } from '@/app/auth/decorators';
 import { AuthenticationException } from '@/app/auth/exceptions/authentication.exception';
 
+import type { AuthUserProvisionerService } from '@/app/auth/auth-user-provisioner.service';
 import type { JwtAuthStrategy } from '@/app/auth/strategies/jwt/jwt-auth.strategy';
 import type { MockAuthStrategy } from '@/app/auth/strategies/mock-auth.strategy';
 import type {
   AuthenticatedRequest,
-  JwtPayload,
+  AuthenticatedUser,
 } from '@/app/auth/types/token.types';
 import type { Env } from '@/app/config/env.schema';
 import type { ExecutionContext } from '@nestjs/common';
@@ -21,17 +22,17 @@ describe('authGuard', () => {
   let reflector: Reflector;
   let jwtAuthStrategy: JwtAuthStrategy;
   let mockAuthStrategy: MockAuthStrategy;
+  let authUserProvisioner: AuthUserProvisionerService;
 
-  const mockPayload: JwtPayload = {
-    sub: 'user-123',
+  const mockPayload: AuthenticatedUser = {
     email: 'user@example.com',
     name: 'Test User',
-    preferred_username: 'user@example.com',
-    scp: 'api.read',
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 3600,
-    iss: 'https://auth.example.com',
-    aud: 'test-client-id',
+    avatarUrl: 'https://example.com/avatar.jpg',
+  };
+
+  const provisionedUser: AuthenticatedUser = {
+    ...mockPayload,
+    id: '8fdff8a9-918d-4a3c-9368-2a8b9d69f3f8',
   };
 
   beforeEach(() => {
@@ -48,6 +49,10 @@ describe('authGuard', () => {
     mockAuthStrategy = {
       authenticate: vi.fn().mockResolvedValue(mockPayload),
     } as unknown as MockAuthStrategy;
+
+    authUserProvisioner = {
+      provision: vi.fn().mockResolvedValue(provisionedUser),
+    } as unknown as AuthUserProvisionerService;
   });
 
   describe('strategy selection', () => {
@@ -65,6 +70,7 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
+        authUserProvisioner,
       );
 
       vi.mocked(reflector.getAllAndOverride).mockReturnValueOnce(false);
@@ -92,6 +98,7 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
+        authUserProvisioner,
       );
 
       vi.mocked(reflector.getAllAndOverride).mockReturnValueOnce(false);
@@ -119,6 +126,7 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
+        authUserProvisioner,
       );
 
       vi.mocked(reflector.getAllAndOverride).mockReturnValueOnce(false);
@@ -148,6 +156,7 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
+        authUserProvisioner,
       );
     });
 
@@ -190,6 +199,7 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
+        authUserProvisioner,
       );
     });
 
@@ -203,14 +213,15 @@ describe('authGuard', () => {
       expect(jwtAuthStrategy.authenticate).toHaveBeenCalledTimes(1);
     });
 
-    it('should set user payload on request after successful authentication', async () => {
+    it('should provision and set user on request after successful authentication', async () => {
       vi.mocked(reflector.getAllAndOverride).mockReturnValueOnce(false);
 
       const context = createMockExecutionContext();
       await guard.canActivate(context);
 
       const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-      expect(request.user).toEqual(mockPayload);
+      expect(authUserProvisioner.provision).toHaveBeenCalledWith(mockPayload);
+      expect(request.user).toEqual(provisionedUser);
     });
 
     it('should propagate authentication errors from strategy', async () => {

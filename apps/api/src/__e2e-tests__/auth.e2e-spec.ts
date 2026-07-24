@@ -21,11 +21,10 @@ describe('Auth E2E Tests', () => {
 
   beforeAll(async () => {
     const clientId = process.env.AUTH_CLIENT_ID!;
-    const audience = `api://${clientId}`;
-    const acceptedScope = process.env.AUTH_ACCEPTED_SCOPES!;
+    const audience = clientId;
 
     await mockOidc.setup();
-    tokenFactory = new MockTokenFactory(mockOidc, audience, acceptedScope);
+    tokenFactory = new MockTokenFactory(mockOidc, audience);
   });
 
   const PROTECTED_ENDPOINT = '/__e2e__/protected';
@@ -41,7 +40,7 @@ describe('Auth E2E Tests', () => {
       await app.close();
     });
 
-    it('should return 200 with valid token and correct scopes', async () => {
+    it('should return 200 with valid token and allowed email', async () => {
       const token = await tokenFactory.validToken();
 
       await createRequest(app)
@@ -102,8 +101,17 @@ describe('Auth E2E Tests', () => {
         .expect(401);
     });
 
-    it('should return 403 for insufficient scopes', async () => {
-      const token = await tokenFactory.wrongScopeToken();
+    it('should return 403 for valid token with email outside allow-list', async () => {
+      const token = await tokenFactory.disallowedEmailToken();
+
+      await createRequest(app)
+        .get(PROTECTED_ENDPOINT)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(403);
+    });
+
+    it('should return 403 for valid token with unverified email', async () => {
+      const token = await tokenFactory.unverifiedEmailToken();
 
       await createRequest(app)
         .get(PROTECTED_ENDPOINT)

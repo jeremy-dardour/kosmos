@@ -19,7 +19,11 @@ export class JwtAuthStrategy implements AuthStrategy {
 
     try {
       const { payload } = await this.jwtService.verify(token);
-      return payload;
+      return {
+        email: payload.email!.toLowerCase(),
+        name: payload.name,
+        avatarUrl: payload.picture,
+      };
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

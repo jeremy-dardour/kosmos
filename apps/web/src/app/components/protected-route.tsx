@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useReducer } from 'react';
 
 import { useAuth } from '@/auth';
 
@@ -10,14 +10,34 @@ export function ProtectedRoute({
   children,
 }: ProtectedRouteProps): React.JSX.Element {
   const auth = useAuth();
+  const [, rerender] = useReducer((revision: number) => revision + 1, 0);
+  const isAuthenticated = auth.isAuthenticated();
 
   useEffect(() => {
-    if (!auth.isAuthenticated()) {
-      void auth.login();
+    if (isAuthenticated) {
+      return;
     }
-  }, [auth]);
 
-  if (auth.isAuthenticated()) {
+    let isMounted = true;
+
+    void Promise.resolve(auth.login())
+      .then(() => {
+        if (isMounted) {
+          rerender();
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          rerender();
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [auth, isAuthenticated]);
+
+  if (isAuthenticated) {
     return <>{children}</>;
   }
 

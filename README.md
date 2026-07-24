@@ -86,19 +86,19 @@ A complete working example demonstrating the full stack:
 
 ### Authentication
 
-A pluggable JWT authentication system ready for any OIDC provider:
+A Google Identity Services authentication system for a small allow-listed group:
 
 - **Strategy pattern**: `AuthGuard` → `AuthStrategy` interface → `JwtAuthStrategy` / `MockAuthStrategy`
-- **JWT verification**: JWKS, audience, issuer, and scope validation via `jose`
+- **JWT verification**: Google ID token JWKS, audience, issuer, and email allow-list validation via `jose`
 - **OIDC discovery**: Automatic metadata and JWKS endpoint resolution
 - **Dev mode**: `FAKE_AUTH=true` bypasses auth for local development
 
-Configure your OIDC provider with three env vars:
+Configure Google auth with three env vars:
 
 ```env
-AUTH_OIDC_DISCOVERY_URL=https://your-provider/.well-known/openid-configuration
-AUTH_CLIENT_ID=your-client-id
-AUTH_ACCEPTED_SCOPES=your.scope
+AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration
+AUTH_CLIENT_ID=your-google-client-id
+AUTH_ALLOWED_EMAILS=person@example.com,another-person@example.com
 ```
 
 ### CLI Commands
