@@ -35,14 +35,15 @@ export class FakeAuthProvider implements AuthProvider {
       );
     }
 
-    const { username } = this.mockAuthenticateUser();
+    const { email } = this.mockAuthenticateUser();
 
-    return Promise.resolve(generateFakeJwt(username, username));
+    return Promise.resolve(generateFakeJwt(email, email));
   }
 
   private mockAuthenticateUser() {
     return {
-      username: 'dev.user@example.com',
+      id: '00000000-0000-4000-8000-000000000001',
+      email: 'dev.user@example.com',
       name: 'DevUser',
     };
   }

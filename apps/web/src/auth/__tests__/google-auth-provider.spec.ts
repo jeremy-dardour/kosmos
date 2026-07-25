@@ -34,14 +34,41 @@ const googleAuthTestState: {
 } = {};
 
 describe('googleAuthProvider', () => {
+  const storageKey = 'wedding-planner.google-id-token';
   const googleGlobal = globalThis as GoogleTestGlobal;
+  const fetchMock = vi.fn<typeof fetch>();
   let token: string;
+  let validatedUser: {
+    id: string;
+    email: string;
+    name: string;
+    avatarUrl?: string;
+  };
 
   beforeEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     delete googleGlobal.google;
     googleAuthTestState.credentialCallback = undefined;
+    document
+      .querySelector<HTMLScriptElement>(
+        'script[src="https://accounts.google.com/gsi/client"]',
+      )
+      ?.remove();
+    sessionStorage.clear();
+    validatedUser = {
+      id: '00000000-0000-4000-8000-000000000123',
+      email: 'jane.doe@example.com',
+      name: 'Jane Doe',
+      avatarUrl: 'https://example.com/jane.jpg',
+    };
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue(
+      Response.json(validatedUser, {
+        status: 200,
+      }),
+    );
 
     token = createToken({
       email: 'jane.doe@example.com',
@@ -63,11 +90,17 @@ describe('googleAuthProvider', () => {
       client_id: 'google-client-id',
       callback: expect.any(Function) as unknown,
     });
+    expect(fetchMock).toHaveBeenCalledWith(
+      new URL('/api/users/me', 'http://localhost:3000'),
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
     expect(provider.isAuthenticated()).toBe(true);
-    expect(provider.getAuthenticatedUser()).toEqual({
-      username: 'jane.doe@example.com',
-      name: 'Jane Doe',
-    });
+    expect(provider.getAuthenticatedUser()).toEqual(validatedUser);
+    expect(sessionStorage.getItem(storageKey)).toBe(token);
     await expect(provider.getAccessToken()).resolves.toBe(token);
   });
 
@@ -88,15 +121,53 @@ describe('googleAuthProvider', () => {
     await expect(secondLogin).resolves.toBeUndefined();
   });
 
+  it('should restore from session storage before prompting GIS', async () => {
+    const provider = new GoogleAuthProvider('google-client-id');
+    sessionStorage.setItem(storageKey, token);
+
+    await provider.login();
+
+    expect(googleGlobal.google?.accounts.id.prompt).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(provider.getAuthenticatedUser()).toEqual(validatedUser);
+  });
+
+  it('should clear rejected restore token and continue with a new prompt after 401', async () => {
+    const freshToken = createToken({
+      email: 'jane.doe@example.com',
+      name: 'Jane Doe',
+      exp: Math.floor(Date.now() / 1000) + 7200,
+    });
+    const provider = new GoogleAuthProvider('google-client-id');
+    sessionStorage.setItem(storageKey, token);
+    fetchMock
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(
+        Response.json(validatedUser, {
+          status: 200,
+        }),
+      );
+    installGoogleIdentityMock({
+      prompt: () => handleCredential({ credential: freshToken }),
+    });
+
+    await provider.login();
+
+    expect(googleGlobal.google?.accounts.id.prompt).toHaveBeenCalledOnce();
+    expect(sessionStorage.getItem(storageKey)).toBe(freshToken);
+    await expect(provider.getAccessToken()).resolves.toBe(freshToken);
+  });
+
   it('should reject when the Google prompt is dismissed', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
     installGoogleIdentityMock({
       prompt: (notify) => notify(createPromptNotification('dismissed')),
     });
 
-    await expect(provider.login()).rejects.toThrow(
-      'Google sign-in prompt was dismissed',
-    );
+    await expect(provider.login()).rejects.toMatchObject({
+      code: 'sign_in_failed',
+      message: 'Google sign-in prompt was dismissed',
+    });
     expect(provider.isAuthenticated()).toBe(false);
   });
 
@@ -134,20 +205,19 @@ describe('googleAuthProvider', () => {
     expect(provider.isAuthenticated()).toBe(false);
   });
 
-  it('should reject when credential payload has no email', async () => {
+  it('should reject when validation returns forbidden and clear stored token', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
-    const tokenWithoutEmail = createToken({
-      name: 'Jane Doe',
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    });
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 403 }));
     installGoogleIdentityMock({
-      prompt: () => handleCredential({ credential: tokenWithoutEmail }),
+      prompt: () => handleCredential({ credential: token }),
     });
 
-    await expect(provider.login()).rejects.toThrow(
-      'Google credential response had no email',
-    );
+    await expect(provider.login()).rejects.toMatchObject({
+      code: 'forbidden',
+      message: 'This Google account is not allowed for this app',
+    });
     expect(provider.isAuthenticated()).toBe(false);
+    expect(sessionStorage.getItem(storageKey)).toBeNull();
   });
 
   it('should reject when the prompt never returns a credential', async () => {
@@ -172,6 +242,13 @@ describe('googleAuthProvider', () => {
     delete googleGlobal.google;
 
     const login = provider.login();
+    await vi.waitFor(() => {
+      expect(
+        document.querySelector<HTMLScriptElement>(
+          'script[src="https://accounts.google.com/gsi/client"]',
+        ),
+      ).not.toBeNull();
+    });
     const script = document.querySelector<HTMLScriptElement>(
       'script[src="https://accounts.google.com/gsi/client"]',
     );
@@ -187,6 +264,13 @@ describe('googleAuthProvider', () => {
     delete googleGlobal.google;
 
     const failedLogin = provider.login();
+    await vi.waitFor(() => {
+      expect(
+        document.querySelector<HTMLScriptElement>(
+          'script[src="https://accounts.google.com/gsi/client"]',
+        ),
+      ).not.toBeNull();
+    });
     const script = document.querySelector<HTMLScriptElement>(
       'script[src="https://accounts.google.com/gsi/client"]',
     );
@@ -211,6 +295,7 @@ describe('googleAuthProvider', () => {
     provider.logout();
 
     expect(provider.isAuthenticated()).toBe(false);
+    expect(sessionStorage.getItem(storageKey)).toBeNull();
     expect(
       googleGlobal.google?.accounts.id.disableAutoSelect,
     ).toHaveBeenCalledOnce();

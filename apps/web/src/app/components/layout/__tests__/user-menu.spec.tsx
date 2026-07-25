@@ -12,7 +12,8 @@ const mockAuthProvider: AuthProvider = {
   login: vi.fn(),
   isAuthenticated: vi.fn().mockReturnValue(true),
   getAuthenticatedUser: vi.fn().mockReturnValue({
-    username: 'jane.doe@example.com',
+    id: '00000000-0000-4000-8000-000000000010',
+    email: 'jane.doe@example.com',
     name: 'Jane Doe',
   }),
   logout: vi.fn(),

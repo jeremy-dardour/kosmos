@@ -1,3 +1,4 @@
+import { AuthError } from '@/auth/auth-error';
 import { env } from '@/config/env';
 
 import type { AuthProvider } from '@/auth/auth-provider.interface';
@@ -41,13 +42,37 @@ type GoogleGlobal = typeof globalThis & {
 };
 
 interface GoogleIdTokenPayload {
-  email?: string;
-  name?: string;
   exp?: number;
 }
 
+interface TokenStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+interface GoogleAuthProviderDependencies {
+  validateToken?: (token: string) => Promise<AuthenticatedUser>;
+  storage?: TokenStorage;
+  now?: () => number;
+}
+
+class CurrentUserRequestError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'CurrentUserRequestError';
+  }
+}
+
 export class GoogleAuthProvider implements AuthProvider {
+  private readonly storageKey = 'wedding-planner.google-id-token';
   private readonly clientId: string;
+  private readonly validateToken: (token: string) => Promise<AuthenticatedUser>;
+  private readonly storage?: TokenStorage;
+  private readonly now: () => number;
   private initializePromise: Promise<void> | null = null;
   private loginPromise: Promise<void> | null = null;
   private idToken: string | null = null;
@@ -57,8 +82,16 @@ export class GoogleAuthProvider implements AuthProvider {
     reject: (error: Error) => void;
   } | null = null;
 
-  constructor(clientId: string = env.googleClientId) {
+  constructor(
+    clientId: string = env.googleClientId,
+    dependencies: GoogleAuthProviderDependencies = {},
+  ) {
     this.clientId = clientId;
+    this.validateToken =
+      dependencies.validateToken ??
+      ((token) => this.fetchCurrentUserFromApi(token));
+    this.storage = dependencies.storage;
+    this.now = dependencies.now ?? (() => Date.now());
   }
 
   async initialize(): Promise<void> {
@@ -84,6 +117,11 @@ export class GoogleAuthProvider implements AuthProvider {
 
   private async startLogin(): Promise<void> {
     try {
+      const wasRestored = await this.restoreFromStoredToken();
+      if (wasRestored) {
+        return;
+      }
+
       await this.initialize();
       const google = this.getGoogle();
 
@@ -96,7 +134,10 @@ export class GoogleAuthProvider implements AuthProvider {
         await new Promise<void>((resolve, reject) => {
           timeout = globalThis.setTimeout(() => {
             this.rejectPendingLogin(
-              new Error('Google sign-in prompt did not return a credential'),
+              new AuthError(
+                'sign_in_failed',
+                'Google sign-in prompt did not return a credential',
+              ),
             );
           }, 60_000);
 
@@ -110,15 +151,21 @@ export class GoogleAuthProvider implements AuthProvider {
                 notification.isDismissedMoment()
               ) {
                 this.rejectPendingLogin(
-                  new Error('Google sign-in prompt was dismissed'),
+                  new AuthError(
+                    'sign_in_failed',
+                    'Google sign-in prompt was dismissed',
+                  ),
                 );
               }
             });
           } catch (error) {
             this.rejectPendingLogin(
               error instanceof Error
-                ? error
-                : new Error('Google sign-in prompt failed'),
+                ? new AuthError('sign_in_failed', error.message)
+                : new AuthError(
+                    'sign_in_failed',
+                    'Google sign-in prompt failed',
+                  ),
             );
           }
         });
@@ -133,13 +180,21 @@ export class GoogleAuthProvider implements AuthProvider {
   }
 
   logout(): void {
-    this.idToken = null;
-    this.authenticatedUser = null;
+    this.clearAuthentication();
     this.getGoogle()?.accounts.id.disableAutoSelect();
   }
 
   isAuthenticated(): boolean {
-    return this.idToken !== null && !this.isExpired(this.idToken);
+    if (!this.idToken || !this.authenticatedUser) {
+      return false;
+    }
+
+    if (this.isExpired(this.idToken)) {
+      this.clearAuthentication();
+      return false;
+    }
+
+    return true;
   }
 
   getAuthenticatedUser(): AuthenticatedUser | null {
@@ -147,7 +202,8 @@ export class GoogleAuthProvider implements AuthProvider {
   }
 
   getAccessToken(): Promise<string> {
-    if (!this.idToken || this.isExpired(this.idToken)) {
+    if (!this.isAuthenticated() || !this.idToken) {
+      this.clearAuthentication();
       return Promise.reject(
         new Error('[GoogleAuthProvider] User is not authenticated'),
       );
@@ -157,6 +213,12 @@ export class GoogleAuthProvider implements AuthProvider {
   }
 
   private handleCredential(response: GoogleCredentialResponse): void {
+    void this.completeCredentialLogin(response);
+  }
+
+  private async completeCredentialLogin(
+    response: GoogleCredentialResponse,
+  ): Promise<void> {
     if (!response.credential) {
       this.rejectPendingLogin(
         new Error('Google credential response was empty'),
@@ -164,32 +226,34 @@ export class GoogleAuthProvider implements AuthProvider {
       return;
     }
 
-    let payload: GoogleIdTokenPayload;
     try {
-      payload = this.decodePayload(response.credential);
+      if (this.isExpired(response.credential)) {
+        throw new AuthError(
+          'sign_in_failed',
+          'Google credential response was expired',
+        );
+      }
     } catch (error) {
+      this.clearAuthentication();
       this.rejectPendingLogin(
-        error instanceof Error
+        error instanceof AuthError || error instanceof Error
           ? error
           : new Error('Google credential response was invalid'),
       );
       return;
     }
 
-    if (!payload.email) {
-      this.rejectPendingLogin(
-        new Error('Google credential response had no email'),
-      );
-      return;
-    }
-
     this.idToken = response.credential;
-    this.authenticatedUser = {
-      username: payload.email,
-      name: payload.name ?? payload.email,
-    };
-    this.pendingLogin?.resolve();
-    this.pendingLogin = null;
+    this.writeStoredToken(response.credential);
+
+    try {
+      this.authenticatedUser = await this.validateToken(response.credential);
+      this.pendingLogin?.resolve();
+      this.pendingLogin = null;
+    } catch (error) {
+      this.clearAuthentication();
+      this.rejectPendingLogin(this.mapValidationError(error));
+    }
   }
 
   private async initializeGoogleIdentity(): Promise<void> {
@@ -206,27 +270,11 @@ export class GoogleAuthProvider implements AuthProvider {
     }
 
     await new Promise<void>((resolve, reject) => {
-      const existingScript =
-        globalThis.document.querySelector<HTMLScriptElement>(
+      globalThis.document
+        .querySelector<HTMLScriptElement>(
           'script[src="https://accounts.google.com/gsi/client"]',
-        );
-
-      if (existingScript) {
-        existingScript.addEventListener('load', () => resolve(), {
-          once: true,
-        });
-        existingScript.addEventListener(
-          'error',
-          () => {
-            existingScript.remove();
-            reject(new Error('Failed to load Google Identity Services'));
-          },
-          {
-            once: true,
-          },
-        );
-        return;
-      }
+        )
+        ?.remove();
 
       const script = globalThis.document.createElement('script');
       script.src = 'https://accounts.google.com/gsi/client';
@@ -260,7 +308,7 @@ export class GoogleAuthProvider implements AuthProvider {
       return true;
     }
 
-    return payload.exp * 1000 <= Date.now();
+    return payload.exp * 1000 <= this.now();
   }
 
   private base64UrlDecode(value: string): string {
@@ -276,6 +324,126 @@ export class GoogleAuthProvider implements AuthProvider {
   private rejectPendingLogin(error: Error): void {
     this.pendingLogin?.reject(error);
     this.pendingLogin = null;
+  }
+
+  private async restoreFromStoredToken(): Promise<boolean> {
+    const storedToken = this.readStoredToken();
+    if (!storedToken) {
+      return false;
+    }
+
+    try {
+      if (this.isExpired(storedToken)) {
+        this.clearAuthentication();
+        return false;
+      }
+    } catch {
+      this.clearAuthentication();
+      return false;
+    }
+
+    this.idToken = storedToken;
+
+    try {
+      this.authenticatedUser = await this.validateToken(storedToken);
+      return true;
+    } catch (error) {
+      this.clearAuthentication();
+
+      if (error instanceof CurrentUserRequestError && error.status === 401) {
+        return false;
+      }
+
+      throw this.mapValidationError(error);
+    }
+  }
+
+  private async fetchCurrentUserFromApi(
+    token: string,
+  ): Promise<AuthenticatedUser> {
+    const response = await fetch(new URL('/api/users/me', env.apiUrl), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.ok) {
+      return (await response.json()) as AuthenticatedUser;
+    }
+
+    throw new CurrentUserRequestError(
+      response.status,
+      `Current user validation failed with status ${response.status}`,
+    );
+  }
+
+  private mapValidationError(error: unknown): AuthError {
+    if (error instanceof AuthError) {
+      return error;
+    }
+
+    if (error instanceof CurrentUserRequestError && error.status === 403) {
+      return new AuthError(
+        'forbidden',
+        'This Google account is not allowed for this app',
+      );
+    }
+
+    if (error instanceof CurrentUserRequestError && error.status === 401) {
+      return new AuthError(
+        'validation_failed',
+        'Google credential validation failed',
+      );
+    }
+
+    return new AuthError(
+      'validation_failed',
+      error instanceof Error
+        ? error.message
+        : 'Google credential validation failed',
+    );
+  }
+
+  private clearAuthentication(): void {
+    this.idToken = null;
+    this.authenticatedUser = null;
+    this.removeStoredToken();
+  }
+
+  private readStoredToken(): string | null {
+    try {
+      return this.getStorage()?.getItem(this.storageKey) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  private writeStoredToken(token: string): void {
+    try {
+      this.getStorage()?.setItem(this.storageKey, token);
+    } catch {
+      return;
+    }
+  }
+
+  private removeStoredToken(): void {
+    try {
+      this.getStorage()?.removeItem(this.storageKey);
+    } catch {
+      return;
+    }
+  }
+
+  private getStorage(): TokenStorage | undefined {
+    if (this.storage) {
+      return this.storage;
+    }
+
+    try {
+      return globalThis.sessionStorage;
+    } catch {
+      return undefined;
+    }
   }
 
   private getGoogle(): GoogleIdentityGlobal | undefined {

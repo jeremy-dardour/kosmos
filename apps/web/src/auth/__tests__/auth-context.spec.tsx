@@ -10,7 +10,7 @@ import type { AuthProvider } from '@/auth/auth-provider.interface';
 function PersonalComponent() {
   const auth = useAuth();
   const account = auth.getAuthenticatedUser();
-  return <div data-testid="username">{account?.username}</div>;
+  return <div data-testid="email">{account?.email}</div>;
 }
 
 function LoginButton() {
@@ -42,9 +42,9 @@ describe('authContext', () => {
     login: vi.fn(),
     isAuthenticated: vi.fn().mockReturnValue(true),
     getAuthenticatedUser: vi.fn().mockReturnValue({
-      username: 'test@example.com',
+      id: '00000000-0000-4000-8000-000000000001',
+      email: 'test@example.com',
       name: 'TestUser',
-      localAccountId: 'testId',
     }),
     logout: vi.fn(),
     getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
@@ -80,9 +80,7 @@ describe('authContext', () => {
         </AuthContext>,
       );
 
-      expect(screen.getByTestId('username')).toHaveTextContent(
-        'test@example.com',
-      );
+      expect(screen.getByTestId('email')).toHaveTextContent('test@example.com');
     });
 
     it('should allow calling auth provider methods', () => {

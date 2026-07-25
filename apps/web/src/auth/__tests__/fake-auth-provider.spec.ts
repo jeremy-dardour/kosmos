@@ -47,7 +47,8 @@ describe('fakeAuthProvider', () => {
       const user = provider.getAuthenticatedUser();
 
       expect(user).toEqual({
-        username: 'dev.user@example.com',
+        id: '00000000-0000-4000-8000-000000000001',
+        email: 'dev.user@example.com',
         name: 'DevUser',
       });
     });

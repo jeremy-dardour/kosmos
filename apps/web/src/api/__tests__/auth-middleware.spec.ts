@@ -16,7 +16,8 @@ describe('createAuthMiddleware', () => {
       login: vi.fn(),
       isAuthenticated: vi.fn().mockReturnValue(true),
       getAuthenticatedUser: vi.fn().mockReturnValue({
-        username: 'test@example.com',
+        id: '00000000-0000-4000-8000-000000000011',
+        email: 'test@example.com',
         name: 'Test User',
       }),
     };

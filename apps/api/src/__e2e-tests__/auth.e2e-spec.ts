@@ -15,6 +15,25 @@ function createRequest(app: INestApplication): TestAgent<SuperTestType> {
   return request(app.getHttpServer() as never);
 }
 
+function isCurrentUserResponse(value: unknown): value is {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl: string;
+} {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const body = value as Record<string, unknown>;
+  return (
+    typeof body.id === 'string' &&
+    typeof body.email === 'string' &&
+    typeof body.name === 'string' &&
+    typeof body.avatarUrl === 'string'
+  );
+}
+
 describe('Auth E2E Tests', () => {
   const mockOidc = new MockOidcService();
   let tokenFactory: MockTokenFactory;
@@ -28,6 +47,7 @@ describe('Auth E2E Tests', () => {
   });
 
   const PROTECTED_ENDPOINT = '/__e2e__/protected';
+  const CURRENT_USER_ENDPOINT = '/users/me';
 
   describe('with valid OIDC configuration', () => {
     let app: INestApplication;
@@ -49,8 +69,34 @@ describe('Auth E2E Tests', () => {
         .expect(200);
     });
 
+    it('should return current user for valid token and allowed email', async () => {
+      const token = await tokenFactory.validToken();
+
+      const response = await createRequest(app)
+        .get(CURRENT_USER_ENDPOINT)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(isCurrentUserResponse(response.body)).toBe(true);
+
+      if (!isCurrentUserResponse(response.body)) {
+        throw new Error('Expected current user response body');
+      }
+
+      expect(response.body.id).toMatch(
+        /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu,
+      );
+      expect(response.body.email).toBe('e2e@example.com');
+      expect(response.body.name).toBe('E2E Test User');
+      expect(response.body.avatarUrl).toBe('https://example.com/avatar.jpg');
+    });
+
     it('should return 401 when no authorization header is provided', async () => {
       await createRequest(app).get(PROTECTED_ENDPOINT).expect(401);
+    });
+
+    it('should return 401 for /users/me when no authorization header is provided', async () => {
+      await createRequest(app).get(CURRENT_USER_ENDPOINT).expect(401);
     });
 
     it('should return 401 for malformed authorization header', async () => {
@@ -106,6 +152,15 @@ describe('Auth E2E Tests', () => {
 
       await createRequest(app)
         .get(PROTECTED_ENDPOINT)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(403);
+    });
+
+    it('should return 403 for /users/me with email outside allow-list', async () => {
+      const token = await tokenFactory.disallowedEmailToken();
+
+      await createRequest(app)
+        .get(CURRENT_USER_ENDPOINT)
         .set('Authorization', `Bearer ${token}`)
         .expect(403);
     });
