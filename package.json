@@ -9,6 +9,7 @@
     "db:stop": "docker compose -p \"$(basename \"$PWD\")\" down",
     "db:migrate:up": "pnpm --filter api db:migrate:up",
     "fix:all": "pnpm lint:fix && pnpm format && pnpm format:top",
+    "start": "pnpm db:start && turbo run start",
     "dev": "pnpm db:start && turbo run dev",
     "build": "turbo run build",
     "build:api:docker": "DOCKER_BUILDKIT=1 docker build -f apps/api/deployment/Dockerfile -t template-api:local .",
