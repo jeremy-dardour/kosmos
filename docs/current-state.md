@@ -47,12 +47,11 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
 - **Web auth module boundaries settled**
   ([ADR 0007](./adr/0007-web-auth-module-boundaries.md)): `/users/me` extracted
   out of `GoogleAuthProvider`, only `401` invalidates a session, fake auth stays
-  offline for e2e
-  ([session 19](./sessions/session-19-2026-07-26-auth-signin-button-fix.md)).
+  offline for e2e.
 - **`AuthProvider` collapsed to 5 members** (#33) — `getState()` + `subscribe()`
   read via `useSyncExternalStore`, sign-in widget moved out of the interface;
   `AuthProviderBoundary` and both rerender hacks deleted
-  ([session 20](./sessions/session-20-2026-07-26-auth-provider-interface-collapse.md)).
+  ([sessions 15–20](./sessions/session-15-20-2026-07-24-auth-v1-1.md)).
 
 ## In flight
 
