@@ -1,26 +1,25 @@
 import { AuthError } from '@/auth/auth-error';
 import { env } from '@/config/env';
 
-import type { dtos } from '@/types/openapi';
+import type { paths } from '@/types/openapi';
 
-export type CurrentUser = dtos['CurrentUserDto'];
+const CURRENT_USER_PATH = '/api/users/me' satisfies keyof paths;
+
+export type CurrentUser =
+  paths[typeof CURRENT_USER_PATH]['get']['responses'][200]['content']['application/json'];
 
 /**
- * Resolves the server-trusted identity behind a bearer token.
+ * Resolves the server-trusted identity for a bearer token.
  *
- * This is deliberately independent of any identity provider: acquiring a token
- * is Google-specific, but exchanging one for "who is this in our app" is not.
- *
- * It also deliberately uses `fetch` rather than the shared API client. This
- * runs *during* authentication, before a session exists, and the client's auth
- * middleware logs the user out on 401 — which is precisely the response this
- * call exists to report back to its caller.
+ * - Uses `fetch` directly rather than the shared API client, because that
+ *   client's auth middleware logs out on 401 — the very response this call
+ *   exists to report back to its caller.
  */
 export async function fetchCurrentUser(token: string): Promise<CurrentUser> {
   let response: Response;
 
   try {
-    response = await fetch(new URL('/api/users/me', env.apiUrl), {
+    response = await fetch(new URL(CURRENT_USER_PATH, env.apiUrl), {
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch (error) {

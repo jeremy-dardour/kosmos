@@ -16,10 +16,6 @@ export function createAuthMiddleware(getAuth: () => AuthProvider | null) {
       }
     },
 
-    // Only 401 invalidates the session here. A 403 from ordinary traffic is a
-    // domain permission failure, not an auth failure — and session validation
-    // (`/users/me`) does not go through this client at all, it is handled by
-    // `fetchCurrentUser`, which maps 401/403 itself.
     async onResponse({ response }: { response: Response }) {
       const auth = getAuth();
       if (response.status === 401 && auth) {

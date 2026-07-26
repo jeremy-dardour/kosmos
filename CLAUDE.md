@@ -33,6 +33,7 @@ Project knowledge — one home per fact. Read these to get oriented:
 @docs/project-purpose.md
 @CONTEXT.md
 @docs/current-state.md
+@STANDARDS.md
 
 Documentation conventions:
 
@@ -95,7 +96,10 @@ next free port, so confirm the port Vite printed rather than trusting `.env`.
 
 ## Standards
 
-See [Global standards](./STANDARDS.md) — TypeScript, imports, naming, testing basics
+[Global standards](./STANDARDS.md) — TypeScript, code style, comments — is
+imported above, so it is always in context. The app-specific ones below are
+loaded on demand by the path-scoped rules in `.claude/rules/`:
+
 See [API standards](./apps/api/STANDARDS.md) — entities, modules, DTOs, architecture boundaries
 See [Web standards](./apps/web/STANDARDS.md) — components, hooks, API layer, auth, i18n
 

@@ -1,6 +1,7 @@
 ---
 paths:
-  - '/**/*.spec.ts'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
 ---
 
 # Tests
