@@ -7,8 +7,13 @@ import { AuthContext } from '@/auth';
 
 import type { AuthProvider } from '@/auth';
 
+function noopUnsubscribe(): void {
+  return;
+}
+
 const mockAuthProvider: AuthProvider = {
   initialize: vi.fn(),
+  restore: vi.fn(),
   login: vi.fn(),
   isAuthenticated: vi.fn().mockReturnValue(true),
   getAuthenticatedUser: vi.fn().mockReturnValue({
@@ -16,8 +21,11 @@ const mockAuthProvider: AuthProvider = {
     email: 'jane.doe@example.com',
     name: 'Jane Doe',
   }),
+  getAuthError: vi.fn().mockReturnValue(null),
   logout: vi.fn(),
   getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
+  renderSignInButton: vi.fn(),
+  onChange: vi.fn(() => noopUnsubscribe),
 };
 
 const setup = () => {

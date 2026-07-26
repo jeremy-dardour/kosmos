@@ -1,7 +1,11 @@
+import { fetchCurrentUser } from '@/api/current-user';
 import { AuthError } from '@/auth/auth-error';
 import { env } from '@/config/env';
 
-import type { AuthProvider } from '@/auth/auth-provider.interface';
+import type {
+  AuthChangeListener,
+  AuthProvider,
+} from '@/auth/auth-provider.interface';
 import type { AuthenticatedUser } from '@/auth/types';
 
 interface GoogleCredentialResponse {
@@ -19,6 +23,17 @@ interface GoogleAccountsId {
     client_id: string;
     callback: (response: GoogleCredentialResponse) => void;
   }): void;
+  renderButton(
+    parent: HTMLElement,
+    options: {
+      shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+      size?: 'large' | 'medium' | 'small';
+      text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+      theme?: 'outline' | 'filled_blue' | 'filled_black';
+      type?: 'standard' | 'icon';
+      width?: string | number;
+    },
+  ): void;
   prompt(
     callback?: (notification: GooglePromptMomentNotification) => void,
   ): void;
@@ -57,16 +72,6 @@ interface GoogleAuthProviderDependencies {
   now?: () => number;
 }
 
-class CurrentUserRequestError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'CurrentUserRequestError';
-  }
-}
-
 export class GoogleAuthProvider implements AuthProvider {
   private readonly storageKey = 'wedding-planner.google-id-token';
   private readonly clientId: string;
@@ -74,9 +79,13 @@ export class GoogleAuthProvider implements AuthProvider {
   private readonly storage?: TokenStorage;
   private readonly now: () => number;
   private initializePromise: Promise<void> | null = null;
+  private restorePromise: Promise<void> | null = null;
   private loginPromise: Promise<void> | null = null;
   private idToken: string | null = null;
   private authenticatedUser: AuthenticatedUser | null = null;
+  private authError: AuthError | null = null;
+  private readonly listeners = new Set<AuthChangeListener>();
+  private changeScheduled = false;
   private pendingLogin: {
     resolve: () => void;
     reject: (error: Error) => void;
@@ -87,9 +96,7 @@ export class GoogleAuthProvider implements AuthProvider {
     dependencies: GoogleAuthProviderDependencies = {},
   ) {
     this.clientId = clientId;
-    this.validateToken =
-      dependencies.validateToken ??
-      ((token) => this.fetchCurrentUserFromApi(token));
+    this.validateToken = dependencies.validateToken ?? fetchCurrentUser;
     this.storage = dependencies.storage;
     this.now = dependencies.now ?? (() => Date.now());
   }
@@ -113,6 +120,50 @@ export class GoogleAuthProvider implements AuthProvider {
     this.loginPromise ??= this.startLogin();
 
     return this.loginPromise;
+  }
+
+  async restore(): Promise<void> {
+    if (this.isAuthenticated()) {
+      return;
+    }
+
+    this.restorePromise ??= this.restoreStoredSession();
+
+    try {
+      await this.restorePromise;
+    } finally {
+      this.restorePromise = null;
+    }
+  }
+
+  async renderSignInButton(container: HTMLElement): Promise<() => void> {
+    await this.initialize();
+    const google = this.getGoogle();
+
+    if (!google?.accounts.id) {
+      throw new Error('Google Identity Services is not available');
+    }
+
+    // Render into a slot we own rather than into `container` directly: the
+    // caller's effect may run twice (React StrictMode) with both calls
+    // awaiting the same `initialize()` promise. A cleanup that cleared the
+    // whole container would delete the *other* call's button, leaving an
+    // empty sign-in area with no error.
+    const slot = globalThis.document.createElement('div');
+    container.append(slot);
+
+    google.accounts.id.renderButton(slot, {
+      shape: 'rectangular',
+      size: 'large',
+      text: 'signin_with',
+      theme: 'outline',
+      type: 'standard',
+      width: 280,
+    });
+
+    return () => {
+      slot.remove();
+    };
   }
 
   private async startLogin(): Promise<void> {
@@ -179,8 +230,8 @@ export class GoogleAuthProvider implements AuthProvider {
     }
   }
 
-  logout(): void {
-    this.clearAuthentication();
+  logout(error?: AuthError): void {
+    this.clearAuthentication(error);
     this.getGoogle()?.accounts.id.disableAutoSelect();
   }
 
@@ -190,7 +241,12 @@ export class GoogleAuthProvider implements AuthProvider {
     }
 
     if (this.isExpired(this.idToken)) {
-      this.clearAuthentication();
+      // Notify asynchronously: `isAuthenticated()` is called during render, and
+      // emitting synchronously would update React state mid-render. Deferring
+      // still lets consumers re-render once the token lapses, instead of
+      // sitting on stale authenticated UI until something else re-renders.
+      this.clearAuthentication(undefined, { notify: false });
+      this.scheduleChange();
       return false;
     }
 
@@ -201,9 +257,13 @@ export class GoogleAuthProvider implements AuthProvider {
     return this.isAuthenticated() ? this.authenticatedUser : null;
   }
 
+  getAuthError(): AuthError | null {
+    return this.authError;
+  }
+
   getAccessToken(): Promise<string> {
     if (!this.isAuthenticated() || !this.idToken) {
-      this.clearAuthentication();
+      this.clearAuthentication(undefined, { notify: false });
       return Promise.reject(
         new Error('[GoogleAuthProvider] User is not authenticated'),
       );
@@ -248,11 +308,14 @@ export class GoogleAuthProvider implements AuthProvider {
 
     try {
       this.authenticatedUser = await this.validateToken(response.credential);
+      this.authError = null;
+      this.emitChange();
       this.pendingLogin?.resolve();
       this.pendingLogin = null;
     } catch (error) {
-      this.clearAuthentication();
-      this.rejectPendingLogin(this.mapValidationError(error));
+      const authError = this.mapValidationError(error);
+      this.clearAuthentication(authError);
+      this.rejectPendingLogin(authError);
     }
   }
 
@@ -346,11 +409,16 @@ export class GoogleAuthProvider implements AuthProvider {
 
     try {
       this.authenticatedUser = await this.validateToken(storedToken);
+      this.authError = null;
+      this.emitChange();
       return true;
     } catch (error) {
       this.clearAuthentication();
 
-      if (error instanceof CurrentUserRequestError && error.status === 401) {
+      // A rejected token is not an error state — it just means there is no
+      // session, so fall through to the sign-in view rather than surfacing a
+      // failure the user can do nothing about.
+      if (error instanceof AuthError && error.code === 'token_rejected') {
         return false;
       }
 
@@ -358,42 +426,13 @@ export class GoogleAuthProvider implements AuthProvider {
     }
   }
 
-  private async fetchCurrentUserFromApi(
-    token: string,
-  ): Promise<AuthenticatedUser> {
-    const response = await fetch(new URL('/api/users/me', env.apiUrl), {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      return (await response.json()) as AuthenticatedUser;
-    }
-
-    throw new CurrentUserRequestError(
-      response.status,
-      `Current user validation failed with status ${response.status}`,
-    );
+  private async restoreStoredSession(): Promise<void> {
+    await this.restoreFromStoredToken();
   }
 
   private mapValidationError(error: unknown): AuthError {
     if (error instanceof AuthError) {
       return error;
-    }
-
-    if (error instanceof CurrentUserRequestError && error.status === 403) {
-      return new AuthError(
-        'forbidden',
-        'This Google account is not allowed for this app',
-      );
-    }
-
-    if (error instanceof CurrentUserRequestError && error.status === 401) {
-      return new AuthError(
-        'validation_failed',
-        'Google credential validation failed',
-      );
     }
 
     return new AuthError(
@@ -404,10 +443,25 @@ export class GoogleAuthProvider implements AuthProvider {
     );
   }
 
-  private clearAuthentication(): void {
+  onChange(listener: AuthChangeListener): () => void {
+    this.listeners.add(listener);
+
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private clearAuthentication(
+    error?: AuthError,
+    { notify = true }: { notify?: boolean } = {},
+  ): void {
     this.idToken = null;
     this.authenticatedUser = null;
+    this.authError = error ?? null;
     this.removeStoredToken();
+    if (notify) {
+      this.emitChange();
+    }
   }
 
   private readStoredToken(): string | null {
@@ -448,5 +502,23 @@ export class GoogleAuthProvider implements AuthProvider {
 
   private getGoogle(): GoogleIdentityGlobal | undefined {
     return (globalThis as GoogleGlobal).google;
+  }
+
+  private emitChange(): void {
+    for (const listener of this.listeners) {
+      listener();
+    }
+  }
+
+  private scheduleChange(): void {
+    if (this.changeScheduled) {
+      return;
+    }
+
+    this.changeScheduled = true;
+    globalThis.setTimeout(() => {
+      this.changeScheduled = false;
+      this.emitChange();
+    }, 0);
   }
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
+function noopUnsubscribe(): void {
+  return;
+}
+
 vi.mock('@/config/env', () => ({
   env: {
     fakeAuth: true,
@@ -12,11 +16,15 @@ vi.mock('@/auth/fake-auth-provider', () => ({
   FakeAuthProvider: vi.fn(function () {
     return {
       initialize: vi.fn(),
+      restore: vi.fn(),
       login: vi.fn(),
       logout: vi.fn(),
       isAuthenticated: vi.fn(),
       getAuthenticatedUser: vi.fn(),
+      getAuthError: vi.fn(),
       getAccessToken: vi.fn().mockResolvedValue('fake-token'),
+      renderSignInButton: vi.fn(),
+      onChange: vi.fn(() => noopUnsubscribe),
     };
   }),
 }));

@@ -7,6 +7,7 @@ type GoogleTestGlobal = typeof globalThis & {
     accounts: {
       id: {
         initialize: ReturnType<typeof vi.fn>;
+        renderButton: ReturnType<typeof vi.fn>;
         prompt: ReturnType<typeof vi.fn>;
         disableAutoSelect: ReturnType<typeof vi.fn>;
       };
@@ -125,11 +126,57 @@ describe('googleAuthProvider', () => {
     const provider = new GoogleAuthProvider('google-client-id');
     sessionStorage.setItem(storageKey, token);
 
-    await provider.login();
+    await provider.restore();
 
     expect(googleGlobal.google?.accounts.id.prompt).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(provider.getAuthenticatedUser()).toEqual(validatedUser);
+  });
+
+  it('should not prompt GIS when restore has no stored token', async () => {
+    const provider = new GoogleAuthProvider('google-client-id');
+
+    await provider.restore();
+
+    expect(googleGlobal.google?.accounts.id.prompt).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(provider.isAuthenticated()).toBe(false);
+  });
+
+  it('should render the Google sign-in button for interactive login', async () => {
+    const provider = new GoogleAuthProvider('google-client-id');
+    const container = document.createElement('div');
+
+    await provider.renderSignInButton(container);
+
+    expect(googleGlobal.google?.accounts.id.renderButton).toHaveBeenCalledWith(
+      container.firstElementChild,
+      expect.objectContaining({
+        text: 'signin_with',
+        type: 'standard',
+      }),
+    );
+    expect(container.children).toHaveLength(1);
+    expect(googleGlobal.google?.accounts.id.prompt).not.toHaveBeenCalled();
+  });
+
+  it('should leave a concurrent sign-in button intact when a stale cleanup runs', async () => {
+    // React StrictMode runs the caller's effect twice, so two renders can be
+    // in flight against the same container. The first call's cleanup must
+    // remove only its own button, not whichever one is currently live.
+    const provider = new GoogleAuthProvider('google-client-id');
+    const container = document.createElement('div');
+
+    const [cleanupFirst] = await Promise.all([
+      provider.renderSignInButton(container),
+      provider.renderSignInButton(container),
+    ]);
+
+    expect(container.children).toHaveLength(2);
+
+    cleanupFirst();
+
+    expect(container.children).toHaveLength(1);
   });
 
   it('should clear rejected restore token and continue with a new prompt after 401', async () => {
@@ -315,6 +362,7 @@ function installGoogleIdentityMock({
         initialize: vi.fn((config: InitializeConfig) => {
           googleAuthTestState.credentialCallback = config.callback;
         }),
+        renderButton: vi.fn(),
         prompt: vi.fn(prompt),
         disableAutoSelect: vi.fn(),
       },

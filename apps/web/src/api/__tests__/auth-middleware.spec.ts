@@ -4,6 +4,10 @@ import { createAuthMiddleware } from '@/api/middlewares/auth-middleware';
 
 import type { AuthProvider } from '@/auth/auth-provider.interface';
 
+function noopUnsubscribe(): void {
+  return;
+}
+
 describe('createAuthMiddleware', () => {
   let mockAuthProvider: AuthProvider;
   let getAuth: ReturnType<typeof vi.fn<() => AuthProvider | null>>;
@@ -13,6 +17,7 @@ describe('createAuthMiddleware', () => {
       getAccessToken: vi.fn().mockResolvedValue('test-token-123'),
       logout: vi.fn(),
       initialize: vi.fn(),
+      restore: vi.fn(),
       login: vi.fn(),
       isAuthenticated: vi.fn().mockReturnValue(true),
       getAuthenticatedUser: vi.fn().mockReturnValue({
@@ -20,6 +25,9 @@ describe('createAuthMiddleware', () => {
         email: 'test@example.com',
         name: 'Test User',
       }),
+      getAuthError: vi.fn().mockReturnValue(null),
+      renderSignInButton: vi.fn(),
+      onChange: vi.fn(() => noopUnsubscribe),
     };
 
     getAuth = vi
@@ -87,6 +95,15 @@ describe('createAuthMiddleware', () => {
       await middleware.onResponse({ response });
 
       expect(mockAuthProvider.logout).toHaveBeenCalled();
+    });
+
+    it('should not call logout on 403 response', async () => {
+      const middleware = createAuthMiddleware(getAuth);
+      const response = new Response(null, { status: 403 });
+
+      await middleware.onResponse({ response });
+
+      expect(mockAuthProvider.logout).not.toHaveBeenCalled();
     });
 
     it('should not call logout on 200 response', async () => {

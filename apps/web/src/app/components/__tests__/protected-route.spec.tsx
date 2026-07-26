@@ -7,6 +7,10 @@ import { AuthContext, AuthError } from '@/auth';
 
 import type { AuthProvider } from '@/auth';
 
+function noopUnsubscribe(): void {
+  return;
+}
+
 describe('protectedRoute', () => {
   it('should render children when already authenticated', () => {
     const auth = createAuthProvider({ isAuthenticated: true });
@@ -20,13 +24,13 @@ describe('protectedRoute', () => {
     );
 
     expect(screen.getByText('Private content')).toBeVisible();
-    expect(auth.login).not.toHaveBeenCalled();
+    expect(auth.restore).not.toHaveBeenCalled();
   });
 
-  it('should login and render children when authentication succeeds', async () => {
+  it('should restore and render children when authentication succeeds', async () => {
     const auth = createAuthProvider({
       isAuthenticated: false,
-      login: () => {
+      restore: () => {
         auth.setAuthenticated(true);
         return Promise.resolve();
       },
@@ -45,19 +49,14 @@ describe('protectedRoute', () => {
     await waitFor(() => {
       expect(screen.getByText('Private content')).toBeVisible();
     });
-    expect(auth.login).toHaveBeenCalledOnce();
+    expect(auth.restore).toHaveBeenCalledOnce();
+    expect(auth.login).not.toHaveBeenCalled();
   });
 
-  it('should show sign-in state when prompt is dismissed', async () => {
+  it('should show sign-in landing immediately when no session is restored', async () => {
     const auth = createAuthProvider({
       isAuthenticated: false,
-      login: () =>
-        Promise.reject(
-          new AuthError(
-            'sign_in_failed',
-            'Google sign-in prompt was dismissed',
-          ),
-        ),
+      restore: () => Promise.resolve(),
     });
 
     render(
@@ -68,18 +67,16 @@ describe('protectedRoute', () => {
       </AuthContext>,
     );
 
-    await waitFor(() => {
-      expect(auth.login).toHaveBeenCalledOnce();
-    });
-
-    expect(screen.getByText('Sign-in is required to continue.')).toBeVisible();
+    expect(await screen.findByText('auth.landing.status.signIn')).toBeVisible();
+    expect(screen.getByText('Mock Google sign-in')).toBeVisible();
     expect(screen.queryByText('Private content')).not.toBeInTheDocument();
+    expect(auth.login).not.toHaveBeenCalled();
   });
 
   it('should show forbidden state for disallowed accounts', async () => {
     const auth = createAuthProvider({
       isAuthenticated: false,
-      login: () =>
+      restore: () =>
         Promise.reject(
           new AuthError(
             'forbidden',
@@ -97,21 +94,15 @@ describe('protectedRoute', () => {
     );
 
     expect(
-      await screen.findByText('This Google account is not allowed.'),
+      await screen.findByText('auth.landing.status.forbidden'),
     ).toBeVisible();
   });
 
-  it('should retry login when sign-in button is clicked', async () => {
+  it('should retry restore when retry button is clicked', async () => {
     const user = userEvent.setup();
     const auth = createAuthProvider({
       isAuthenticated: false,
-      login: () =>
-        Promise.reject(
-          new AuthError(
-            'sign_in_failed',
-            'Google sign-in prompt was dismissed',
-          ),
-        ),
+      restore: () => Promise.reject(new Error('Validation failed')),
     });
 
     render(
@@ -122,25 +113,25 @@ describe('protectedRoute', () => {
       </AuthContext>,
     );
 
-    expect(
-      await screen.findByText('Sign-in is required to continue.'),
-    ).toBeVisible();
+    expect(await screen.findByText('auth.landing.status.error')).toBeVisible();
 
     await user.click(
-      screen.getByRole('button', { name: 'Sign in with Google' }),
+      screen.getByRole('button', { name: 'auth.landing.action.retry' }),
     );
 
     await waitFor(() => {
-      expect(auth.login).toHaveBeenCalledTimes(2);
+      expect(auth.restore).toHaveBeenCalledTimes(2);
     });
   });
 });
 
 function createAuthProvider({
   isAuthenticated,
+  restore,
   login,
 }: {
   isAuthenticated: boolean;
+  restore?: () => Promise<void>;
   login?: () => Promise<void>;
 }): AuthProvider & {
   setAuthenticated: (isAuthenticatedValue: boolean) => void;
@@ -149,11 +140,19 @@ function createAuthProvider({
 
   return {
     initialize: vi.fn(),
+    restore: vi.fn(restore ?? (() => Promise.resolve())),
     login: vi.fn(login ?? (() => Promise.resolve())),
     logout: vi.fn(),
     isAuthenticated: vi.fn(() => isAuthenticatedState),
     getAuthenticatedUser: vi.fn(() => null),
+    getAuthError: vi.fn(() => null),
     getAccessToken: vi.fn(() => Promise.resolve('token')),
+    renderSignInButton: vi.fn((container: HTMLElement) => {
+      const button = document.createElement('button');
+      button.textContent = 'Mock Google sign-in';
+      container.append(button);
+    }),
+    onChange: vi.fn(() => noopUnsubscribe),
     setAuthenticated: (isAuthenticatedValue: boolean) => {
       isAuthenticatedState = isAuthenticatedValue;
     },

@@ -1,11 +1,18 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AuthContext, useAuth } from '@/auth/auth-context';
 import { AuthProviderBoundary } from '@/auth/auth-provider-boundary';
 
-import type { AuthProvider } from '@/auth/auth-provider.interface';
+import type {
+  AuthChangeListener,
+  AuthProvider,
+} from '@/auth/auth-provider.interface';
+
+function noopUnsubscribe(): void {
+  return;
+}
 
 function PersonalComponent() {
   const auth = useAuth();
@@ -39,6 +46,7 @@ function LogoutStatus() {
 describe('authContext', () => {
   const mockAuthProvider: AuthProvider = {
     initialize: vi.fn(),
+    restore: vi.fn(),
     login: vi.fn(),
     isAuthenticated: vi.fn().mockReturnValue(true),
     getAuthenticatedUser: vi.fn().mockReturnValue({
@@ -46,8 +54,11 @@ describe('authContext', () => {
       email: 'test@example.com',
       name: 'TestUser',
     }),
+    getAuthError: vi.fn().mockReturnValue(null),
     logout: vi.fn(),
     getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
+    renderSignInButton: vi.fn(),
+    onChange: vi.fn(() => noopUnsubscribe),
   };
 
   describe('useAuth', () => {
@@ -98,15 +109,26 @@ describe('authContext', () => {
 
     it('should refresh consumers after auth boundary logout', async () => {
       let isAuthenticated = true;
+      let listener: AuthChangeListener | undefined;
       const authProvider: AuthProvider = {
         initialize: vi.fn(),
+        restore: vi.fn(),
         login: vi.fn(),
         isAuthenticated: vi.fn(() => isAuthenticated),
         getAuthenticatedUser: vi.fn().mockReturnValue(null),
+        getAuthError: vi.fn().mockReturnValue(null),
         logout: vi.fn(() => {
           isAuthenticated = false;
+          listener?.();
         }),
         getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
+        renderSignInButton: vi.fn(),
+        onChange: vi.fn((nextListener: AuthChangeListener) => {
+          listener = nextListener;
+          return () => {
+            listener = undefined;
+          };
+        }),
       };
 
       render(
@@ -118,6 +140,45 @@ describe('authContext', () => {
       expect(screen.getByText('Authenticated')).toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('button', { name: 'Logout' }));
+
+      expect(screen.getByText('Not authenticated')).toBeInTheDocument();
+    });
+
+    it('should refresh consumers when provider changes outside React', () => {
+      let isAuthenticated = true;
+      let listener: AuthChangeListener | undefined;
+      const authProvider: AuthProvider = {
+        initialize: vi.fn(),
+        restore: vi.fn(),
+        login: vi.fn(),
+        isAuthenticated: vi.fn(() => isAuthenticated),
+        getAuthenticatedUser: vi.fn().mockReturnValue(null),
+        getAuthError: vi.fn().mockReturnValue(null),
+        logout: vi.fn(() => {
+          isAuthenticated = false;
+          listener?.();
+        }),
+        getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
+        renderSignInButton: vi.fn(),
+        onChange: vi.fn((nextListener: AuthChangeListener) => {
+          listener = nextListener;
+          return () => {
+            listener = undefined;
+          };
+        }),
+      };
+
+      render(
+        <AuthProviderBoundary authProvider={authProvider}>
+          <TestComponent />
+        </AuthProviderBoundary>,
+      );
+
+      expect(screen.getByText('Authenticated')).toBeInTheDocument();
+
+      act(() => {
+        void authProvider.logout();
+      });
 
       expect(screen.getByText('Not authenticated')).toBeInTheDocument();
     });
