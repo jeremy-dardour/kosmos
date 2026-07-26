@@ -188,6 +188,13 @@ pointer. Violations → 409 `step-frozen` or `step-not-deletable`.
 Full implementation spec in the [Auth PRD](./auth/PRD.md). Research in
 [auth-internals.md](../research/auth-internals.md).
 
+> **Web module structure:** see
+> [ADR 0007](../adr/0007-web-auth-module-boundaries.md) — where `/users/me`
+> lives, why page load restores rather than prompts, why only `401`
+> invalidates a session, and the fake-auth-stays-offline constraint. It
+> supersedes the "Frontend login flow" steps below, which describe `login()`
+> as the mount-time entry point.
+
 - **Identity:** Google Identity Services (GIS) — `openid`, `email`, `profile`
   scopes. Consent screen published "In production" (non-sensitive scopes, no
   verification needed).

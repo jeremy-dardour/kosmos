@@ -5,12 +5,13 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-24_
+_Last updated: 2026-07-26_
 
 ## Phase
 
-**Building.** First build slice (#17 — entities + migration) is in PR #28, but
-review fix-up is still in progress. 9 issues remaining after #17 merges.
+**Building.** Foundations are merged (entities + migration, Google auth wiring).
+Two PRs open in parallel: auth refinement (#32) and the first overview slice
+(#31). 8 build-slice issues remain after those land.
 
 ## Done
 
@@ -24,35 +25,38 @@ review fix-up is still in progress. 9 issues remaining after #17 merges.
 - Entity/schema design written
   ([entity-schema-design.md](./entity-schema-design.md)).
 - Auth approach resolved: GIS + `.env` allow-list, consent screen "In
-  production" with non-sensitive scopes.
+  production" with non-sensitive scopes
   ([docs/specs/auth/PRD.md](./specs/auth/PRD.md)).
 - API contract resolved: unified `advance` endpoint, one overview aggregate
-  read, flat CRUD, derived state server-side.
+  read, flat CRUD, derived state server-side
   ([docs/specs/api-contract/PRD.md](./specs/api-contract/PRD.md)).
 - Hosting & deployment resolved: Cloud Run + Neon, single deployable, ~$0/mo.
-- Overview UI build slices defined: 7 ordered increments.
-- State machine implementation decisions resolved: unified `advance` API,
-  private methods on `WorkstreamService`, explicit transactions for advance +
-  reorder only, pure utility functions for derived state.
-  (see [V1 Tech Design § State machine](./specs/v1-tech-design.md)).
-- **V1 Technical Design** written — links all decisions.
+- **V1 Technical Design** written — links all decisions
   ([docs/specs/v1-tech-design.md](./specs/v1-tech-design.md)).
 - **10 GitHub issues created** (end-to-end build slices):
   [#17](https://github.com/jeremy-dardour/wedding-planner/issues/17)–[#26](https://github.com/jeremy-dardour/wedding-planner/issues/26).
 - **Wayfinder map complete** — all 9 tickets resolved.
-- **#17 — Entities + initial migration** — 7 entities defined and PR #28 open,
-  but review found entity decorator, e2e, schema-integrity, and API contract
-  follow-up work before merge
-  ([session 11](./sessions/session-11-2026-07-23-entities-migration.md),
-  [session 12](./sessions/session-12-2026-07-23-pr-28-review-fix-wip.md)).
-- Path-scoped `.claude/rules/` added for API, web, and entity files; ported
-  to sibling template repo. Entity standards extracted to
-  [ENTITIES_STANDARDS.md](../apps/api/ENTITIES_STANDARDS.md), type errors
-  fixed, `updatedAt` onUpdate added, composite FKs removed (service-layer
-  guards instead, [ADR 0006](./adr/0006-same-parent-integrity-in-service-layer.md)).
-  Parallel workspace ports fixed and documented. Dead template items files
-  removed. All lint/type/test checks pass
-  ([session 13](./sessions/session-13-2026-07-24-rules-entities-ports.md)).
+- **#17 — Entities + initial migration** merged (PR #28). 7 entities, composite
+  FKs replaced by service-layer guards
+  ([ADR 0006](./adr/0006-same-parent-integrity-in-service-layer.md)); entity
+  standards extracted to
+  [ENTITIES_STANDARDS.md](../apps/api/ENTITIES_STANDARDS.md).
+- **Google authentication wired** end-to-end and merged (PR #29).
+- Path-scoped `.claude/rules/` added for API, web, and entity files; parallel
+  workspace ports fixed and documented in `CLAUDE.md § Ports`.
+- **Web auth module boundaries settled**
+  ([ADR 0007](./adr/0007-web-auth-module-boundaries.md)): `/users/me` extracted
+  out of `GoogleAuthProvider`, page load restores rather than prompts, only
+  `401` invalidates a session, fake auth stays offline for e2e
+  ([session 19](./sessions/session-19-2026-07-26-auth-signin-button-fix.md)).
+
+## In flight
+
+- **PR #32 (`auth-v1.1`)** — session restore (#30) plus the sign-in button fix,
+  `/users/me` extraction, and landing-page cleanup. All checks green; needs a
+  final review pass, then merge.
+- **PR #31 (`feat/slice-1-overview`)** — Slice 1: overview aggregate read +
+  Pipeline Stack UI (#18).
 
 ## Open questions
 
@@ -62,9 +66,10 @@ review fix-up is still in progress. 9 issues remaining after #17 merges.
 
 ## Next steps
 
-Finish PR #28 review fix-up before starting #18:
-
-- Entity definitions are type-clean, lint-clean, documented.
-- Migration verified against `schema:update --dump` — matches exactly.
-- Regenerate migration (fresh, post-composite-FK removal) if needed.
-- PR #28 ready for final review pass.
+1. Land PR #32, then PR #31.
+2. Build slices #19–#24, then deployment (#26).
+3. Web e2e coverage is currently a single placeholder — real specs belong with
+   the overview slices, and `ApiMock` still targets the deleted `/api/items`.
+4. [#33](https://github.com/jeremy-dardour/wedding-planner/issues/33) —
+   collapse `AuthProvider` to `getState()` + `subscribe()`; deferred, not
+   blocking.
