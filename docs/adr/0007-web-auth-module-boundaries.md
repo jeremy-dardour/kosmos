@@ -29,7 +29,7 @@ It deliberately uses `fetch` rather than the shared openapi-fetch client: it
 runs _during_ authentication, before a session exists, and the client's auth
 middleware signs out on 401 — precisely the response this call exists to report.
 
-### 2. `AuthProvider` is a state machine, and nothing else
+### 2. `AuthSession` is a state machine, and nothing else
 
 Five members, no DOM:
 
@@ -37,13 +37,27 @@ Five members, no DOM:
 getState(): AuthState                      // one snapshot, discriminated union
 subscribe(listener): () => void            // read via useSyncExternalStore
 signIn(): Promise<void>
-signOut(reason?: AuthError): void
+signOut(): void
 getAccessToken(): Promise<string>
 ```
+
+Named `AuthSession`, not `AuthProvider`: in React that name reads as a context
+provider component, and this is neither a component nor a React thing. The
+concrete implementations keep the `…AuthProvider` suffix — they are what
+provides a session.
 
 `AuthState` is `restoring | anonymous | authenticated | forbidden | error`.
 Consumers render from the status directly, so no component derives a parallel
 view-state enum or holds a rerender counter.
+
+**`signOut()` takes no argument.** It once took the `AuthError` that caused the
+sign-out, which the provider mapped onto the next state. That was inert in
+practice: the one caller passing a reason was the 401 middleware, and
+`token_rejected` mapped to `anonymous` — exactly what a bare `signOut()` does.
+It was also a divergence the type could not catch, since the fake provider
+mapped the same argument to `error`. Non-anonymous outcomes (`forbidden`,
+`error`) are only ever reached from inside token validation, which is where
+they are now set.
 
 Two rules the types cannot carry:
 
@@ -55,27 +69,41 @@ Two rules the types cannot carry:
   failures but not others, check a separate accessor afterwards — was invisible
   at the signature.
 
-### 3. The sign-in affordance ships beside the provider, not inside it
+The concrete providers take no injected dependencies. An optional
+`{ validateToken, storage, now }` bag existed for tests that never used it —
+the specs drive the provider through the real `sessionStorage`, a stubbed
+`fetch`, and fake timers.
 
-Rendering a sign-in widget is provider-specific: Google must render its own
-iframe button, a fake needs nothing but an `onClick`. Putting
-`renderSignInButton(container: HTMLElement)` on the shared interface forced
-every adapter to implement a widget it may not need, and put a DOM node in an
-otherwise DOM-free interface.
+### 3. The sign-in affordance ships beside the session, not inside it
 
-`createAuth()` therefore returns the pair:
+Google's One Tap prompt (`prompt()`, the callback-only path) is suppressed
+unpredictably by browser state — it is what produced the FedCM `AbortError`
+that made the first unauthenticated landing unusable. The reliable interactive
+path is `renderButton`, where Google renders its own iframe. So a sign-in
+affordance cannot always be "a button wired to `signIn()`", and it is
+provider-specific: the fake needs nothing but an `onClick`.
 
-```ts
-{ provider: AuthProvider, signInButton: React.ReactNode }
+Putting `renderSignInButton(container: HTMLElement)` on the shared interface
+forced every adapter to implement a widget it may not need, and put a DOM node
+in an otherwise DOM-free interface. Instead a single `<SignInButton />`
+component branches on the concrete session in context:
+
+```tsx
+session instanceof GoogleAuthProvider ? <GoogleSignInButton … /> : <FakeSignInButton />
 ```
 
-An element, not a component type — built once, so rendering it never creates a
-component during another component's render.
+`createAuth()` therefore returns an `AuthSession` and nothing else — it briefly
+returned a `{ provider, signInButton }` pair, which put a rendered element in
+the context value for every consumer to carry.
 
 `GoogleAuthProvider.renderSignInButton` survives as a concrete method that only
 `GoogleSignInButton` calls. It **must render into a node it creates and clean up
 only that node**: callers' effects run twice under React StrictMode, so a
 cleanup that cleared the whole container would delete the other call's button.
+
+Loading the GIS script follows the same rule in reverse — a script tag already
+in the document must be **awaited, not replaced**. Removing and re-adding it
+restarts the download and races two copies.
 
 Token expiry is handled by a timer armed when the session is established, not by
 a check inside `getState()` — `getState()` is read during render and could not
@@ -101,12 +129,17 @@ API-side, `MockAuthStrategy` is unused by API e2e (`.env.e2e` sets
 
 ## Trade-offs
 
-- **Gained:** the endpoint has one home; `AuthProvider` went from ten members to
-  five with no DOM; `AuthProviderBoundary` and both `useReducer` rerender hacks
-  deleted themselves; the context value is now stable, so `useAuth()` is safe in
-  a dependency array; dev/e2e stays offline and fast.
-- **Lost:** `createAuth()` returns a pair rather than a provider, so the factory
-  is the one place that knows both halves. Tests that drive auth need a state
-  stub (`@/testing/stub-auth`) rather than an ad-hoc object literal.
+- **Gained:** the endpoint has one home; the interface went from ten members to
+  five, with no DOM and no arguments that only one implementation honours;
+  `AuthProviderBoundary` and both `useReducer` rerender hacks deleted
+  themselves; the context value is a bare session, stable, so `useAuth()` is
+  safe in a dependency array; dev/e2e stays offline and fast.
+- **Lost:** `SignInButton` needs an `instanceof` check against a concrete class,
+  which is the price of not carrying the widget on the interface. Tests that
+  drive auth need a state stub (`@/testing/stub-auth`) rather than an ad-hoc
+  object literal.
 - **Accepted:** `signIn()` still rejects _and_ records the failure in state.
   Callers can use either; the state is the one consumers should read.
+- **Accepted:** a token-expiry timer flips an idle tab to anonymous with no
+  network call. The next request's 401 would reach the same state, so this
+  buys UX on an idle tab for ~30 lines.

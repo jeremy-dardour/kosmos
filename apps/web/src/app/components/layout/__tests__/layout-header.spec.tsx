@@ -17,7 +17,7 @@ const setup = () => {
   });
 
   render(
-    <AuthContext value={auth}>
+    <AuthContext value={auth.session}>
       <LayoutHeader />
     </AuthContext>,
   );
@@ -57,7 +57,7 @@ describe('layoutHeader', () => {
     const logoutButton = screen.getByText('app.userMenu.logout');
     await userEvent.click(logoutButton);
 
-    expect(auth.provider.signOut).toHaveBeenCalledOnce();
+    expect(auth.session.signOut).toHaveBeenCalledOnce();
   });
 
   it('should navigate to home page when title is clicked', async () => {

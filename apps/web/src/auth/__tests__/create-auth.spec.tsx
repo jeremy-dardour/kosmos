@@ -9,23 +9,29 @@ vi.mock('@/config/env', () => ({
   },
 }));
 
+import { AuthContext } from '@/auth/auth-context';
 import { createAuth } from '@/auth/create-auth';
+import { SignInButton } from '@/auth/sign-in-button';
 
 describe('createAuth', () => {
-  it('should pair the fake provider with a sign-in button that drives it', async () => {
-    const { provider, signInButton } = createAuth();
+  it('should build a session the matching sign-in button drives', async () => {
+    const session = createAuth();
 
-    expect(provider.getState().status).toBe('authenticated');
-    provider.signOut();
-    expect(provider.getState().status).toBe('anonymous');
+    expect(session.getState().status).toBe('authenticated');
+    session.signOut();
+    expect(session.getState().status).toBe('anonymous');
 
-    render(signInButton);
+    render(
+      <AuthContext value={session}>
+        <SignInButton />
+      </AuthContext>,
+    );
     screen
       .getByRole('button', { name: 'auth.landing.action.continueInDevMode' })
       .click();
 
     await vi.waitFor(() => {
-      expect(provider.getState().status).toBe('authenticated');
+      expect(session.getState().status).toBe('authenticated');
     });
   });
 });

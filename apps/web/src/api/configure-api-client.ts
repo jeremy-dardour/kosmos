@@ -4,10 +4,10 @@ import { env } from '@/config/env';
 
 import { createAuthMiddleware } from './middlewares/auth-middleware';
 
-import type { AuthProvider } from '@/auth/auth-provider.interface';
+import type { AuthSession } from '@/auth/auth-session.interface';
 import type { paths } from '@/types/openapi';
 
-export function configureApiClient(authProvider: AuthProvider) {
+export function configureApiClient(session: AuthSession) {
   const fetchClient = createFetchClient<paths>({
     baseUrl: env.apiUrl,
     headers: {
@@ -18,6 +18,6 @@ export function configureApiClient(authProvider: AuthProvider) {
     },
   });
 
-  fetchClient.use(createAuthMiddleware(() => authProvider));
+  fetchClient.use(createAuthMiddleware(() => session));
   return fetchClient;
 }

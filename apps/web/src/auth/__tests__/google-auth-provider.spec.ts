@@ -281,7 +281,7 @@ describe('googleAuthProvider', () => {
     expect(provider.getState().status).not.toBe('authenticated');
   });
 
-  it('should reject when validation returns forbidden and clear stored token', async () => {
+  it('should reject and clear the stored token when /users/me returns 403', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 403 }));
     installGoogleIdentityMock({
@@ -361,6 +361,33 @@ describe('googleAuthProvider', () => {
 
     await provider.signIn();
 
+    expect(provider.getState().status).toBe('authenticated');
+  });
+
+  it('should await a GIS script already in flight instead of replacing it', async () => {
+    delete googleGlobal.google;
+    const pending = document.createElement('script');
+    pending.src = 'https://accounts.google.com/gsi/client';
+    document.head.append(pending);
+
+    const provider = new GoogleAuthProvider('google-client-id');
+    const signIn = provider.signIn();
+
+    await vi.waitFor(() => {
+      expect(
+        document.querySelectorAll(
+          'script[src="https://accounts.google.com/gsi/client"]',
+        ),
+      ).toHaveLength(1);
+    });
+    expect(document.head.contains(pending)).toBe(true);
+
+    installGoogleIdentityMock({
+      prompt: () => handleCredential({ credential: token }),
+    });
+    pending.dispatchEvent(new Event('load'));
+
+    await signIn;
     expect(provider.getState().status).toBe('authenticated');
   });
 

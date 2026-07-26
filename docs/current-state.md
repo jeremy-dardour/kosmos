@@ -56,8 +56,9 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
 ## In flight
 
 - **PR #32 (`auth-v1.1`)** — session restore (#30), the sign-in button fix,
-  `/users/me` extraction, landing-page cleanup, and the `AuthProvider` collapse
-  (#33). All checks green; needs a final review pass, then merge.
+  `/users/me` extraction, landing-page cleanup, the interface collapse (#33),
+  and the review round that followed (`AuthProvider` → `AuthSession`,
+  argument-free `signOut()`, `SignInButton`). All checks green; ready to merge.
 - **PR #31 (`feat/slice-1-overview`)** — Slice 1: overview aggregate read +
   Pipeline Stack UI (#18).
 
@@ -75,5 +76,3 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
 2. Build slices #19–#24, then deployment (#26).
 3. Web e2e coverage is currently a single placeholder — real specs belong with
    the overview slices, and `ApiMock` still targets the deleted `/api/items`.
-4. Open review comment: `current-user.ts` still uses a bare `fetch` rather than
-   the shared client. Constrained by the client's 401 sign-out middleware.

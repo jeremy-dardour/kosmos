@@ -1,8 +1,6 @@
-import { AuthError } from '@/auth/auth-error';
+import type { AuthSession } from '@/auth/auth-session.interface';
 
-import type { AuthProvider } from '@/auth/auth-provider.interface';
-
-export function createAuthMiddleware(getAuth: () => AuthProvider | null) {
+export function createAuthMiddleware(getAuth: () => AuthSession | null) {
   return {
     async onRequest({ request }: { request: Request }) {
       const auth = getAuth();
@@ -18,9 +16,11 @@ export function createAuthMiddleware(getAuth: () => AuthProvider | null) {
 
     onResponse({ response }: { response: Response }) {
       const auth = getAuth();
+      // Only 401: this API uses 403 for domain permissions, so treating it as
+      // auth invalidation would sign users out of ordinary feature denials.
       if (response.status === 401 && auth) {
         console.warn('[AuthMiddleware] Received 401 response, logging out');
-        auth.signOut(new AuthError('token_rejected', 'Authentication expired'));
+        auth.signOut();
       }
     },
   };

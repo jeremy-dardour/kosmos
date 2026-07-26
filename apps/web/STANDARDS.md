@@ -29,9 +29,13 @@ src/
 
 ## Auth
 
-- Strategy interface: `AuthProvider` with `initialize`, `login`, `logout`, `getAccessToken`
-- React context (`AuthContext`) + `useAuth()` hook
-- Factory selects `FakeAuthProvider` (dev) vs real OIDC based on config
+- Strategy interface: `AuthSession` — `getState`, `subscribe`, `signIn`,
+  `signOut`, `getAccessToken`
+- React context (`AuthContext`) + `useAuth()` for actions, `useAuthState()` for
+  the state (via `useSyncExternalStore`)
+- `createAuth()` selects `FakeAuthProvider` (dev/e2e) vs `GoogleAuthProvider`
+- Module boundaries and what the interface deliberately excludes:
+  [ADR 0007](../../docs/adr/0007-web-auth-module-boundaries.md)
 
 ## i18n
 

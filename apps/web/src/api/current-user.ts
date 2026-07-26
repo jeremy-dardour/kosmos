@@ -9,11 +9,8 @@ export type CurrentUser =
   paths[typeof CURRENT_USER_PATH]['get']['responses'][200]['content']['application/json'];
 
 /**
- * Resolves the server-trusted identity for a bearer token.
- *
- * - Uses `fetch` directly rather than the shared API client, because that
- *   client's auth middleware logs out on 401 — the very response this call
- *   exists to report back to its caller.
+ * Uses `fetch` directly rather than the shared API client: that client's auth
+ * middleware signs out on 401 — the very response this call exists to report.
  */
 export async function fetchCurrentUser(token: string): Promise<CurrentUser> {
   let response: Response;

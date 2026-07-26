@@ -189,11 +189,11 @@ Full implementation spec in the [Auth PRD](./auth/PRD.md). Research in
 [auth-internals.md](../research/auth-internals.md).
 
 > **Web module structure:** see
-> [ADR 0007](../adr/0007-web-auth-module-boundaries.md) — where `/users/me`
-> lives, why page load restores rather than prompts, why only `401`
-> invalidates a session, and the fake-auth-stays-offline constraint. It
-> supersedes the "Frontend login flow" steps below, which describe `login()`
-> as the mount-time entry point.
+> [ADR 0007](../adr/0007-web-auth-module-boundaries.md) — the `AuthSession`
+> interface, where `/users/me` lives, why the session recovers on construction
+> rather than on a caller's command, why only `401` invalidates a session, and
+> the fake-auth-stays-offline constraint. It owns the frontend flow; this
+> document owns the API contract.
 
 - **Identity:** Google Identity Services (GIS) — `openid`, `email`, `profile`
   scopes. Consent screen published "In production" (non-sensitive scopes, no
@@ -207,172 +207,62 @@ Full implementation spec in the [Auth PRD](./auth/PRD.md). Research in
 - **Dev/test:** `FakeAuth` path remains fully functional. All auth env vars
   optional when `FAKE_AUTH=true`.
 
-### Auth validation and restore follow-up
+### Backend-validated session restore (#30)
 
-The Google auth wiring remains stateless: the API does not create a server-side
-session and the web app does not receive refresh tokens. The web app may persist
-the short-lived Google ID token in `sessionStorage` so a same-tab browser
-refresh can restore the user until the token expires.
+Shipped in PR #32. Auth stays stateless: the API creates no server-side session
+and the web app receives no refresh tokens. The web app persists the short-lived
+Google ID token in `sessionStorage` so a same-tab refresh restores the user
+until it expires.
 
-The web app must not treat a raw GIS credential as an authenticated app session.
-The backend remains the source of truth for both token validity and
-`AUTH_ALLOWED_EMAILS`.
+A raw GIS credential is never an authenticated app session. The backend remains
+the source of truth for both token validity and `AUTH_ALLOWED_EMAILS`.
 
 #### API current-user endpoint
 
-Add `GET /api/users/me`.
+`GET /api/users/me`, protected by the normal auth guard. The guard verifies the
+Google ID token, checks the allow-list, provisions/updates the `User`, and
+attaches it to the request; the controller returns it as `CurrentUserDto`
+(`id`, `email`, `name`, `avatarUrl?`). No schema change.
 
-The route is protected by the normal API auth guard. The guard verifies the
-Google ID token, checks the static allow-list, provisions/updates the `User`, and
-attaches the authenticated user to the request. The controller returns that
-server-trusted user as `CurrentUserDto`.
+| Status | Meaning                                                          |
+| ------ | ---------------------------------------------------------------- |
+| `200`  | Valid, allow-listed, provisioned — body is the current app user  |
+| `401`  | Token missing, malformed, expired, or rejected by JWT validation |
+| `403`  | Token valid, email not in `AUTH_ALLOWED_EMAILS`                  |
 
-Response:
+#### Frontend
 
-```ts
-interface CurrentUserDto {
-  id: string;
-  email: string;
-  name: string;
-  avatarUrl?: string;
-}
-```
+Owned by [ADR 0007](../adr/0007-web-auth-module-boundaries.md). Two invariants
+belong here because they are contract, not structure:
 
-No database schema change is required.
-
-Expected status semantics:
-
-- `200`: token is valid, email is allow-listed, user has been
-  provisioned/updated, and the response body is the current app user.
-- `401`: token is missing, malformed, expired, or rejected by Google/JWT
-  validation.
-- `403`: token is valid but the email is not in `AUTH_ALLOWED_EMAILS`.
-
-#### Frontend login flow
-
-`GoogleAuthProvider.login()` should remain the single entry point used by
-`ProtectedRoute`.
-
-1. If another login/restore is already in flight, return the existing promise.
-2. Check `sessionStorage` for the stored Google ID token.
-3. If a token exists and is not locally expired, call `GET /api/users/me` with
-   `Authorization: Bearer <token>`.
-4. If `/me` succeeds, set `AuthenticatedUser` from the response and resolve
-   without showing the Google prompt.
-5. If the stored token is missing, expired, rejected with `401`, or rejected with
-   `403`, clear storage and continue to the Google prompt path.
-6. Load/initialize GIS lazily.
-7. Prompt the user with GIS.
-8. When GIS returns a credential, store the ID token temporarily and call
-   `GET /api/users/me`.
-9. If `/me` succeeds, keep the stored token, set `AuthenticatedUser` from the
-   response, and resolve login.
-10. If `/me` fails with `401` or `403`, clear the stored token and reject with an
-    auth-specific error that the UI can render.
-11. If GIS/FedCM cannot produce a credential, show an explicit sign-in/error
-    fallback instead of leaving the protected route blank.
-
-The frontend may decode the ID token only to read `exp` for a local expiry
-pre-check. Rendered identity fields (`id`, `email`, `name`, `avatarUrl`) must
-come from `/api/users/me`, not from decoded Google claims.
-
-#### Frontend refresh flow
-
-On page refresh, the app starts with no in-memory user. `ProtectedRoute` calls
-`auth.login()` as it does today.
-
-- If `sessionStorage` contains a non-expired ID token and `/api/users/me`
-  succeeds, the provider restores the authenticated user without prompting
-  Google.
-- If no token exists, the provider prompts Google.
-- If the token exists but is expired or rejected, the provider clears it and
-  prompts Google.
-- If the token is valid but the email is forbidden, the provider clears it and
-  renders the forbidden state.
-
-This gives refresh persistence without introducing backend sessions.
+- Rendered identity (`id`, `email`, `name`, `avatarUrl`) comes from
+  `/api/users/me`. The ID token may be decoded only for a local `exp`
+  pre-check — the backend normalizes names and avatar URLs during provisioning,
+  so decoded claims drift.
+- The unauthenticated route renders an explicit state, never a blank page:
+  `restoring`, `anonymous`, `forbidden`, `error`. GIS and FedCM can fail without
+  returning a credential — reliably so in private browsing — and a route that
+  only awaits a successful callback lands on nothing.
 
 #### Rationale
 
-`GET /api/users/me` is needed because Google sign-in only proves that the
-browser received a Google credential. It does not prove that the account is
-authorized for this app. The backend owns the allow-list, token verification,
-and user provisioning rules, so the frontend must validate the credential
-against the API before rendering protected app content.
+Google sign-in proves only that the browser received a Google credential, not
+that the account is authorized for this app. The backend owns verification, the
+allow-list, and provisioning, so the frontend validates against the API before
+rendering protected content. A current-user endpoint rather than a session
+endpoint keeps each request carrying its own proof, with no server-side lookup.
 
-The endpoint is a current-user endpoint rather than a session endpoint. It
-returns the app user that the backend has accepted for the current bearer token.
-This keeps the architecture stateless and matches the existing API auth guard:
-each request carries its own proof, and the API validates that proof without
-server-side session lookup.
+`sessionStorage` is the smallest fix for same-tab refresh: scoped to the tab,
+not shared across same-origin tabs, cleared on sign-out, expiry, and `401`.
+Refresh tokens are deliberately stored nowhere — the user set is tiny and the
+app needs no long-lived Google API access, so after expiry it simply asks Google
+again.
 
-Persisting the Google ID token in `sessionStorage` is the smallest fix for
-same-tab browser refresh. The current in-memory provider loses state on reload,
-which causes a fresh Google prompt even when the token is still valid. Storing
-the short-lived ID token lets the provider retry `/api/users/me` after reload
-and restore the user without adding backend session storage. `sessionStorage`
-keeps the persistence scoped to the current tab and avoids sharing the token
-across same-origin tabs. The app still clears the token on logout, expiry,
-`401`, or `403`.
+#### Coverage
 
-Refresh tokens are intentionally not stored in the browser or backend for this
-app. The product has a tiny private user set and does not need long-lived Google
-API access. Keeping only the ID token limits the auth surface area: the app can
-restore across a same-tab browser refresh during the token lifetime, and after
-expiry it asks Google again.
-
-User display data must come from `/api/users/me` instead of client-decoded
-Google claims. The backend may normalize names, store avatar URLs, or update the
-user record during provisioning. Rendering the server response keeps the UI
-aligned with the app's own user model and fixes name/avatar drift.
-
-Explicit auth UI states are needed because GIS and FedCM can fail without
-returning a credential, especially in private browsing or with browser account
-state disabled. A protected route that only waits for a successful callback can
-land on a blank page. Rendering `checking`, `sign-in`, `forbidden`, and `error`
-states makes those failures recoverable and testable.
-
-#### Logout flow
-
-Logout clears the in-memory user and removes the stored Google ID token from
-`sessionStorage`. It may also call GIS disable/revoke behavior if supported, but
-the app must not depend on that call for its own logged-out state.
-
-#### Auth UI states
-
-`ProtectedRoute` must represent these states explicitly:
-
-- `checking`: restore/login validation is in flight.
-- `sign-in`: no local token exists, local token is expired, or GIS prompt is
-  required.
-- `authenticated`: `/api/users/me` succeeded.
-- `forbidden`: `/api/users/me` returned `403`.
-- `error`: GIS/FedCM failed or validation failed unexpectedly.
-
-The route should not render a blank page for GIS/FedCM failures.
-
-#### Testing requirements
-
-- API e2e: `/api/users/me` returns the current user for a valid allow-listed
-  Google token.
-- API e2e: `/api/users/me` returns `403` for a valid token whose email is not
-  allow-listed.
-- API e2e: `/api/users/me` returns `401` without a valid token.
-- Web unit tests: login stores the credential only after GIS returns it and marks
-  authenticated only after `/me` succeeds.
-- Web unit tests: refresh restores from `sessionStorage` through `/me`.
-- Web unit tests: expired/rejected tokens are cleared.
-- Web unit tests: forbidden and GIS/FedCM failure states are renderable.
-
-This closes four gaps in the first auth pass:
-
-- disallowed Google accounts can no longer enter the app before the backend
-  allow-list check runs;
-- display name/avatar come from the backend-provisioned user instead of
-  client-side token decoding;
-- browser refresh no longer loses auth state while the ID token remains valid;
-- Google/FedCM prompt failures render an explicit sign-in/error fallback instead
-  of a blank protected route.
+API e2e covers `200` / `401` / `403` on `/users/me`. Web unit tests cover
+restore-from-storage, marking authenticated only after `/me` succeeds, clearing
+expired and rejected tokens, and rendering the forbidden and error states.
 
 ---
 

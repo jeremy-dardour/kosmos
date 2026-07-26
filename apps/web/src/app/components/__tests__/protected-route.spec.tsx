@@ -12,7 +12,7 @@ function renderProtectedRoute(initialState: AuthState) {
   const auth = createStubAuth(initialState);
 
   render(
-    <AuthContext value={auth}>
+    <AuthContext value={auth.session}>
       <ProtectedRoute>
         <div>Private content</div>
       </ProtectedRoute>
@@ -54,11 +54,15 @@ describe('protectedRoute', () => {
     expect(screen.getByText('Private content')).toBeVisible();
   });
 
-  it('should show the provider sign-in button when anonymous', () => {
+  it('should show the sign-in button when anonymous', () => {
     renderProtectedRoute({ status: 'anonymous' });
 
     expect(screen.getByText('auth.landing.status.signIn')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Sign in' })).toBeVisible();
+    expect(
+      screen.getByRole('button', {
+        name: 'auth.landing.action.continueInDevMode',
+      }),
+    ).toBeVisible();
     expect(screen.queryByText('Private content')).not.toBeInTheDocument();
   });
 
@@ -77,7 +81,7 @@ describe('protectedRoute', () => {
       }),
     );
 
-    expect(auth.provider.signOut).toHaveBeenCalledOnce();
+    expect(auth.session.signOut).toHaveBeenCalledOnce();
   });
 
   it('should retry sign-in from the error state', async () => {
@@ -93,6 +97,6 @@ describe('protectedRoute', () => {
       screen.getByRole('button', { name: 'auth.landing.action.retry' }),
     );
 
-    expect(auth.provider.signIn).toHaveBeenCalledOnce();
+    expect(auth.session.signIn).toHaveBeenCalledOnce();
   });
 });

@@ -39,7 +39,7 @@ describe('authContext', () => {
     const auth = createStubAuth();
 
     render(
-      <AuthContext value={auth}>
+      <AuthContext value={auth.session}>
         <SessionStatus />
       </AuthContext>,
     );
@@ -63,7 +63,7 @@ describe('authContext', () => {
     const auth = createStubAuth();
 
     render(
-      <AuthContext value={auth}>
+      <AuthContext value={auth.session}>
         <PersonalComponent />
       </AuthContext>,
     );
@@ -75,21 +75,21 @@ describe('authContext', () => {
     const auth = createStubAuth();
 
     render(
-      <AuthContext value={auth}>
+      <AuthContext value={auth.session}>
         <SignInButton />
       </AuthContext>,
     );
 
     screen.getByRole('button', { name: 'Sign in' }).click();
 
-    expect(auth.provider.signIn).toHaveBeenCalledOnce();
+    expect(auth.session.signIn).toHaveBeenCalledOnce();
   });
 
   it('should re-render consumers when the provider changes outside React', () => {
     const auth = createStubAuth();
 
     render(
-      <AuthContext value={auth}>
+      <AuthContext value={auth.session}>
         <SessionStatus />
       </AuthContext>,
     );

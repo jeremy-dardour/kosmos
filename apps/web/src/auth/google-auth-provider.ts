@@ -5,10 +5,9 @@ import { env } from '@/config/env';
 
 import type {
   AuthChangeListener,
-  AuthProvider,
-} from '@/auth/auth-provider.interface';
+  AuthSession,
+} from '@/auth/auth-session.interface';
 import type { AuthState } from '@/auth/auth-state';
-import type { AuthenticatedUser } from '@/auth/types';
 
 interface GoogleCredentialResponse {
   credential?: string;
@@ -62,24 +61,21 @@ interface GoogleIdTokenPayload {
   exp?: number;
 }
 
-interface TokenStorage {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-}
+const GSI_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
+const ID_TOKEN_STORAGE_KEY = 'wedding-planner.google-id-token';
+const SIGN_IN_PROMPT_TIMEOUT_MS = 60_000;
 
-interface GoogleAuthProviderDependencies {
-  validateToken?: (token: string) => Promise<AuthenticatedUser>;
-  storage?: TokenStorage;
-  now?: () => number;
-}
+const SIGN_IN_BUTTON_OPTIONS = {
+  shape: 'rectangular',
+  size: 'large',
+  text: 'signin_with',
+  theme: 'outline',
+  type: 'standard',
+  width: 280,
+} as const;
 
-export class GoogleAuthProvider implements AuthProvider {
-  private readonly storageKey = 'wedding-planner.google-id-token';
+export class GoogleAuthProvider implements AuthSession {
   private readonly clientId: string;
-  private readonly validateToken: (token: string) => Promise<AuthenticatedUser>;
-  private readonly storage?: TokenStorage;
-  private readonly now: () => number;
   private state: AuthState = RESTORING;
   private readonly restorePromise: Promise<void>;
   private initializePromise: Promise<void> | null = null;
@@ -92,18 +88,8 @@ export class GoogleAuthProvider implements AuthProvider {
     reject: (error: Error) => void;
   } | null = null;
 
-  constructor(
-    clientId: string = env.googleClientId,
-    dependencies: GoogleAuthProviderDependencies = {},
-  ) {
+  constructor(clientId: string = env.googleClientId) {
     this.clientId = clientId;
-    this.validateToken = dependencies.validateToken ?? fetchCurrentUser;
-    this.storage = dependencies.storage;
-    this.now = dependencies.now ?? (() => Date.now());
-
-    // Recover a stored session immediately rather than exposing a `restore()`
-    // for callers to sequence: the state starts at `restoring` and settles on
-    // its own, so a consumer only ever renders from `getState()`.
     this.restorePromise = this.restoreStoredSession();
   }
 
@@ -129,8 +115,8 @@ export class GoogleAuthProvider implements AuthProvider {
     return this.signInPromise;
   }
 
-  signOut(reason?: AuthError): void {
-    this.clearSession(reason ? this.stateForError(reason) : ANONYMOUS);
+  signOut(): void {
+    this.clearSession(ANONYMOUS);
     this.getGoogle()?.accounts.id.disableAutoSelect();
   }
 
@@ -145,16 +131,10 @@ export class GoogleAuthProvider implements AuthProvider {
   }
 
   /**
-   * Renders Google's own sign-in widget into a node this provider owns.
-   *
-   * - Not part of `AuthProvider`: only `GoogleSignInButton` calls it, and
-   *   putting an `HTMLElement` on the shared interface forced every adapter to
-   *   implement a widget it may not need.
-   * - Appends a slot instead of rendering into `container` directly, because
-   *   the caller's effect may run twice (React StrictMode) with both calls
-   *   awaiting the same `initialize()`. A cleanup that cleared the whole
-   *   container would delete the *other* call's button, leaving an empty
-   *   sign-in area with no error.
+   * Appends a slot rather than rendering into `container` directly: the
+   * caller's effect runs twice under React StrictMode, and a cleanup that
+   * cleared the whole container would delete the *other* call's button,
+   * leaving an empty sign-in area with no error.
    */
   async renderSignInButton(container: HTMLElement): Promise<() => void> {
     await this.initialize();
@@ -166,15 +146,7 @@ export class GoogleAuthProvider implements AuthProvider {
 
     const slot = globalThis.document.createElement('div');
     container.append(slot);
-
-    google.accounts.id.renderButton(slot, {
-      shape: 'rectangular',
-      size: 'large',
-      text: 'signin_with',
-      theme: 'outline',
-      type: 'standard',
-      width: 280,
-    });
+    google.accounts.id.renderButton(slot, SIGN_IN_BUTTON_OPTIONS);
 
     return () => {
       slot.remove();
@@ -194,8 +166,6 @@ export class GoogleAuthProvider implements AuthProvider {
 
   private async startSignIn(): Promise<void> {
     try {
-      // Let the constructor's restore finish first: a stored session that is
-      // still valid makes the interactive prompt unnecessary.
       await this.restorePromise;
       if (this.state.status === 'authenticated') {
         return;
@@ -218,7 +188,7 @@ export class GoogleAuthProvider implements AuthProvider {
                 'Google sign-in prompt did not return a credential',
               ),
             );
-          }, 60_000);
+          }, SIGN_IN_PROMPT_TIMEOUT_MS);
 
           this.pendingSignIn = { resolve, reject };
 
@@ -325,12 +295,9 @@ export class GoogleAuthProvider implements AuthProvider {
   }
 
   /**
-   * Validates a token against the API and moves the state machine to the
-   * outcome — the single place a session is established.
-   *
-   * - A rejected token settles on `anonymous`, not `error`: it means there is
-   *   no session, which is a sign-in prompt rather than a failure the user can
-   *   do anything about.
+   * A rejected token settles on `anonymous`, not `error`: it means there is no
+   * session, which calls for a sign-in prompt rather than a failure the user
+   * can do nothing about.
    */
   private async adoptToken(
     token: string,
@@ -342,7 +309,7 @@ export class GoogleAuthProvider implements AuthProvider {
     }
 
     try {
-      const user = await this.validateToken(token);
+      const user = await fetchCurrentUser(token);
       this.scheduleExpiry(token);
       this.setState({ status: 'authenticated', user });
     } catch (error) {
@@ -377,13 +344,6 @@ export class GoogleAuthProvider implements AuthProvider {
     );
   }
 
-  /**
-   * Flips the session to anonymous the moment the ID token lapses.
-   *
-   * - A timer rather than an expiry check inside `getState()`: `getState()` is
-   *   read during render, and a check there would have to mutate state mid-
-   *   render to report the lapse.
-   */
   private scheduleExpiry(token: string): void {
     this.clearExpiryTimeout();
 
@@ -398,7 +358,7 @@ export class GoogleAuthProvider implements AuthProvider {
       return;
     }
 
-    const remaining = payload.exp * 1000 - this.now();
+    const remaining = payload.exp * 1000 - Date.now();
     this.expiryTimeout = globalThis.setTimeout(
       () => {
         this.clearSession(ANONYMOUS);
@@ -429,17 +389,17 @@ export class GoogleAuthProvider implements AuthProvider {
       return;
     }
 
-    await new Promise<void>((resolve, reject) => {
-      globalThis.document
-        .querySelector<HTMLScriptElement>(
-          'script[src="https://accounts.google.com/gsi/client"]',
-        )
-        ?.remove();
+    // A tag already in the document is still loading — GSI publishes the global
+    // before `load` fires, so the check above would have returned otherwise.
+    // Await that load; removing and re-adding the tag restarts the download and
+    // races two copies of the script.
+    const pending = [...globalThis.document.querySelectorAll('script')].find(
+      (script) => script.src === GSI_SCRIPT_URL,
+    );
 
-      const script = globalThis.document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
+    await new Promise<void>((resolve, reject) => {
+      const script = pending ?? this.appendScript();
+
       script.addEventListener('load', () => resolve(), { once: true });
       script.addEventListener(
         'error',
@@ -449,8 +409,17 @@ export class GoogleAuthProvider implements AuthProvider {
         },
         { once: true },
       );
-      globalThis.document.head.append(script);
     });
+  }
+
+  private appendScript(): HTMLScriptElement {
+    const script = globalThis.document.createElement('script');
+    script.src = GSI_SCRIPT_URL;
+    script.async = true;
+    script.defer = true;
+    globalThis.document.head.append(script);
+
+    return script;
   }
 
   private decodePayload(token: string): GoogleIdTokenPayload {
@@ -468,7 +437,7 @@ export class GoogleAuthProvider implements AuthProvider {
       return true;
     }
 
-    return payload.exp * 1000 <= this.now();
+    return payload.exp * 1000 <= Date.now();
   }
 
   private base64UrlDecode(value: string): string {
@@ -506,7 +475,7 @@ export class GoogleAuthProvider implements AuthProvider {
 
   private readStoredToken(): string | null {
     try {
-      return this.getStorage()?.getItem(this.storageKey) ?? null;
+      return this.getStorage()?.getItem(ID_TOKEN_STORAGE_KEY) ?? null;
     } catch {
       return null;
     }
@@ -514,7 +483,7 @@ export class GoogleAuthProvider implements AuthProvider {
 
   private writeStoredToken(token: string): void {
     try {
-      this.getStorage()?.setItem(this.storageKey, token);
+      this.getStorage()?.setItem(ID_TOKEN_STORAGE_KEY, token);
     } catch {
       return;
     }
@@ -522,17 +491,13 @@ export class GoogleAuthProvider implements AuthProvider {
 
   private removeStoredToken(): void {
     try {
-      this.getStorage()?.removeItem(this.storageKey);
+      this.getStorage()?.removeItem(ID_TOKEN_STORAGE_KEY);
     } catch {
       return;
     }
   }
 
-  private getStorage(): TokenStorage | undefined {
-    if (this.storage) {
-      return this.storage;
-    }
-
+  private getStorage(): Storage | undefined {
     try {
       return globalThis.sessionStorage;
     } catch {

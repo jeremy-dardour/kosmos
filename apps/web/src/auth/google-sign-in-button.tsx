@@ -10,15 +10,8 @@ interface GoogleSignInButtonProps {
 }
 
 /**
- * Hosts Google's own sign-in widget, and falls back to a plain button when it
- * cannot be rendered.
- *
- * - Takes the concrete `GoogleAuthProvider` rather than reading `useAuth()`:
- *   rendering a provider-owned widget is not part of the `AuthProvider`
- *   interface, and only the factory that built this provider can supply it.
- * - The cleanup returned by `renderSignInButton` is scoped to the node that
- *   call created, so running a stale one removes only that call's button — not
- *   whichever button is currently live.
+ * Takes the concrete provider rather than reading `useAuth()`: rendering the
+ * widget is not part of `AuthSession` (ADR 0007).
  */
 export function GoogleSignInButton({
   provider,

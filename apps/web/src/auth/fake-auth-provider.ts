@@ -1,11 +1,10 @@
 import { ANONYMOUS } from '@/auth/auth-state';
 import { generateFakeJwt } from '@/auth/utils/generate-fake-jwt';
 
-import type { AuthError } from '@/auth/auth-error';
 import type {
   AuthChangeListener,
-  AuthProvider,
-} from '@/auth/auth-provider.interface';
+  AuthSession,
+} from '@/auth/auth-session.interface';
 import type { AuthState } from '@/auth/auth-state';
 import type { AuthenticatedUser } from '@/auth/types';
 
@@ -15,8 +14,11 @@ const DEV_USER: AuthenticatedUser = {
   name: 'DevUser',
 };
 
-// provider for local developments
-export class FakeAuthProvider implements AuthProvider {
+/**
+ * Must make no network call of any kind: web e2e runs with the API mocked at
+ * the Playwright layer, so a real request would break the suite (ADR 0007).
+ */
+export class FakeAuthProvider implements AuthSession {
   private state: AuthState = { status: 'authenticated', user: DEV_USER };
   private readonly listeners = new Set<AuthChangeListener>();
 
@@ -38,8 +40,8 @@ export class FakeAuthProvider implements AuthProvider {
     return Promise.resolve();
   }
 
-  signOut(reason?: AuthError): void {
-    this.setState(reason ? { status: 'error', error: reason } : ANONYMOUS);
+  signOut(): void {
+    this.setState(ANONYMOUS);
   }
 
   getAccessToken(): Promise<string> {

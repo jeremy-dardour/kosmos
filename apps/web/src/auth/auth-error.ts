@@ -1,9 +1,9 @@
 export type AuthErrorCode =
   | 'forbidden'
+  // `sign_in_failed` and `token_rejected` both mean "no session, sign in
+  // again"; `validation_failed` means the check itself could not run, which is
+  // an error state the user cannot resolve by signing in.
   | 'sign_in_failed'
-  // The server refused the token (401). Distinct from `validation_failed`,
-  // which means validation could not be completed at all — a rejected token
-  // sends the user back to sign-in, an unreachable server is an error state.
   | 'token_rejected'
   | 'validation_failed';
 

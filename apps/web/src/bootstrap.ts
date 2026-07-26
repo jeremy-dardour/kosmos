@@ -4,8 +4,7 @@ import { createAuth } from '@/auth';
 
 export function bootstrap() {
   const auth = createAuth();
-  const apiClient = configureApiClient(auth.provider);
-  setApiClient(apiClient);
+  setApiClient(configureApiClient(auth));
 
   return { auth };
 }

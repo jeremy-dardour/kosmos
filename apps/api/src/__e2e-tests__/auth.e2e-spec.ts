@@ -15,25 +15,6 @@ function createRequest(app: INestApplication): TestAgent<SuperTestType> {
   return request(app.getHttpServer() as never);
 }
 
-function isCurrentUserResponse(value: unknown): value is {
-  id: string;
-  email: string;
-  name: string;
-  avatarUrl: string;
-} {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const body = value as Record<string, unknown>;
-  return (
-    typeof body.id === 'string' &&
-    typeof body.email === 'string' &&
-    typeof body.name === 'string' &&
-    typeof body.avatarUrl === 'string'
-  );
-}
-
 describe('Auth E2E Tests', () => {
   const mockOidc = new MockOidcService();
   let tokenFactory: MockTokenFactory;
@@ -77,18 +58,14 @@ describe('Auth E2E Tests', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
-      expect(isCurrentUserResponse(response.body)).toBe(true);
-
-      if (!isCurrentUserResponse(response.body)) {
-        throw new Error('Expected current user response body');
-      }
-
-      expect(response.body.id).toMatch(
-        /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu,
-      );
-      expect(response.body.email).toBe('e2e@example.com');
-      expect(response.body.name).toBe('E2E Test User');
-      expect(response.body.avatarUrl).toBe('https://example.com/avatar.jpg');
+      expect(response.body).toMatchObject({
+        id: expect.stringMatching(
+          /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu,
+        ) as string,
+        email: 'e2e@example.com',
+        name: 'E2E Test User',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      });
     });
 
     it('should return 401 when no authorization header is provided', async () => {

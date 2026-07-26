@@ -17,7 +17,7 @@ const setup = () => {
   });
 
   render(
-    <AuthContext value={auth}>
+    <AuthContext value={auth.session}>
       <UserMenu />
     </AuthContext>,
   );
@@ -47,6 +47,6 @@ describe('userMenu', () => {
     await userEvent.click(screen.getByText('Jane Doe'));
     await userEvent.click(screen.getByText('app.userMenu.logout'));
 
-    expect(auth.provider.signOut).toHaveBeenCalledOnce();
+    expect(auth.session.signOut).toHaveBeenCalledOnce();
   });
 });
