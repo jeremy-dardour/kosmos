@@ -10,10 +10,6 @@ import type {
   AuthProvider,
 } from '@/auth/auth-provider.interface';
 
-function noopUnsubscribe(): void {
-  return;
-}
-
 function PersonalComponent() {
   const auth = useAuth();
   const account = auth.getAuthenticatedUser();
@@ -58,7 +54,7 @@ describe('authContext', () => {
     logout: vi.fn(),
     getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
     renderSignInButton: vi.fn(),
-    onChange: vi.fn(() => noopUnsubscribe),
+    onChange: vi.fn(),
   };
 
   describe('useAuth', () => {

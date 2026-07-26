@@ -4,10 +4,6 @@ import { createAuthMiddleware } from '@/api/middlewares/auth-middleware';
 
 import type { AuthProvider } from '@/auth/auth-provider.interface';
 
-function noopUnsubscribe(): void {
-  return;
-}
-
 describe('createAuthMiddleware', () => {
   let mockAuthProvider: AuthProvider;
   let getAuth: ReturnType<typeof vi.fn<() => AuthProvider | null>>;
@@ -27,7 +23,7 @@ describe('createAuthMiddleware', () => {
       }),
       getAuthError: vi.fn().mockReturnValue(null),
       renderSignInButton: vi.fn(),
-      onChange: vi.fn(() => noopUnsubscribe),
+      onChange: vi.fn(),
     };
 
     getAuth = vi

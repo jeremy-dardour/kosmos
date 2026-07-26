@@ -7,10 +7,6 @@ import { AuthContext, AuthError } from '@/auth';
 
 import type { AuthProvider } from '@/auth';
 
-function noopUnsubscribe(): void {
-  return;
-}
-
 describe('protectedRoute', () => {
   it('should render children when already authenticated', () => {
     const auth = createAuthProvider({ isAuthenticated: true });
@@ -152,7 +148,7 @@ function createAuthProvider({
       button.textContent = 'Mock Google sign-in';
       container.append(button);
     }),
-    onChange: vi.fn(() => noopUnsubscribe),
+    onChange: vi.fn(),
     setAuthenticated: (isAuthenticatedValue: boolean) => {
       isAuthenticatedState = isAuthenticatedValue;
     },

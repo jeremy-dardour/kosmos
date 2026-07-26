@@ -7,10 +7,6 @@ import { AuthContext } from '@/auth';
 
 import type { AuthProvider } from '@/auth';
 
-function noopUnsubscribe(): void {
-  return;
-}
-
 const mockAuthProvider: AuthProvider = {
   initialize: vi.fn(),
   restore: vi.fn(),
@@ -25,7 +21,7 @@ const mockAuthProvider: AuthProvider = {
   logout: vi.fn(),
   getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
   renderSignInButton: vi.fn(),
-  onChange: vi.fn(() => noopUnsubscribe),
+  onChange: vi.fn(),
 };
 
 const setup = () => {
