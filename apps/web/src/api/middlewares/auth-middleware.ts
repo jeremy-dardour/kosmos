@@ -16,13 +16,11 @@ export function createAuthMiddleware(getAuth: () => AuthProvider | null) {
       }
     },
 
-    async onResponse({ response }: { response: Response }) {
+    onResponse({ response }: { response: Response }) {
       const auth = getAuth();
       if (response.status === 401 && auth) {
         console.warn('[AuthMiddleware] Received 401 response, logging out');
-        await auth.logout(
-          new AuthError('validation_failed', 'Authentication expired'),
-        );
+        auth.signOut(new AuthError('token_rejected', 'Authentication expired'));
       }
     },
   };

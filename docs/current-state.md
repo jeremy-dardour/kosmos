@@ -46,15 +46,19 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
   workspace ports fixed and documented in `CLAUDE.md § Ports`.
 - **Web auth module boundaries settled**
   ([ADR 0007](./adr/0007-web-auth-module-boundaries.md)): `/users/me` extracted
-  out of `GoogleAuthProvider`, page load restores rather than prompts, only
-  `401` invalidates a session, fake auth stays offline for e2e
+  out of `GoogleAuthProvider`, only `401` invalidates a session, fake auth stays
+  offline for e2e
   ([session 19](./sessions/session-19-2026-07-26-auth-signin-button-fix.md)).
+- **`AuthProvider` collapsed to 5 members** (#33) — `getState()` + `subscribe()`
+  read via `useSyncExternalStore`, sign-in widget moved out of the interface;
+  `AuthProviderBoundary` and both rerender hacks deleted
+  ([session 20](./sessions/session-20-2026-07-26-auth-provider-interface-collapse.md)).
 
 ## In flight
 
-- **PR #32 (`auth-v1.1`)** — session restore (#30) plus the sign-in button fix,
-  `/users/me` extraction, and landing-page cleanup. All checks green; needs a
-  final review pass, then merge.
+- **PR #32 (`auth-v1.1`)** — session restore (#30), the sign-in button fix,
+  `/users/me` extraction, landing-page cleanup, and the `AuthProvider` collapse
+  (#33). All checks green; needs a final review pass, then merge.
 - **PR #31 (`feat/slice-1-overview`)** — Slice 1: overview aggregate read +
   Pipeline Stack UI (#18).
 
@@ -66,10 +70,11 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
 
 ## Next steps
 
-1. Land PR #32, then PR #31.
+1. Land PR #32 (and close
+   [#33](https://github.com/jeremy-dardour/wedding-planner/issues/33) with it),
+   then PR #31.
 2. Build slices #19–#24, then deployment (#26).
 3. Web e2e coverage is currently a single placeholder — real specs belong with
    the overview slices, and `ApiMock` still targets the deleted `/api/items`.
-4. [#33](https://github.com/jeremy-dardour/wedding-planner/issues/33) —
-   collapse `AuthProvider` to `getState()` + `subscribe()`; deferred, not
-   blocking.
+4. Open review comment: `current-user.ts` still uses a bare `fetch` rather than
+   the shared client. Constrained by the client's 401 sign-out middleware.

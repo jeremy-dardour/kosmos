@@ -22,38 +22,71 @@ fetchCurrentUser(token): Promise<CurrentUser>   // owns GET /api/users/me
 ```
 
 It maps HTTP status onto `AuthError` codes and is the only place that knows the
-endpoint exists. `CurrentUser` is derived from the generated `CurrentUserDto`,
-so contract drift surfaces as a type error rather than a runtime surprise.
+endpoint exists. `CurrentUser` is derived from the generated OpenAPI `paths`, so
+contract drift surfaces as a type error rather than a runtime surprise.
 
 It deliberately uses `fetch` rather than the shared openapi-fetch client: it
 runs _during_ authentication, before a session exists, and the client's auth
-middleware logs out on 401 — precisely the response this call exists to report.
+middleware signs out on 401 — precisely the response this call exists to report.
 
-### 2. Page load restores; it never prompts
+### 2. `AuthProvider` is a state machine, and nothing else
 
-`ProtectedRoute` calls `restore()` on mount, never `login()`. `restore()` only
-reads `sessionStorage` and validates against the API — it never touches
-GIS/FedCM. Interactive sign-in is delegated to `renderSignInButton(container)`,
-so the provider renders Google's own button and GIS details never leak into
-route UI.
+Five members, no DOM:
 
-`renderSignInButton` **must render into a node it creates and clean up only
-that node.** Callers' effects run twice under React StrictMode, so a cleanup
-that cleared the whole container would delete the other call's button.
+```ts
+getState(): AuthState                      // one snapshot, discriminated union
+subscribe(listener): () => void            // read via useSyncExternalStore
+signIn(): Promise<void>
+signOut(reason?: AuthError): void
+getAccessToken(): Promise<string>
+```
 
-### 3. Only 401 invalidates the session
+`AuthState` is `restoring | anonymous | authenticated | forbidden | error`.
+Consumers render from the status directly, so no component derives a parallel
+view-state enum or holds a rerender counter.
 
-The API auth middleware logs out on `401` alone. `403` is a domain permission
-code in this API, so treating it as auth invalidation would log users out of
+Two rules the types cannot carry:
+
+- **`getState()` must return a stable reference until the state changes.**
+  `useSyncExternalStore` loops if handed a fresh object per call.
+- **Session recovery happens on construction, not on a caller's command.** The
+  provider starts at `restoring` and settles itself. An explicit `restore()`
+  would put back a method whose real contract — returns nothing, throws on some
+  failures but not others, check a separate accessor afterwards — was invisible
+  at the signature.
+
+### 3. The sign-in affordance ships beside the provider, not inside it
+
+Rendering a sign-in widget is provider-specific: Google must render its own
+iframe button, a fake needs nothing but an `onClick`. Putting
+`renderSignInButton(container: HTMLElement)` on the shared interface forced
+every adapter to implement a widget it may not need, and put a DOM node in an
+otherwise DOM-free interface.
+
+`createAuth()` therefore returns the pair:
+
+```ts
+{ provider: AuthProvider, signInButton: React.ReactNode }
+```
+
+An element, not a component type — built once, so rendering it never creates a
+component during another component's render.
+
+`GoogleAuthProvider.renderSignInButton` survives as a concrete method that only
+`GoogleSignInButton` calls. It **must render into a node it creates and clean up
+only that node**: callers' effects run twice under React StrictMode, so a
+cleanup that cleared the whole container would delete the other call's button.
+
+Token expiry is handled by a timer armed when the session is established, not by
+a check inside `getState()` — `getState()` is read during render and could not
+report a lapse without mutating mid-render.
+
+### 4. Only 401 invalidates the session
+
+The API auth middleware signs out on `401` alone. `403` is a domain permission
+code in this API, so treating it as auth invalidation would sign users out of
 ordinary feature denials. The forbidden case is handled where it actually
-occurs — inside `fetchCurrentUser`, which maps `403` to
-`AuthError('forbidden')`.
-
-### 4. `AuthProviderBoundary` recreates its context object every render
-
-This is load-bearing, not an oversight. React context propagates by value
-identity, so memoizing the object stops consumers re-rendering when auth
-changes. See the comment in `auth-provider-boundary.tsx`.
+occurs — inside `fetchCurrentUser`, which maps `403` to `AuthError('forbidden')`.
 
 ## Constraint: fake auth must stay offline
 
@@ -68,13 +101,12 @@ API-side, `MockAuthStrategy` is unused by API e2e (`.env.e2e` sets
 
 ## Trade-offs
 
-- **Lost:** `AuthProvider` is a wide interface (10 methods) expressing one state
-  machine through five accessors, which forces `useReducer` rerender hacks in
-  `AuthProviderBoundary` and `ProtectedRoute`, and makes consumers that use
-  `auth` as an effect dependency re-run on every auth change.
-- **Gained:** the endpoint has one home, dev/e2e stays offline and fast, and
-  StrictMode double-mounting is safe.
-- **Revisit:** collapsing the interface to `getState()` + `subscribe()` read via
-  `useSyncExternalStore` is tracked in
-  [issue #33](https://github.com/jeremy-dardour/wedding-planner/issues/33).
-  That removes both rerender hacks and the boundary trap in (4).
+- **Gained:** the endpoint has one home; `AuthProvider` went from ten members to
+  five with no DOM; `AuthProviderBoundary` and both `useReducer` rerender hacks
+  deleted themselves; the context value is now stable, so `useAuth()` is safe in
+  a dependency array; dev/e2e stays offline and fast.
+- **Lost:** `createAuth()` returns a pair rather than a provider, so the factory
+  is the one place that knows both halves. Tests that drive auth need a state
+  stub (`@/testing/stub-auth`) rather than an ad-hoc object literal.
+- **Accepted:** `signIn()` still rejects _and_ records the failure in state.
+  Callers can use either; the state is the one consumers should read.

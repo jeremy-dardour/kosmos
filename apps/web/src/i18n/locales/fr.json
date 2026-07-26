@@ -7,6 +7,7 @@
   "auth.landing.status.signIn": "Aucune session active n'a été trouvée.",
   "auth.landing.status.forbidden": "Ce compte Google ne figure pas sur la liste d'accès de l'application.",
   "auth.landing.status.error": "La connexion n'a pas pu être validée. Réessayez depuis ce navigateur.",
+  "auth.landing.action.continueInDevMode": "Continuer en mode dev",
   "auth.landing.action.signInWithGoogle": "Se connecter avec Google",
   "auth.landing.action.tryAnotherAccount": "Utiliser un autre compte",
   "auth.landing.action.retry": "Réessayer",

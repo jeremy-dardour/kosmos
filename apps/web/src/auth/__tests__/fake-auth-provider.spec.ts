@@ -9,65 +9,50 @@ describe('fakeAuthProvider', () => {
     provider = new FakeAuthProvider();
   });
 
-  describe('initialize', () => {
-    it('should set authenticated to true', () => {
-      provider.initialize();
-
-      expect(provider.isAuthenticated()).toBe(true);
-    });
-  });
-
-  describe('login', () => {
-    it('should set authenticated to true', () => {
-      provider.login();
-
-      expect(provider.isAuthenticated()).toBe(true);
-    });
-  });
-
-  describe('logout', () => {
-    it('should set authenticated to false', () => {
-      provider.initialize();
-      expect(provider.isAuthenticated()).toBe(true);
-
-      provider.logout();
-
-      expect(provider.isAuthenticated()).toBe(false);
-    });
-  });
-
-  describe('getAuthenticatedUser', () => {
-    it('should return null when not authenticated', () => {
-      expect(provider.getAuthenticatedUser()).toBeNull();
-    });
-
-    it('should return user info when authenticated', () => {
-      provider.initialize();
-
-      const user = provider.getAuthenticatedUser();
-
-      expect(user).toEqual({
+  it('should start authenticated so the app is usable without a real login', () => {
+    expect(provider.getState()).toEqual({
+      status: 'authenticated',
+      user: {
         id: '00000000-0000-4000-8000-000000000001',
         email: 'dev.user@example.com',
         name: 'DevUser',
-      });
+      },
     });
   });
 
-  describe('getAccessToken', () => {
-    it('should throw error when not authenticated', async () => {
-      await expect(provider.getAccessToken()).rejects.toThrow(
-        '[FakeAuthProvider] User is not authenticated',
-      );
+  it('should go anonymous on signOut and back on signIn', async () => {
+    provider.signOut();
+    expect(provider.getState()).toEqual({ status: 'anonymous' });
+
+    await provider.signIn();
+
+    expect(provider.getState().status).toBe('authenticated');
+  });
+
+  it('should notify subscribers on every change', () => {
+    let calls = 0;
+    const unsubscribe = provider.subscribe(() => {
+      calls += 1;
     });
 
-    it('should return a valid JWT token when authenticated', async () => {
-      provider.initialize();
+    provider.signOut();
+    unsubscribe();
+    provider.signOut();
 
-      const token = await provider.getAccessToken();
+    expect(calls).toBe(1);
+  });
 
-      const parts = token.split('.');
-      expect(parts).toHaveLength(3);
-    });
+  it('should reject getAccessToken when not authenticated', async () => {
+    provider.signOut();
+
+    await expect(provider.getAccessToken()).rejects.toThrow(
+      '[FakeAuthProvider] User is not authenticated',
+    );
+  });
+
+  it('should return a JWT-shaped token when authenticated', async () => {
+    const token = await provider.getAccessToken();
+
+    expect(token.split('.')).toHaveLength(3);
   });
 });

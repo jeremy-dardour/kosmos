@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createAuthMiddleware } from '@/api/middlewares/auth-middleware';
+import { createStubAuthProvider } from '@/testing/stub-auth';
 
 import type { AuthProvider } from '@/auth/auth-provider.interface';
 
@@ -9,22 +10,10 @@ describe('createAuthMiddleware', () => {
   let getAuth: ReturnType<typeof vi.fn<() => AuthProvider | null>>;
 
   beforeEach(() => {
-    mockAuthProvider = {
-      getAccessToken: vi.fn().mockResolvedValue('test-token-123'),
-      logout: vi.fn(),
-      initialize: vi.fn(),
-      restore: vi.fn(),
-      login: vi.fn(),
-      isAuthenticated: vi.fn().mockReturnValue(true),
-      getAuthenticatedUser: vi.fn().mockReturnValue({
-        id: '00000000-0000-4000-8000-000000000011',
-        email: 'test@example.com',
-        name: 'Test User',
-      }),
-      getAuthError: vi.fn().mockReturnValue(null),
-      renderSignInButton: vi.fn(),
-      onChange: vi.fn(),
-    };
+    mockAuthProvider = createStubAuthProvider().provider;
+    mockAuthProvider.getAccessToken = vi
+      .fn()
+      .mockResolvedValue('test-token-123');
 
     getAuth = vi
       .fn<() => AuthProvider | null>()
@@ -84,40 +73,40 @@ describe('createAuthMiddleware', () => {
   });
 
   describe('onResponse', () => {
-    it('should call logout on 401 response', async () => {
+    it('should sign out on 401 response', () => {
       const middleware = createAuthMiddleware(getAuth);
       const response = new Response(null, { status: 401 });
 
-      await middleware.onResponse({ response });
+      middleware.onResponse({ response });
 
-      expect(mockAuthProvider.logout).toHaveBeenCalled();
+      expect(mockAuthProvider.signOut).toHaveBeenCalled();
     });
 
-    it('should not call logout on 403 response', async () => {
+    it('should not sign out on 403 response', () => {
       const middleware = createAuthMiddleware(getAuth);
       const response = new Response(null, { status: 403 });
 
-      await middleware.onResponse({ response });
+      middleware.onResponse({ response });
 
-      expect(mockAuthProvider.logout).not.toHaveBeenCalled();
+      expect(mockAuthProvider.signOut).not.toHaveBeenCalled();
     });
 
-    it('should not call logout on 200 response', async () => {
+    it('should not sign out on 200 response', () => {
       const middleware = createAuthMiddleware(getAuth);
       const response = new Response(null, { status: 200 });
 
-      await middleware.onResponse({ response });
+      middleware.onResponse({ response });
 
-      expect(mockAuthProvider.logout).not.toHaveBeenCalled();
+      expect(mockAuthProvider.signOut).not.toHaveBeenCalled();
     });
 
-    it('should not call logout on 400 response', async () => {
+    it('should not sign out on 400 response', () => {
       const middleware = createAuthMiddleware(getAuth);
       const response = new Response(null, { status: 400 });
 
-      await middleware.onResponse({ response });
+      middleware.onResponse({ response });
 
-      expect(mockAuthProvider.logout).not.toHaveBeenCalled();
+      expect(mockAuthProvider.signOut).not.toHaveBeenCalled();
     });
   });
 });

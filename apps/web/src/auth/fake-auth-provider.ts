@@ -1,76 +1,30 @@
+import { ANONYMOUS } from '@/auth/auth-state';
 import { generateFakeJwt } from '@/auth/utils/generate-fake-jwt';
 
-import type { AuthenticatedUser } from './types';
 import type { AuthError } from '@/auth/auth-error';
 import type {
   AuthChangeListener,
   AuthProvider,
 } from '@/auth/auth-provider.interface';
+import type { AuthState } from '@/auth/auth-state';
+import type { AuthenticatedUser } from '@/auth/types';
+
+const DEV_USER: AuthenticatedUser = {
+  id: '00000000-0000-4000-8000-000000000001',
+  email: 'dev.user@example.com',
+  name: 'DevUser',
+};
 
 // provider for local developments
 export class FakeAuthProvider implements AuthProvider {
-  private authenticated = false;
-  private authError: AuthError | null = null;
-  private authenticatedUser: AuthenticatedUser = this.mockAuthenticateUser();
+  private state: AuthState = { status: 'authenticated', user: DEV_USER };
   private readonly listeners = new Set<AuthChangeListener>();
 
-  initialize(): void {
-    this.authenticate();
+  getState(): AuthState {
+    return this.state;
   }
 
-  restore(): void {
-    this.authenticate();
-  }
-
-  login(): void {
-    this.authenticate();
-  }
-
-  logout(error?: AuthError): void {
-    this.authenticated = false;
-    this.authError = error ?? null;
-    this.emitChange();
-  }
-
-  isAuthenticated(): boolean {
-    return this.authenticated;
-  }
-
-  getAuthenticatedUser(): AuthenticatedUser | null {
-    return this.authenticated ? this.authenticatedUser : null;
-  }
-
-  getAuthError(): AuthError | null {
-    return this.authError;
-  }
-
-  getAccessToken(): Promise<string> {
-    if (!this.authenticated) {
-      return Promise.reject(
-        new Error('[FakeAuthProvider] User is not authenticated'),
-      );
-    }
-
-    const { email } = this.mockAuthenticateUser();
-
-    return Promise.resolve(generateFakeJwt(email, email));
-  }
-
-  renderSignInButton(container: HTMLElement): () => void {
-    // Append rather than replace, and clean up only our own node — the caller's
-    // effect may run twice under StrictMode. See GoogleAuthProvider.
-    const button = globalThis.document.createElement('button');
-    button.type = 'button';
-    button.textContent = 'Continue in dev mode';
-    button.addEventListener('click', () => this.login());
-    container.append(button);
-
-    return () => {
-      button.remove();
-    };
-  }
-
-  onChange(listener: AuthChangeListener): () => void {
+  subscribe(listener: AuthChangeListener): () => void {
     this.listeners.add(listener);
 
     return () => {
@@ -78,21 +32,28 @@ export class FakeAuthProvider implements AuthProvider {
     };
   }
 
-  private authenticate(): void {
-    this.authenticated = true;
-    this.authError = null;
-    this.emitChange();
+  signIn(): Promise<void> {
+    this.setState({ status: 'authenticated', user: DEV_USER });
+
+    return Promise.resolve();
   }
 
-  private mockAuthenticateUser() {
-    return {
-      id: '00000000-0000-4000-8000-000000000001',
-      email: 'dev.user@example.com',
-      name: 'DevUser',
-    };
+  signOut(reason?: AuthError): void {
+    this.setState(reason ? { status: 'error', error: reason } : ANONYMOUS);
   }
 
-  private emitChange(): void {
+  getAccessToken(): Promise<string> {
+    if (this.state.status !== 'authenticated') {
+      return Promise.reject(
+        new Error('[FakeAuthProvider] User is not authenticated'),
+      );
+    }
+
+    return Promise.resolve(generateFakeJwt(DEV_USER.email, DEV_USER.email));
+  }
+
+  private setState(next: AuthState): void {
+    this.state = next;
     for (const listener of this.listeners) {
       listener();
     }

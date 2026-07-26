@@ -7,6 +7,7 @@
   "auth.landing.status.signIn": "No se encontró ninguna sesión activa.",
   "auth.landing.status.forbidden": "Esta cuenta de Google no está en la lista de acceso de la aplicación.",
   "auth.landing.status.error": "No se pudo validar el inicio de sesión. Inténtalo de nuevo desde este navegador.",
+  "auth.landing.action.continueInDevMode": "Continuar en modo dev",
   "auth.landing.action.signInWithGoogle": "Iniciar sesión con Google",
   "auth.landing.action.tryAnotherAccount": "Usar otra cuenta",
   "auth.landing.action.retry": "Reintentar",
