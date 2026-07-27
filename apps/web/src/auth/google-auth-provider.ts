@@ -71,6 +71,15 @@ const SIGN_IN_BUTTON_OPTIONS = {
   width: 280,
 } as const;
 
+/**
+ * `Auth` backed by Google Identity Services: owns the GIS lifecycle (script
+ * load, prompt, credential callback, sign-in button) and the ID token it
+ * yields — persisting it, restoring it on construction, and expiring it.
+ *
+ * It does not decide who the user is. `fetchCurrentUser` exchanges the token
+ * for an app identity and produces the `AuthError` this maps onto the next
+ * state, so a token Google accepts can still land on `forbidden` (ADR 0007).
+ */
 export class GoogleAuthProvider implements Auth {
   private readonly clientId: string;
   private state: AuthState = RESTORING;

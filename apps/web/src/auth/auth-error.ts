@@ -7,6 +7,11 @@ export type AuthErrorCode =
   | 'token_rejected'
   | 'validation_failed';
 
+/**
+ * A failure of authentication itself. The provider maps `code` onto the next
+ * `AuthState`, so branch on `code` — never on `message`, which is only ever
+ * shown or logged.
+ */
 export class AuthError extends Error {
   constructor(
     readonly code: AuthErrorCode,
