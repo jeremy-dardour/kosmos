@@ -4,6 +4,9 @@ Inherits: [Global standards](../../STANDARDS.md)
 
 ## Module structure
 
+See [module-layout.md](./module-layout.md) for the project aggregate layout and
+its rationale.
+
 ```
 src/
   app/            → Infrastructure (auth, config, filters, interceptors, health, logger)
@@ -12,6 +15,9 @@ src/
       <feature>.module.ts
       <feature>.controller.ts
       <feature>.service.ts
+      repositories/
+        <concern>.repository.ts → Persistence operations for an entity,
+                                  aggregate, or read model
       dtos/
         input/    → Create/Update DTOs (class-validator + @ApiProperty)
         output/   → Response DTOs (@ApiProperty only)
@@ -27,6 +33,32 @@ ESLint `boundaries` plugin enforces module isolation:
 - Feature modules (`src/modules/*`) cannot import each other
 - Only `shared/` and `app/` are allowed for cross-imports
 - `app/` layer cannot import business modules
+
+## Persistence seam
+
+Repositories encapsulate persistence. The dependency flow is:
+
+```text
+Controller → Service → Repository → EntityManager
+```
+
+- Only repository implementations may inject an `EntityManager` or
+  `EntityRepository`; services and controllers never use MikroORM APIs,
+  including `find`, `populate`, `flush`, query builders, or transactions.
+  Entity definitions, migrations, seeders, database configuration, and
+  database-backed tests are the expected exceptions.
+- Repositories accept and return entities, IDs, query criteria, or
+  query-specific entity graphs—never input or output DTOs. Repository `save`
+  methods call `persist(entity)` followed by `flush()`.
+- A read model such as the overview gets a query-focused repository rather
+  than being forced through an entity CRUD repository.
+- Services instantiate and mutate entities from input DTOs; services or
+  controllers map entities to output DTOs. Entity methods expose neutral
+  collection accessors so DTO mapping never calls MikroORM `Collection` APIs.
+- Use one concrete `<concern>.repository.ts` class while MikroORM is the only
+  persistence adapter. Do not add a parallel abstract repository plus a
+  `MikroOrm*Repository` implementation or generic base repository until a
+  second real adapter requires that seam.
 
 ## Entity definitions (MikroORM 7)
 

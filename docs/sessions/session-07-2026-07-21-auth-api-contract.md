@@ -24,7 +24,7 @@
   CRUD for sub-entities, all derived state server-side (see ticket 04 answer).
 - Module structure: one `project` module owns everything (no cross-module
   boundaries at this scale). Updates the split in
-  [module-layout.md](../module-layout.md).
+  [module layout](../../apps/api/module-layout.md).
 - No standalone `GET` for workstreams — overview provides all data; mutations
   return updated state.
 - Notes fetched per-workstream (`GET /workstreams/:workstreamId/notes`) not

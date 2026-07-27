@@ -14,7 +14,7 @@
   `step_outcome` enum, deferred unique constraints on position columns, and
   explicit indexes on `note.step_id` / `checklist_item.step_id`.
 - **Registered entities in 4 NestJS modules** (user, project, group,
-  workstream) per the [module layout](../module-layout.md).
+  workstream) per the [module layout](../../apps/api/module-layout.md).
 - **Removed the scaffolding Item entity**, its module, factory, seeder
   reference, and E2E test.
 - **Verified migration runs cleanly** against a fresh Postgres — all tables,

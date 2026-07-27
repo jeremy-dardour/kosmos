@@ -33,8 +33,14 @@ One Docker container serves both the API and the Vite-built SPA
 
 ```
 src/modules/
-  workstream/              ← owns the entire aggregate
-    workstream.module.ts
+  project/                 ← owns the entire aggregate
+    project.module.ts
+    project.controller.ts       (Project CRUD)
+    project.service.ts
+    overview.controller.ts      (the aggregate read model)
+    overview.service.ts
+    group.controller.ts         (Group CRUD)
+    group.service.ts
     workstream.controller.ts    (Workstream CRUD + advance)
     workstream.service.ts       (pipeline transitions + CRUD)
     step.controller.ts          (Step CRUD + reorder)
@@ -47,12 +53,10 @@ src/modules/
     dtos/
       input/                    (class-validator)
       output/                   (@ApiProperty)
-  project/                 ← thin CRUD
-  group/                   ← thin CRUD
   user/                    ← upsert-on-login, read-only endpoints
 ```
 
-Full layout rationale: [module-layout.md](../module-layout.md).
+Full layout rationale: [API module layout](../../apps/api/module-layout.md).
 
 ---
 

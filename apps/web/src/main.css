@@ -124,6 +124,79 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Pipeline design tokens — wireframe semantics, re-derived in oklch. */
+:root {
+  --step-done: oklch(0.66 0.096 155);
+  --step-in-progress: oklch(0.58 0.142 255);
+  --step-in-progress-glow: oklch(0.58 0.142 255 / 18%);
+  --step-not-started: oklch(0.84 0.004 285);
+  --step-skipped: oklch(0.7 0.004 285);
+  --step-blocked: oklch(0.58 0.163 27);
+  --step-blocked-glow: oklch(0.58 0.163 27 / 18%);
+
+  /* Deadline urgency bands: ≥ 7 days, < 7 days, past. */
+  --urgency-calm: oklch(0.96 0.003 285);
+  --urgency-calm-foreground: oklch(0.52 0.004 285);
+  --urgency-soon: oklch(0.95 0.032 27);
+  --urgency-soon-foreground: oklch(0.52 0.163 27);
+  --urgency-late: oklch(0.58 0.163 27);
+  --urgency-late-foreground: oklch(0.99 0 0);
+}
+
+.dark {
+  --step-done: oklch(0.74 0.105 155);
+  --step-in-progress: oklch(0.7 0.13 255);
+  --step-in-progress-glow: oklch(0.7 0.13 255 / 24%);
+  --step-not-started: oklch(0.44 0.006 285);
+  --step-skipped: oklch(0.56 0.006 285);
+  --step-blocked: oklch(0.71 0.145 27);
+  --step-blocked-glow: oklch(0.71 0.145 27 / 24%);
+
+  --urgency-calm: oklch(0.27 0.004 285);
+  --urgency-calm-foreground: oklch(0.72 0.006 285);
+  --urgency-soon: oklch(0.31 0.055 27);
+  --urgency-soon-foreground: oklch(0.79 0.12 27);
+  --urgency-late: oklch(0.63 0.16 27);
+  --urgency-late-foreground: oklch(0.16 0 0);
+}
+
+@theme inline {
+  --color-step-done: var(--step-done);
+  --color-step-in-progress: var(--step-in-progress);
+  --color-step-not-started: var(--step-not-started);
+  --color-step-skipped: var(--step-skipped);
+  --color-step-blocked: var(--step-blocked);
+
+  --color-urgency-calm: var(--urgency-calm);
+  --color-urgency-calm-foreground: var(--urgency-calm-foreground);
+  --color-urgency-soon: var(--urgency-soon);
+  --color-urgency-soon-foreground: var(--urgency-soon-foreground);
+  --color-urgency-late: var(--urgency-late);
+  --color-urgency-late-foreground: var(--urgency-late-foreground);
+
+  --shadow-step-current: 0 0 0 3px var(--step-in-progress-glow);
+  --shadow-step-blocked: 0 0 0 3px var(--step-blocked-glow);
+
+  --spacing-card: 0.875rem;
+  --spacing-panel: 1.25rem;
+  --spacing-dot: 0.625rem;
+  --spacing-dot-current: 0.875rem;
+  --spacing-connector: 1rem;
+}
+
+@layer components {
+  /* --avatar-hue arrives inline per user; lightness and chroma fixed here. */
+  .owner-avatar {
+    background-color: oklch(0.93 0.045 var(--avatar-hue));
+    color: oklch(0.42 0.105 var(--avatar-hue));
+  }
+
+  .dark .owner-avatar {
+    background-color: oklch(0.33 0.055 var(--avatar-hue));
+    color: oklch(0.86 0.085 var(--avatar-hue));
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

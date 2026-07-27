@@ -1,37 +1,26 @@
-import { InjectRepository } from '@mikro-orm/nestjs';
-import { EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
 import { User } from '@/database/entities/user.entity';
+import { UserRepository } from '@/database/repositories/user.repository';
 
 import type { AuthenticatedUser } from '@/app/auth/types/token.types';
 
 @Injectable()
 export class AuthUserProvisionerService {
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: EntityRepository<User>,
-  ) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   async provision(
     authenticatedUser: AuthenticatedUser,
   ): Promise<AuthenticatedUser> {
     const email = authenticatedUser.email.toLowerCase();
     const user =
-      (await this.userRepository.findOne({ email })) ??
-      this.userRepository.create({
-        email,
-        name: authenticatedUser.name ?? email,
-        avatarUrl: authenticatedUser.avatarUrl ?? null,
-      });
+      (await this.userRepository.findOneByEmail(email)) ?? new User();
 
-    this.userRepository.assign(user, {
-      email,
-      name: authenticatedUser.name ?? email,
-      avatarUrl: authenticatedUser.avatarUrl ?? null,
-    });
+    user.email = email;
+    user.name = authenticatedUser.name ?? email;
+    user.avatarUrl = authenticatedUser.avatarUrl ?? null;
 
-    await this.userRepository.getEntityManager().flush();
+    await this.userRepository.save(user);
 
     return {
       ...authenticatedUser,

@@ -14,7 +14,7 @@ export class User {
   name!: string;
 
   @Property({ type: 'text' })
-  avatarUrl?: Opt<string | null>;
+  avatarUrl?: Opt<string> | null;
 
   @Property({ type: 'timestamptz', defaultRaw: 'now()' })
   createdAt!: Opt<Date>;

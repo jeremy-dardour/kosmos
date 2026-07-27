@@ -39,19 +39,27 @@ decorators.
 
 ```typescript
 @Property({ type: 'text' })
-description?: Opt<string | null>;
+description?: Opt<string> | null;
 ```
 
 - `?` - property omittable in `em.create()`
 - `| null` - database column is nullable
 - `Opt<T>` - property has a default or is optional in create operations
 
+**Keep `| null` outside `Opt<>`.** `Opt<T>` is `T & Opt.Brand`, so
+`Opt<string | null>` distributes to `(string & Brand) | (null & Brand)` and the
+second half collapses to `never` — the property ends up typed
+`(string & Brand) | undefined` and **cannot be assigned `null`**. Any service
+that clears the column (`project.eventDate = null`) fails to compile. Both
+forms generate the same schema, so this is a TS-only distinction with no
+migration impact.
+
 ## Property modifiers
 
 | Modifier            | Meaning                                                              | Use for                                                                        |
 | ------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | `!: Opt<T>`         | Required at TS level, has DB default, omittable in `em.create()`     | Non-nullable columns with a DB default (`gen_random_uuid()`, `now()`, `false`) |
-| `?: Opt<T \| null>` | Optional in `em.create()`, nullable in DB, set later by domain logic | Nullable columns populated by domain operations after creation                 |
+| `?: Opt<T> \| null` | Optional in `em.create()`, nullable in DB, set later by domain logic | Nullable columns populated by domain operations after creation                 |
 | `?: T \| null`      | Optional in `em.create()`, nullable in DB, no default                | Nullable relations where assignment is optional                                |
 | `!: T`              | Required, non-nullable, no DB default                                | Non-nullable columns the caller must always provide at creation                |
 

@@ -1,0 +1,112 @@
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+
+import { PipelineDots } from '@/features/overview/pipeline-dots';
+
+import type { dtos } from '@/types/openapi';
+
+function step(
+  name: string,
+  status: dtos['StepStatus'],
+  overrides: Partial<dtos['OverviewStepDto']> = {},
+): dtos['OverviewStepDto'] {
+  return {
+    id: name,
+    name,
+    position: 1,
+    status,
+    blocked: false,
+    deadline: null,
+    explicitOwnerId: null,
+    effectiveOwnerId: null,
+    checklistItems: [],
+    ...overrides,
+  };
+}
+
+function dotFor(name: string, statusKey: string): HTMLElement {
+  return screen.getByTitle(`${name} — overview.stepStatus.${statusKey}`);
+}
+
+describe('pipelineDots', () => {
+  it('renders one labelled dot per step', () => {
+    render(
+      <PipelineDots
+        steps={[
+          step('Shortlist', 'done'),
+          step('Visit', 'in_progress'),
+          step('Book', 'not_started'),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Shortlist')).toBeInTheDocument();
+    expect(screen.getByText('Visit')).toBeInTheDocument();
+    expect(screen.getByText('Book')).toBeInTheDocument();
+  });
+
+  it('colours each dot by status', () => {
+    render(
+      <PipelineDots
+        steps={[
+          step('Shortlist', 'done'),
+          step('Compare', 'skipped'),
+          step('Visit', 'in_progress'),
+          step('Book', 'not_started'),
+        ]}
+      />,
+    );
+
+    expect(dotFor('Shortlist', 'done')).toHaveClass('bg-step-done');
+    expect(dotFor('Compare', 'skipped')).toHaveClass('border-step-skipped');
+    expect(dotFor('Visit', 'inProgress')).toHaveClass('bg-step-in-progress');
+    expect(dotFor('Book', 'notStarted')).toHaveClass('border-step-not-started');
+  });
+
+  it('gives the current step the larger glowing dot', () => {
+    render(<PipelineDots steps={[step('Visit', 'in_progress')]} />);
+
+    const dot = dotFor('Visit', 'inProgress');
+    expect(dot).toHaveClass('size-dot-current');
+    expect(dot).toHaveClass('shadow-step-current');
+  });
+
+  it('shows a blocked current step in red', () => {
+    render(
+      <PipelineDots
+        steps={[step('Addresses', 'in_progress', { blocked: true })]}
+      />,
+    );
+
+    const dot = dotFor('Addresses', 'blocked');
+    expect(dot).toHaveClass('bg-step-blocked');
+    expect(dot).toHaveClass('shadow-step-blocked');
+  });
+
+  it('ignores a stale blocked flag on a step that has been passed', () => {
+    render(
+      <PipelineDots steps={[step('Addresses', 'done', { blocked: true })]} />,
+    );
+
+    expect(dotFor('Addresses', 'done')).toHaveClass('bg-step-done');
+  });
+
+  it('announces each status as text for screen readers', () => {
+    render(
+      <PipelineDots
+        steps={[step('Shortlist', 'done'), step('Visit', 'in_progress')]}
+      />,
+    );
+
+    expect(screen.getByText('overview.stepStatus.done')).toHaveClass('sr-only');
+    expect(screen.getByText('overview.stepStatus.inProgress')).toHaveClass(
+      'sr-only',
+    );
+  });
+
+  it('falls back to a message when the pipeline is empty', () => {
+    render(<PipelineDots steps={[]} />);
+
+    expect(screen.getByText('overview.card.noSteps')).toBeInTheDocument();
+  });
+});

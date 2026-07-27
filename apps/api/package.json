@@ -57,7 +57,6 @@
     "@nestjs/throttler": "^6.5.0",
     "@scalar/nestjs-api-reference": "^1.2.5",
     "@workspace/api-contracts": "workspace:*",
-    "@workspace/shared": "workspace:*",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
     "jose": "^6.2.3",

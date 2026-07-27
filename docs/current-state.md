@@ -5,7 +5,7 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-26_
+_Last updated: 2026-07-27 (session 18 follow-up)_
 
 ## Phase
 
@@ -54,6 +54,26 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
   credential validation cannot undo logout or overwrite a newer session.
   `AuthProviderBoundary` and both rerender hacks remain deleted
   ([sessions 15–21](./sessions/session-15-20-2026-07-24-auth-v1-1.md)).
+- **#18 — Slice 1: layout shell + overview data + card list** — complete on
+  `feat/slice-1-overview`. A single `project` module owns the aggregate
+  ([module layout](../apps/api/module-layout.md)); the overview aggregate read derives
+  lifecycle, step status, owner inheritance and nearest-deadline selection
+  server-side from one repeatable-read snapshot. User display data is normalized
+  into one summary directory; owner and deadline relationships use IDs. The web
+  derives relative countdowns from stable dates and refreshes them at local
+  midnight. It renders grouped cards with pipeline dots in light and dark themes.
+  The API now isolates MikroORM behind entity-only repositories; services own
+  DTO-to-entity orchestration, while the overview uses a query-focused
+  repository for its consistent entity graph. Dev seeder covers every
+  lifecycle/status/urgency combination
+  ([session 15](./sessions/session-15-2026-07-25-slice-1-overview.md)).
+- **PR #31 reviewed and fixed.** Blocking: `@IsOptionalNotNull()` stops an
+  explicit `null` reaching a non-nullable column (422, not 500);
+  `WorkstreamService.remove` is one transaction. Cleanups: `StepContext`
+  removed, calendar-day helpers consolidated, the whole project module on one
+  data-access idiom, `isBlockedNow()` shared on the web, `sr-only` status on
+  pipeline dots, `eventYesterday`
+  ([session 15](./sessions/session-15-2026-07-25-slice-1-overview.md)).
 
 ## In flight
 
@@ -69,6 +89,8 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
 - `deferMode: 'deferred'` on `@Unique` constraints (Step, ChecklistItem) does
   not produce `DEFERRABLE INITIALLY DEFERRED` in MikroORM's generated SQL.
   Service layer will need to handle constraint ordering for bulk reorder.
+- Overview ordering is alphabetical (groups and workstreams by name) — nothing
+  in the specs states an order. Revisit if manual ordering is wanted.
 
 ## Next steps
 
