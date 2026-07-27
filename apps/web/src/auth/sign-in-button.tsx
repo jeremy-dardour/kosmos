@@ -8,10 +8,10 @@ import { GoogleSignInButton } from '@/auth/google-sign-in-button';
  * goes through One Tap, which browsers suppress unpredictably (ADR 0007).
  */
 export function SignInButton(): React.JSX.Element {
-  const session = useAuth();
+  const auth = useAuth();
 
-  if (session instanceof GoogleAuthProvider) {
-    return <GoogleSignInButton provider={session} />;
+  if (auth instanceof GoogleAuthProvider) {
+    return <GoogleSignInButton provider={auth} />;
   }
 
   return <FakeSignInButton />;

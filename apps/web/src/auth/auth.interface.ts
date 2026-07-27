@@ -8,7 +8,7 @@ export type AuthChangeListener = () => void;
  *
  * What this interface leaves out, and why: ADR 0007.
  */
-export interface AuthSession {
+export interface Auth {
   getState(): AuthState;
   subscribe(listener: AuthChangeListener): () => void;
   signIn(): Promise<void>;

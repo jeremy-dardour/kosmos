@@ -11,7 +11,7 @@ interface GoogleSignInButtonProps {
 
 /**
  * Takes the concrete provider rather than reading `useAuth()`: rendering the
- * widget is not part of `AuthSession` (ADR 0007).
+ * widget is not part of `Auth` (ADR 0007).
  */
 export function GoogleSignInButton({
   provider,

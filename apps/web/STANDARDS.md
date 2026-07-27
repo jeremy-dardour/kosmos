@@ -29,7 +29,7 @@ src/
 
 ## Auth
 
-- Strategy interface: `AuthSession` — `getState`, `subscribe`, `signIn`,
+- Strategy interface: `Auth` — `getState`, `subscribe`, `signIn`,
   `signOut`, `getAccessToken`
 - React context (`AuthContext`) + `useAuth()` for actions, `useAuthState()` for
   the state (via `useSyncExternalStore`)

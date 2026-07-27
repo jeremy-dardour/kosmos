@@ -1,18 +1,18 @@
 import { createContext, use, useSyncExternalStore } from 'react';
 
-import type { AuthSession } from '@/auth/auth-session.interface';
 import type { AuthState } from '@/auth/auth-state';
+import type { Auth } from '@/auth/auth.interface';
 
-export const AuthContext = createContext<AuthSession | null>(null);
+export const AuthContext = createContext<Auth | null>(null);
 
-export function useAuth(): AuthSession {
-  const session = use(AuthContext);
+export function useAuth(): Auth {
+  const auth = use(AuthContext);
 
-  if (!session) {
+  if (!auth) {
     throw new Error('useAuth must be used within AuthContext.Provider');
   }
 
-  return session;
+  return auth;
 }
 
 /**
@@ -20,10 +20,10 @@ export function useAuth(): AuthSession {
  * context value stable, so `useAuth()` is safe in a dependency array.
  */
 export function useAuthState(): AuthState {
-  const session = useAuth();
+  const auth = useAuth();
 
   return useSyncExternalStore(
-    (listener) => session.subscribe(listener),
-    () => session.getState(),
+    (listener) => auth.subscribe(listener),
+    () => auth.getState(),
   );
 }

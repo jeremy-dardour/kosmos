@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 
 export function FakeSignInButton(): React.JSX.Element {
   const { t } = useTranslation();
-  const session = useAuth();
+  const auth = useAuth();
 
   return (
-    <Button onClick={() => void session.signIn()} type="button">
+    <Button onClick={() => void auth.signIn()} type="button">
       {t('auth.landing.action.continueInDevMode')}
     </Button>
   );

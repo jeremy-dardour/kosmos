@@ -36,10 +36,10 @@ function SignInButton() {
 
 describe('authContext', () => {
   it('should expose the session state to consumers', () => {
-    const auth = createStubAuth();
+    const { auth } = createStubAuth();
 
     render(
-      <AuthContext value={auth.session}>
+      <AuthContext value={auth}>
         <SessionStatus />
       </AuthContext>,
     );
@@ -60,10 +60,10 @@ describe('authContext', () => {
   });
 
   it('should expose the authenticated user', () => {
-    const auth = createStubAuth();
+    const { auth } = createStubAuth();
 
     render(
-      <AuthContext value={auth.session}>
+      <AuthContext value={auth}>
         <PersonalComponent />
       </AuthContext>,
     );
@@ -72,24 +72,24 @@ describe('authContext', () => {
   });
 
   it('should expose provider actions', () => {
-    const auth = createStubAuth();
+    const { auth } = createStubAuth();
 
     render(
-      <AuthContext value={auth.session}>
+      <AuthContext value={auth}>
         <SignInButton />
       </AuthContext>,
     );
 
     screen.getByRole('button', { name: 'Sign in' }).click();
 
-    expect(auth.session.signIn).toHaveBeenCalledOnce();
+    expect(auth.signIn).toHaveBeenCalledOnce();
   });
 
   it('should re-render consumers when the provider changes outside React', () => {
-    const auth = createStubAuth();
+    const { auth, setState } = createStubAuth();
 
     render(
-      <AuthContext value={auth.session}>
+      <AuthContext value={auth}>
         <SessionStatus />
       </AuthContext>,
     );
@@ -97,7 +97,7 @@ describe('authContext', () => {
     expect(screen.getByText('Authenticated')).toBeInTheDocument();
 
     act(() => {
-      auth.setState({ status: 'anonymous' });
+      setState({ status: 'anonymous' });
     });
 
     expect(screen.getByText('Not authenticated')).toBeInTheDocument();

@@ -12,7 +12,7 @@ Four boundaries in the web auth module.
 
 ### 1. Acquiring a token and validating a session are separate concerns
 
-`AuthProvider` implementations own **identity acquisition only** — the
+`Auth` implementations own **identity acquisition only** — the
 Google-specific business of getting an ID token out of GIS. Exchanging any
 token for "who is this in our app" is provider-agnostic and lives in
 `apps/web/src/api/current-user.ts`:
@@ -29,7 +29,7 @@ It deliberately uses `fetch` rather than the shared openapi-fetch client: it
 runs _during_ authentication, before a session exists, and the client's auth
 middleware signs out on 401 — precisely the response this call exists to report.
 
-### 2. `AuthSession` is a state machine, and nothing else
+### 2. `Auth` is a state machine, and nothing else
 
 Five members, no DOM:
 
@@ -41,10 +41,24 @@ signOut(): void
 getAccessToken(): Promise<string>
 ```
 
-Named `AuthSession`, not `AuthProvider`: in React that name reads as a context
-provider component, and this is neither a component nor a React thing. The
-concrete implementations keep the `…AuthProvider` suffix — they are what
-provides a session.
+Named `Auth`. It is emphatically **not** `AuthSession`: the object exists before
+anyone signs in, survives sign-out, and reports `anonymous` — while `signIn()`
+on a "session" inverts the lifecycle, since a session is _created_ by signing
+in rather than creating itself. The real session is the `authenticated` state
+plus its token; internally `GoogleAuthProvider` already uses "session" for that
+(`restoreStoredSession`, `clearSession`), and it keeps the word.
+
+`Auth` over a more descriptive noun (`Authenticator`, `AuthClient`) because the
+module already says `auth` at every boundary — `createAuth()`, `useAuth()`,
+`<AuthContext value={auth}>`. Naming the type `Auth` collapses the vocabulary
+onto the one already in use instead of adding another, and it is the only
+option where the hook and its return type agree.
+
+The concrete implementations keep the `…AuthProvider` suffix. With the
+interface no longer squatting on the word, "provider" reads correctly as the
+**identity provider** adapter, and `implements Auth` distinguishes it on sight
+from Firebase's same-named class — which is a throwaway IdP descriptor, not the
+stateful singleton. Firebase calls that singleton `Auth` too.
 
 `AuthState` is `restoring | anonymous | authenticated | forbidden | error`.
 Consumers render from the status directly, so no component derives a parallel
@@ -89,10 +103,10 @@ in an otherwise DOM-free interface. Instead a single `<SignInButton />`
 component branches on the concrete session in context:
 
 ```tsx
-session instanceof GoogleAuthProvider ? <GoogleSignInButton … /> : <FakeSignInButton />
+auth instanceof GoogleAuthProvider ? <GoogleSignInButton … /> : <FakeSignInButton />
 ```
 
-`createAuth()` therefore returns an `AuthSession` and nothing else — it briefly
+`createAuth()` therefore returns an `Auth` and nothing else — it briefly
 returned a `{ provider, signInButton }` pair, which put a rendered element in
 the context value for every consumer to carry.
 

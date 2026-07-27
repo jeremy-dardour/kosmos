@@ -9,17 +9,17 @@ import { createStubAuth } from '@/testing/stub-auth';
 import type { AuthState } from '@/auth';
 
 function renderProtectedRoute(initialState: AuthState) {
-  const auth = createStubAuth(initialState);
+  const stub = createStubAuth(initialState);
 
   render(
-    <AuthContext value={auth.session}>
+    <AuthContext value={stub.auth}>
       <ProtectedRoute>
         <div>Private content</div>
       </ProtectedRoute>
     </AuthContext>,
   );
 
-  return auth;
+  return stub;
 }
 
 describe('protectedRoute', () => {
@@ -40,12 +40,12 @@ describe('protectedRoute', () => {
   });
 
   it('should swap to children when the session settles as authenticated', () => {
-    const auth = renderProtectedRoute({ status: 'restoring' });
+    const { setState } = renderProtectedRoute({ status: 'restoring' });
 
     expect(screen.queryByText('Private content')).not.toBeInTheDocument();
 
     act(() => {
-      auth.setState({
+      setState({
         status: 'authenticated',
         user: { id: 'id', email: 'a@example.com', name: 'A' },
       });
@@ -68,7 +68,7 @@ describe('protectedRoute', () => {
 
   it('should show forbidden state for disallowed accounts', async () => {
     const user = userEvent.setup();
-    const auth = renderProtectedRoute({
+    const { auth } = renderProtectedRoute({
       status: 'forbidden',
       error: new AuthError('forbidden', 'not allowed'),
     });
@@ -81,12 +81,12 @@ describe('protectedRoute', () => {
       }),
     );
 
-    expect(auth.session.signOut).toHaveBeenCalledOnce();
+    expect(auth.signOut).toHaveBeenCalledOnce();
   });
 
   it('should retry sign-in from the error state', async () => {
     const user = userEvent.setup();
-    const auth = renderProtectedRoute({
+    const { auth } = renderProtectedRoute({
       status: 'error',
       error: new AuthError('validation_failed', 'boom'),
     });
@@ -97,6 +97,6 @@ describe('protectedRoute', () => {
       screen.getByRole('button', { name: 'auth.landing.action.retry' }),
     );
 
-    expect(auth.session.signIn).toHaveBeenCalledOnce();
+    expect(auth.signIn).toHaveBeenCalledOnce();
   });
 });

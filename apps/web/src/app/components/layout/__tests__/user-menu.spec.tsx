@@ -6,8 +6,10 @@ import { UserMenu } from '@/app/components/layout/user-menu';
 import { AuthContext } from '@/auth';
 import { createStubAuth } from '@/testing/stub-auth';
 
+import type { Auth } from '@/auth';
+
 const setup = () => {
-  const auth = createStubAuth({
+  const { auth } = createStubAuth({
     status: 'authenticated',
     user: {
       id: '00000000-0000-4000-8000-000000000010',
@@ -17,7 +19,7 @@ const setup = () => {
   });
 
   render(
-    <AuthContext value={auth.session}>
+    <AuthContext value={auth}>
       <UserMenu />
     </AuthContext>,
   );
@@ -26,7 +28,7 @@ const setup = () => {
 };
 
 describe('userMenu', () => {
-  let auth: ReturnType<typeof createStubAuth>;
+  let auth: Auth;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -47,6 +49,6 @@ describe('userMenu', () => {
     await userEvent.click(screen.getByText('Jane Doe'));
     await userEvent.click(screen.getByText('app.userMenu.logout'));
 
-    expect(auth.session.signOut).toHaveBeenCalledOnce();
+    expect(auth.signOut).toHaveBeenCalledOnce();
   });
 });

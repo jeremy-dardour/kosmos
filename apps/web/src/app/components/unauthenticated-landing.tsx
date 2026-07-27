@@ -16,7 +16,7 @@ export function UnauthenticatedLanding({
   status,
 }: UnauthenticatedLandingProps): React.JSX.Element {
   const { t } = useTranslation();
-  const session = useAuth();
+  const auth = useAuth();
 
   return (
     <div className="min-h-screen bg-[linear-gradient(135deg,#f8f7f3_0%,#ffffff_44%,#eef3ef_100%)] text-foreground">
@@ -53,7 +53,7 @@ export function UnauthenticatedLanding({
               {status === 'anonymous' ? <SignInButton /> : null}
               {status === 'forbidden' ? (
                 <Button
-                  onClick={() => session.signOut()}
+                  onClick={() => auth.signOut()}
                   type="button"
                   variant="outline"
                 >
@@ -62,7 +62,7 @@ export function UnauthenticatedLanding({
               ) : null}
               {status === 'error' ? (
                 <Button
-                  onClick={() => void session.signIn()}
+                  onClick={() => void auth.signIn()}
                   type="button"
                   variant="outline"
                 >

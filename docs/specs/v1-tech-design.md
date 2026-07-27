@@ -189,7 +189,7 @@ Full implementation spec in the [Auth PRD](./auth/PRD.md). Research in
 [auth-internals.md](../research/auth-internals.md).
 
 > **Web module structure:** see
-> [ADR 0007](../adr/0007-web-auth-module-boundaries.md) — the `AuthSession`
+> [ADR 0007](../adr/0007-web-auth-module-boundaries.md) — the `Auth`
 > interface, where `/users/me` lives, why the session recovers on construction
 > rather than on a caller's command, why only `401` invalidates a session, and
 > the fake-auth-stays-offline constraint. It owns the frontend flow; this

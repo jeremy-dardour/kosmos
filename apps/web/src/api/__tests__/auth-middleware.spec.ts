@@ -3,17 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthMiddleware } from '@/api/middlewares/auth-middleware';
 import { createStubAuth } from '@/testing/stub-auth';
 
-import type { AuthSession } from '@/auth/auth-session.interface';
+import type { Auth } from '@/auth/auth.interface';
 
 describe('createAuthMiddleware', () => {
-  let mockSession: AuthSession;
-  let getAuth: ReturnType<typeof vi.fn<() => AuthSession | null>>;
+  let mockAuth: Auth;
+  let getAuth: ReturnType<typeof vi.fn<() => Auth | null>>;
 
   beforeEach(() => {
-    mockSession = createStubAuth().session;
-    mockSession.getAccessToken = vi.fn().mockResolvedValue('test-token-123');
+    mockAuth = createStubAuth().auth;
+    mockAuth.getAccessToken = vi.fn().mockResolvedValue('test-token-123');
 
-    getAuth = vi.fn<() => AuthSession | null>().mockReturnValue(mockSession);
+    getAuth = vi.fn<() => Auth | null>().mockReturnValue(mockAuth);
   });
 
   describe('onRequest', () => {
@@ -23,7 +23,7 @@ describe('createAuthMiddleware', () => {
 
       await middleware.onRequest({ request });
 
-      expect(mockSession.getAccessToken).toHaveBeenCalled();
+      expect(mockAuth.getAccessToken).toHaveBeenCalled();
       expect(request.headers.get('Authorization')).toBe(
         'Bearer test-token-123',
       );
@@ -40,7 +40,7 @@ describe('createAuthMiddleware', () => {
     });
 
     it('should not add Authorization header when getAccessToken returns empty string', async () => {
-      mockSession.getAccessToken = vi.fn().mockResolvedValueOnce('');
+      mockAuth.getAccessToken = vi.fn().mockResolvedValueOnce('');
       const middleware = createAuthMiddleware(getAuth);
       const request = new Request('http://localhost/api/test');
 
@@ -75,7 +75,7 @@ describe('createAuthMiddleware', () => {
 
       middleware.onResponse({ response });
 
-      expect(mockSession.signOut).toHaveBeenCalled();
+      expect(mockAuth.signOut).toHaveBeenCalled();
     });
 
     it('should not sign out on 403 response', () => {
@@ -84,7 +84,7 @@ describe('createAuthMiddleware', () => {
 
       middleware.onResponse({ response });
 
-      expect(mockSession.signOut).not.toHaveBeenCalled();
+      expect(mockAuth.signOut).not.toHaveBeenCalled();
     });
 
     it('should not sign out on 200 response', () => {
@@ -93,7 +93,7 @@ describe('createAuthMiddleware', () => {
 
       middleware.onResponse({ response });
 
-      expect(mockSession.signOut).not.toHaveBeenCalled();
+      expect(mockAuth.signOut).not.toHaveBeenCalled();
     });
 
     it('should not sign out on 400 response', () => {
@@ -102,7 +102,7 @@ describe('createAuthMiddleware', () => {
 
       middleware.onResponse({ response });
 
-      expect(mockSession.signOut).not.toHaveBeenCalled();
+      expect(mockAuth.signOut).not.toHaveBeenCalled();
     });
   });
 });

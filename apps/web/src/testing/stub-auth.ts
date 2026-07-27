@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 
-import type { AuthSession } from '@/auth/auth-session.interface';
 import type { AuthState } from '@/auth/auth-state';
+import type { Auth } from '@/auth/auth.interface';
 
 export const STUB_USER = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -11,7 +11,7 @@ export const STUB_USER = {
 
 /** `setState` notifies subscribers, so wrap the call in `act`. */
 export function createStubAuth(initialState?: AuthState): {
-  session: AuthSession;
+  auth: Auth;
   setState: (next: AuthState) => void;
 } {
   let state: AuthState = initialState ?? {
@@ -20,7 +20,7 @@ export function createStubAuth(initialState?: AuthState): {
   };
   const listeners = new Set<() => void>();
 
-  const session: AuthSession = {
+  const auth: Auth = {
     getState: () => state,
     subscribe: (listener) => {
       listeners.add(listener);
@@ -36,5 +36,5 @@ export function createStubAuth(initialState?: AuthState): {
     for (const listener of listeners) listener();
   };
 
-  return { session, setState };
+  return { auth, setState };
 }

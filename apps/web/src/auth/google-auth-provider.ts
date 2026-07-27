@@ -3,11 +3,8 @@ import { AuthError } from '@/auth/auth-error';
 import { ANONYMOUS, RESTORING } from '@/auth/auth-state';
 import { env } from '@/config/env';
 
-import type {
-  AuthChangeListener,
-  AuthSession,
-} from '@/auth/auth-session.interface';
 import type { AuthState } from '@/auth/auth-state';
+import type { Auth, AuthChangeListener } from '@/auth/auth.interface';
 
 interface GoogleCredentialResponse {
   credential?: string;
@@ -74,7 +71,7 @@ const SIGN_IN_BUTTON_OPTIONS = {
   width: 280,
 } as const;
 
-export class GoogleAuthProvider implements AuthSession {
+export class GoogleAuthProvider implements Auth {
   private readonly clientId: string;
   private state: AuthState = RESTORING;
   private readonly restorePromise: Promise<void>;

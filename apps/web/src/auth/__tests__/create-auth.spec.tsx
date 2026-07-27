@@ -14,15 +14,15 @@ import { createAuth } from '@/auth/create-auth';
 import { SignInButton } from '@/auth/sign-in-button';
 
 describe('createAuth', () => {
-  it('should build a session the matching sign-in button drives', async () => {
-    const session = createAuth();
+  it('should build an auth the matching sign-in button drives', async () => {
+    const auth = createAuth();
 
-    expect(session.getState().status).toBe('authenticated');
-    session.signOut();
-    expect(session.getState().status).toBe('anonymous');
+    expect(auth.getState().status).toBe('authenticated');
+    auth.signOut();
+    expect(auth.getState().status).toBe('anonymous');
 
     render(
-      <AuthContext value={session}>
+      <AuthContext value={auth}>
         <SignInButton />
       </AuthContext>,
     );
@@ -31,7 +31,7 @@ describe('createAuth', () => {
       .click();
 
     await vi.waitFor(() => {
-      expect(session.getState().status).toBe('authenticated');
+      expect(auth.getState().status).toBe('authenticated');
     });
   });
 });

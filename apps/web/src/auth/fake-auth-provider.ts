@@ -1,11 +1,8 @@
 import { ANONYMOUS } from '@/auth/auth-state';
 import { generateFakeJwt } from '@/auth/utils/generate-fake-jwt';
 
-import type {
-  AuthChangeListener,
-  AuthSession,
-} from '@/auth/auth-session.interface';
 import type { AuthState } from '@/auth/auth-state';
+import type { Auth, AuthChangeListener } from '@/auth/auth.interface';
 import type { AuthenticatedUser } from '@/auth/types';
 
 const DEV_USER: AuthenticatedUser = {
@@ -18,7 +15,7 @@ const DEV_USER: AuthenticatedUser = {
  * Must make no network call of any kind: web e2e runs with the API mocked at
  * the Playwright layer, so a real request would break the suite (ADR 0007).
  */
-export class FakeAuthProvider implements AuthSession {
+export class FakeAuthProvider implements Auth {
   private state: AuthState = { status: 'authenticated', user: DEV_USER };
   private readonly listeners = new Set<AuthChangeListener>();
 
