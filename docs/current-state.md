@@ -5,13 +5,12 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-27 (session 18 follow-up)_
+_Last updated: 2026-07-27 (session 22)_
 
 ## Phase
 
-**Building.** Foundations are merged (entities + migration, Google auth wiring).
-Two PRs open in parallel: auth refinement (#32) and the first overview slice
-(#31). 8 build-slice issues remain after those land.
+**Building.** Foundations and auth refinement are merged. The first overview
+slice is open as PR #31; seven build-slice/deployment issues remain.
 
 ## Done
 
@@ -59,7 +58,9 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
   ([module layout](../apps/api/module-layout.md)); the overview aggregate read derives
   lifecycle, step status, owner inheritance and nearest-deadline selection
   server-side from one repeatable-read snapshot. User display data is normalized
-  into one summary directory; owner and deadline relationships use IDs. The web
+  into one summary directory; owner and deadline relationships use IDs. A
+  follow-up contract alignment for #19 will replace the near-duplicate overview
+  Workstream and Step DTOs with the canonical entity response shapes. The web
   derives relative countdowns from stable dates and refreshes them at local
   midnight. It renders grouped cards with pipeline dots in light and dark themes.
   The API now isolates MikroORM behind entity-only repositories; services own
@@ -77,26 +78,19 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
 
 ## In flight
 
-- **PR #32 (`auth-v1.1`)** — session restore (#30), the sign-in button fix,
-  `/users/me` extraction, landing-page cleanup, the interface collapse (#33),
-  and the review round that followed (`AuthSystem`, argument-free `signOut()`,
-  provider-bound `SignInButton`). All checks green; ready to merge.
 - **PR #31 (`feat/slice-1-overview`)** — Slice 1: overview aggregate read +
   Pipeline Stack UI (#18).
 
 ## Open questions
 
-- `deferMode: 'deferred'` on `@Unique` constraints (Step, ChecklistItem) does
-  not produce `DEFERRABLE INITIALLY DEFERRED` in MikroORM's generated SQL.
-  Service layer will need to handle constraint ordering for bulk reorder.
 - Overview ordering is alphabetical (groups and workstreams by name) — nothing
   in the specs states an order. Revisit if manual ordering is wanted.
 
 ## Next steps
 
-1. Land PR #32 (and close
-   [#33](https://github.com/jeremy-dardour/wedding-planner/issues/33) with it),
-   then PR #31.
-2. Build slices #19–#24, then deployment (#26).
+1. Land PR #31.
+2. Build slices #19–#24, then deployment (#26). Reorder repositories use
+   two-phase temporary positions because the generated constraints are not
+   deferrable.
 3. Web e2e coverage is currently a single placeholder — real specs belong with
    the overview slices, and `ApiMock` still targets the deleted `/api/items`.

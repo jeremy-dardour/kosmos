@@ -43,10 +43,8 @@ Documentation conventions:
 - **Single home per fact.** Live status lives only in `current-state.md`; domain
   decisions only in `docs/domain-decisions.md`; session files record what
   happened + learnings and link out rather than restating current truth.
-- **Session summaries.** When logging or closing a session, add a summary in
-  `docs/sessions/` using the template and instructions there
-  ([docs/sessions/README.md](./docs/sessions/README.md)). Update
-  `current-state.md` at session end.
+- **Session summaries.** When logging or closing a session, use the
+  `log-session` skill and update `current-state.md` at session end.
 
 ## Monorepo structure
 

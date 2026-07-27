@@ -126,19 +126,18 @@ lifecycle:
 | Complete                | 409 `workstream-not-advanceable`                    | —                            |
 | NotStarted + zero steps | 409 `workstream-empty`                              | —                            |
 
-Internally, `WorkstreamService` dispatches to private `start()` and
-`advanceActive()` methods — distinct transitions with different invariants,
-behind a unified API surface.
+Internally, `WorkstreamService` owns the lifecycle dispatch and transition
+decisions behind the unified API surface.
 
 ### Implementation decisions
 
 - **Service structure:** All pipeline logic as private methods on
   `WorkstreamService`. No separate state-machine class.
-- **Derived state:** Pure utility functions in `workstream/utils/`:
-  `deriveLifecycle()`, `deriveStepStatus()`, `resolveOwner()`,
-  `deriveNearestDeadline()`. Used by both mutations and DTO construction.
-- **Transactions:** Explicit `em.transactional()` for `advance` and step
-  reorder only. All other operations rely on MikroORM's unit-of-work flush.
+- **Derived state:** Entity behavior derives lifecycle, step status and nearest
+  deadline; cross-entity owner resolution remains a pure domain function.
+- **Persistence:** Repositories alone use MikroORM. Advance and reorder run
+  through repository operations that own their transaction and any required
+  row locking while accepting and returning entities, never DTOs.
 - **Validation:** Guards at the top of service methods. Wrong lifecycle → 409.
   Outcome on NotStarted → 400 (DTO validation).
 
@@ -161,6 +160,9 @@ Full endpoint spec, DTOs, and error codes in the
 4. **Flat CRUD for sub-entities** — Steps, Notes, ChecklistItems have their own
    endpoints scoped under their parent.
 5. **No pagination** — client-side filters at this data volume.
+6. **Canonical entity DTOs** — aggregate reads compose the normal Project,
+   Group, Workstream and Step DTOs. A read-model-specific entity shape is
+   introduced only when the representation is materially different.
 
 ### Step mutability
 

@@ -164,23 +164,26 @@ export enum StepOutcome {
 }
 
 @Enum({ items: () => StepOutcome, nativeEnumName: 'step_outcome' })
-outcome?: Opt<StepOutcome | null>;
+outcome?: Opt<StepOutcome> | null;
 ```
 
 `nativeEnumName` creates a Postgres `CREATE TYPE` instead of a check constraint.
 
 ## Unique constraints
 
-### Deferred unique (for ordered positions)
+### Unique ordered positions
 
 ```typescript
 @Unique({
   properties: ['workstream', 'position'],
-  options: { deferMode: 'deferred' },
 })
 ```
 
-Deferral allows bulk position renumbering within a single transaction.
+Do not assume `options: { deferMode: 'deferred' }` produces a deferrable
+constraint: MikroORM's generated migration currently emits an ordinary unique
+constraint. Reorder through a repository-owned transaction using collision-free
+temporary positions before assigning the final contiguous positions, or verify
+and commit a migration that explicitly creates a deferrable constraint.
 
 ## Explicit indexes
 

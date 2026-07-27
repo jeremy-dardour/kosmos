@@ -26,6 +26,15 @@ src/
 - `openapi-react-query` wraps `openapi-fetch` for typed hooks from OpenAPI spec
 - Query hooks: thin wrappers in `src/api/hooks/` around `$api.useQuery`/`$api.useMutation`
 - Auth middleware in `src/api/middlewares/` injects bearer token
+- Access generated schemas with indexed types such as
+  `components['schemas']['WorkstreamDto']`. Do not use dotted access through a
+  type alias; it can silently resolve to `any`.
+- Store selected entity IDs, then derive the selected entity from query data;
+  do not keep a copied response object that can become stale.
+- Mutations invalidate only queries whose response can change. Workstream,
+  step, checklist, group, project, and pipeline mutations invalidate the
+  overview. Note mutations invalidate the on-demand notes query only while the
+  overview contains no note data or counts.
 
 ## Auth
 
