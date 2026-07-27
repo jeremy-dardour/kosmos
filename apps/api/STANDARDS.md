@@ -77,6 +77,12 @@ See [ENTITIES_STANDARDS.md](./ENTITIES_STANDARDS.md).
 - Input DTOs: `class-validator` decorators + `@ApiProperty` for Swagger
 - Output DTOs: `@ApiProperty` only (no validation on responses)
 - Plain classes with `!` non-null assertions, no base class
+- Actor identity comes from the authenticated request. Mutation DTOs never
+  accept an actor, author, or current-user ID when the server can determine it.
+- Use one canonical output DTO per entity by default. Aggregate responses
+  compose those DTOs rather than introducing near-duplicate projections.
+  Create a read-model-specific entity DTO only when its shape is materially
+  different, not merely a subset or a few additional derived fields.
 
 ## Environment config
 

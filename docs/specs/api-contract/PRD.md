@@ -30,24 +30,28 @@ endpoints, DTOs, and a read model. Follows the template conventions in
 5. **No pagination, no filtering on the API.** The UI has client-side filters
    (owner, group). At this data volume, the server returns everything and the
    client filters.
+6. **One output DTO per entity by default.** Aggregate responses compose the
+   canonical entity DTOs. A read-model-specific entity DTO is justified only
+   when its representation is materially different, not for a subset or a few
+   additional derived fields.
 
 ---
 
 ## Module structure
 
-A single `project` module owns everything — Project, Group, Workstream, Step,
-Note, ChecklistItem, User. No cross-module import issues, no artificial
-boundaries at this scale.
+A single `project` module owns Project, Group, Workstream, Step, Note and
+ChecklistItem. The `user` module owns the authenticated-user endpoint and user
+registration.
 
-| Controller                | Owns                                   |
-| ------------------------- | -------------------------------------- |
-| `ProjectController`       | Project CRUD + overview read model     |
-| `GroupController`         | Group CRUD                             |
-| `WorkstreamController`    | Workstream CRUD + `start` / `advance`  |
-| `StepController`          | Step CRUD + reorder                    |
-| `NoteController`          | Note CRUD (author-guarded)             |
-| `ChecklistItemController` | ChecklistItem CRUD + reorder           |
-| `UserController`          | User read-only (`/users`, `/users/me`) |
+| Controller                | Owns                                  |
+| ------------------------- | ------------------------------------- |
+| `ProjectController`       | Project CRUD + overview read model    |
+| `GroupController`         | Group CRUD                            |
+| `WorkstreamController`    | Workstream CRUD + `start` / `advance` |
+| `StepController`          | Step CRUD + reorder                   |
+| `NoteController`          | Note CRUD (author-guarded)            |
+| `ChecklistItemController` | ChecklistItem CRUD + reorder          |
+| `UserController`          | Authenticated user (`/users/me`)      |
 
 ---
 
@@ -96,9 +100,11 @@ endpoint the Pipeline Stack overview calls on load.
 | `DELETE` | `/workstreams/:id`                 | —                     | `204`           | Cascades steps, notes, checklist items |
 | `POST`   | `/workstreams/:id/advance`         | `AdvanceDto`          | `WorkstreamDto` | Pipeline action — see below            |
 
-No standalone `GET` for workstreams — the overview endpoint provides all
-workstream data. Mutations return the updated `WorkstreamDto` for the client to
-patch its local state.
+No standalone `GET` for workstreams — the overview endpoint provides the
+canonical `WorkstreamDto` data needed by both cards and the detail panel.
+Mutations return the updated entity DTO, but the web invalidates the overview
+query as its correctness path because one mutation may change several derived
+or grouped values.
 
 **`advance` is the single pipeline action.** The server dispatches by lifecycle:
 
@@ -133,16 +139,17 @@ to the pointer. Violations return 409.
 
 ### Note
 
-Author-editable/deletable (Decision 39) — the API checks `authorId` matches
-the authenticated user. Notes can be appended to any step (including past steps
-— Decision 33).
+Author-editable/deletable (Decision 39) — the API compares `note.author?.id`
+with the server-trusted authenticated user ID. The client never submits an
+author ID. Notes can be appended to any step (including past steps — Decision
+33).
 
-| Method   | Path                               | Body            | Response    | Notes                                                                                                |
-| -------- | ---------------------------------- | --------------- | ----------- | ---------------------------------------------------------------------------------------------------- |
-| `GET`    | `/workstreams/:workstreamId/notes` | —               | `NoteDto[]` | All notes across all steps; chronological. Each includes `stepId`. Used when the detail panel opens. |
-| `POST`   | `/steps/:stepId/notes`             | `CreateNoteDto` | `NoteDto`   | Sets authorId from auth                                                                              |
-| `PATCH`  | `/notes/:id`                       | `UpdateNoteDto` | `NoteDto`   | Author only; 403 otherwise                                                                           |
-| `DELETE` | `/notes/:id`                       | —               | `204`       | Author only; 403 otherwise                                                                           |
+| Method   | Path                               | Body            | Response    | Notes                                                                                                         |
+| -------- | ---------------------------------- | --------------- | ----------- | ------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/workstreams/:workstreamId/notes` | —               | `NoteDto[]` | All notes across all steps, newest first with a stable tie-breaker. Each includes `stepId`. Loaded on demand. |
+| `POST`   | `/steps/:stepId/notes`             | `CreateNoteDto` | `NoteDto`   | Sets `author` from the authenticated user                                                                     |
+| `PATCH`  | `/notes/:id`                       | `UpdateNoteDto` | `NoteDto`   | Author only; 403 otherwise                                                                                    |
+| `DELETE` | `/notes/:id`                       | —               | `204`       | Author only; 403 otherwise                                                                                    |
 
 ### Checklist Item
 
@@ -162,13 +169,14 @@ data (they're small: name + boolean + position).
 
 ### User
 
-Read-only in V1. Users are created via the auth upsert (see auth PRD), not via
-API endpoints.
+Users are created via the auth upsert (see auth PRD), not via CRUD endpoints.
+The overview's canonical `users` directory supplies owner and author display
+data. The auth module already calls `/users/me` and exposes that result through
+`AuthSession`; feature code does not fetch it again.
 
-| Method | Path        | Response    | Notes                            |
-| ------ | ----------- | ----------- | -------------------------------- |
-| `GET`  | `/users`    | `UserDto[]` | All users (for owner assignment) |
-| `GET`  | `/users/me` | `UserDto`   | Current authenticated user       |
+| Method | Path        | Response         | Notes                      |
+| ------ | ----------- | ---------------- | -------------------------- |
+| `GET`  | `/users/me` | `CurrentUserDto` | Current authenticated user |
 
 ---
 
@@ -298,31 +306,8 @@ the Pipeline Stack needs for first paint.
 class OverviewDto {
   project!: ProjectDto;
   groups!: GroupDto[];
-  workstreams!: OverviewWorkstreamDto[];
+  workstreams!: WorkstreamDto[];
   users!: UserSummaryDto[]; // canonical display data for owner IDs
-}
-
-class OverviewWorkstreamDto {
-  id!: string;
-  name!: string;
-  icon!: string;
-  groupId?: string | null;
-  lifecycle!: 'not_started' | 'active' | 'complete'; // derived
-  ownerId?: string | null;
-  steps!: OverviewStepDto[];
-  nearestDeadlineStepId?: string | null; // derived
-}
-
-class OverviewStepDto {
-  id!: string;
-  name!: string;
-  position!: number;
-  status!: 'not_started' | 'in_progress' | 'done' | 'skipped'; // derived from pointer
-  blocked!: boolean;
-  deadline?: string | null; // ISO date
-  explicitOwnerId?: string | null; // null means inherit from workstream
-  effectiveOwnerId?: string | null; // resolved after inheritance
-  checklistItems!: ChecklistItemDto[]; // full items (small — name + done + position)
 }
 
 class UserSummaryDto {
@@ -332,10 +317,10 @@ class UserSummaryDto {
 }
 ```
 
-### WorkstreamDto (detail / mutation response)
+### WorkstreamDto
 
-Returned by workstream CRUD and `start`/`advance`. Includes nested steps with
-full detail (notes, checklist items).
+The canonical workstream representation, composed into `OverviewDto` and
+returned by workstream mutations. Notes remain a separate on-demand resource.
 
 ```ts
 class WorkstreamDto {
@@ -344,10 +329,11 @@ class WorkstreamDto {
   icon!: string;
   groupId?: string | null;
   lifecycle!: 'not_started' | 'active' | 'complete';
-  owner?: UserSummaryDto | null;
+  ownerId?: string | null;
   currentStepId?: string | null;
   startedAt?: string | null; // ISO datetime
   completedAt?: string | null; // ISO datetime
+  nearestDeadlineStepId?: string | null; // derived
   steps!: StepDto[];
   createdAt!: string;
   updatedAt!: string;
@@ -366,9 +352,9 @@ class StepDto {
   deadline?: string | null;
   outcome?: 'done' | 'skipped' | null;
   outcomeAt?: string | null;
-  owner?: UserSummaryDto | null; // resolved (inherited if null on entity)
+  explicitOwnerId?: string | null; // null means inherit from workstream
+  effectiveOwnerId?: string | null; // resolved after inheritance
   checklistItems!: ChecklistItemDto[];
-  noteCount!: number; // count only (full notes loaded on demand)
   createdAt!: string;
   updatedAt!: string;
 }
@@ -424,16 +410,14 @@ class ProjectDto {
 }
 ```
 
-### UserDto
+### CurrentUserDto
 
 ```ts
-class UserDto {
+class CurrentUserDto {
   id!: string;
   email!: string;
   name!: string;
   avatarUrl?: string | null;
-  createdAt!: string;
-  updatedAt!: string;
 }
 ```
 
@@ -460,7 +444,8 @@ error cases:
 
 ## Derived state computation (server-side)
 
-These are computed at read time by the workstream service, not stored:
+These are computed at read time by entity behavior or domain functions, not
+stored:
 
 | Field                              | Logic                                                                                                                                           |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -481,18 +466,26 @@ These are computed at read time by the workstream service, not stored:
 - **Countdown presentation.** The API returns stable calendar dates. The client
   derives event and deadline countdown labels and refreshes them at local
   midnight, so a mounted overview does not retain yesterday's relative values.
-- **Notes loaded on demand.** `GET /workstreams/:workstreamId/notes` returns all
-  notes across all steps of that workstream in one call, each with `stepId`. Called
-  once when the detail panel opens. The overview carries no note data.
+- **Detail flow.** The selected workstream is stored as an ID and derived from
+  the current overview query data. Opening the detail panel does not refetch the
+  workstream; it only calls `GET /workstreams/:workstreamId/notes`. That endpoint
+  returns all notes across the workstream's steps, newest first, each with
+  `stepId`.
+- **Mutation invalidation.** Project, group, workstream, step, checklist and
+  advance mutations invalidate the overview query. Note mutations invalidate
+  only the selected workstream's notes query while the overview contains no
+  note data or counts. If that changes, note mutations invalidate both.
 - **Reorder transactions.** `ReorderStepsDto` sends the full ordered ID list of
-  future steps. The service validates it matches the current future set, then
-  bulk-updates positions in one transaction (deferred unique constraint allows
-  this).
+  future steps. The service validates it matches the current future set. The
+  repository owns the transaction and uses a two-phase temporary-position
+  strategy for step and checklist reorder because the generated unique
+  constraints are not deferrable.
 - **Step mutability checks.** On PATCH/DELETE of a step (or its checklist items),
   the service loads the parent workstream to determine if the step is
   past/current/future relative to the pointer. Past → 409 `step-frozen`.
   Current + structural → 409 `step-not-deletable`. Current + attribute edit → OK.
   Future → OK.
-- **`advance` response.** Returns the updated `WorkstreamDto` with all steps
-  re-derived — the client gets the new pointer position, the recorded outcome on
-  the previous step, and the new current step's status, all in one response.
+- **`advance` persistence.** The repository performs the atomic entity load and
+  save under a transaction with concurrency protection; the service never
+  receives an EntityManager. The response is the canonical `WorkstreamDto`, and
+  the web then invalidates the overview query.

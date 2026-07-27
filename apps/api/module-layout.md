@@ -58,6 +58,9 @@ project, 20–50 workstreams).
   MikroORM persistence APIs. They accept and return entities, not DTOs.
 - Services instantiate and mutate entities from input DTOs. Services or
   controllers map entities to output DTOs through the canonical DTO mappers.
+- Aggregate responses reuse canonical entity DTOs unless a projection is
+  materially different. The overview envelope composes `WorkstreamDto` and
+  `StepDto`; it does not create parallel entity shapes for a few extra fields.
 - Entity-owned derived state (lifecycle, step status, nearest deadline) lives on
   the entity. Cross-entity owner resolution remains a pure function in
   `utils/`.
