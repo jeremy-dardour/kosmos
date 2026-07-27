@@ -21,6 +21,13 @@ export enum StepOutcome {
   Skipped = 'skipped',
 }
 
+export enum StepStatus {
+  NotStarted = 'not_started',
+  InProgress = 'in_progress',
+  Done = 'done',
+  Skipped = 'skipped',
+}
+
 @Entity()
 @Unique({
   properties: ['workstream', 'position'],
@@ -40,16 +47,16 @@ export class Step {
   name!: string;
 
   @Property({ type: 'date' })
-  deadline?: Opt<string | null>;
+  deadline?: Opt<string> | null;
 
   @ManyToOne(() => User, { deleteRule: 'set null' })
   owner?: User | null;
 
   @Enum({ items: () => StepOutcome, nativeEnumName: 'step_outcome' })
-  outcome?: Opt<StepOutcome | null>;
+  outcome?: Opt<StepOutcome> | null;
 
   @Property({ type: 'timestamptz' })
-  outcomeAt?: Opt<Date | null>;
+  outcomeAt?: Opt<Date> | null;
 
   @Property({ defaultRaw: 'false' })
   blocked!: Opt<boolean>;
@@ -71,4 +78,24 @@ export class Step {
     onUpdate: () => new Date(),
   })
   updatedAt!: Opt<Date>;
+
+  getChecklistItems(): readonly ChecklistItem[] {
+    return this.checklistItems.getItems();
+  }
+
+  // Outcome wins so complete workstreams (no pointer) still derive correctly.
+  getStatus(pointerPosition: number | null): StepStatus {
+    if (this.outcome) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison -- Opt<T> brand widens the type
+      return this.outcome === StepOutcome.Skipped
+        ? StepStatus.Skipped
+        : StepStatus.Done;
+    }
+
+    if (pointerPosition !== null && this.position === pointerPosition) {
+      return StepStatus.InProgress;
+    }
+
+    return StepStatus.NotStarted;
+  }
 }

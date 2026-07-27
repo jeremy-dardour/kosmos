@@ -14,6 +14,12 @@ import { User } from '@/database/entities/user.entity';
 import type { Step } from '@/database/entities/step.entity';
 import type { Opt } from '@mikro-orm/core';
 
+export enum WorkstreamLifecycle {
+  NotStarted = 'not_started',
+  Active = 'active',
+  Complete = 'complete',
+}
+
 @Entity()
 export class Workstream {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
@@ -35,10 +41,10 @@ export class Workstream {
   owner?: User | null;
 
   @Property({ type: 'timestamptz' })
-  startedAt?: Opt<Date | null>;
+  startedAt?: Opt<Date> | null;
 
   @Property({ type: 'timestamptz' })
-  completedAt?: Opt<Date | null>;
+  completedAt?: Opt<Date> | null;
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any -- MikroORM 7 legacy decorators don't type string entity names; runtime resolves them
   @ManyToOne(() => 'Step' as any, { deleteRule: 'restrict' })
@@ -57,4 +63,29 @@ export class Workstream {
     onUpdate: () => new Date(),
   })
   updatedAt!: Opt<Date>;
+
+  getLifecycle(): WorkstreamLifecycle {
+    if (!this.startedAt) {
+      return WorkstreamLifecycle.NotStarted;
+    }
+
+    return this.completedAt
+      ? WorkstreamLifecycle.Complete
+      : WorkstreamLifecycle.Active;
+  }
+
+  getSteps(): readonly Step[] {
+    return this.steps.getItems();
+  }
+
+  nearestDeadlineStep(): Step | null {
+    const [nearest] = this.getSteps()
+      .filter((step) => step.deadline && !step.outcome)
+      .sort(
+        (a, b) =>
+          a.deadline!.localeCompare(b.deadline!) || a.position - b.position,
+      );
+
+    return nearest ?? null;
+  }
 }

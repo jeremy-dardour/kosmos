@@ -5,6 +5,8 @@ import { TsMorphMetadataProvider } from '@mikro-orm/reflection';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { UserRepository } from '@/database/repositories/user.repository';
+
 import type { BaseEnv } from '@/shared/types/env.base.schema';
 import type { DynamicModule } from '@nestjs/common';
 
@@ -73,8 +75,9 @@ export class DatabaseModule {
           useFactory: (em: EntityManager) => em,
           inject: [EntityManager],
         },
+        UserRepository,
       ],
-      exports: [SqlEntityManager],
+      exports: [SqlEntityManager, UserRepository],
     };
   }
 }

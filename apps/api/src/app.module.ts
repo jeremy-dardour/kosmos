@@ -16,10 +16,8 @@ import { ContextHeadersInterceptor } from '@/app/interceptors/context-headers.in
 import { LoggerModule } from '@/app/logger/logger.module';
 import { SwaggerDevController } from '@/app/swagger/swagger-dev.controller';
 import { DatabaseModule } from '@/database/database.module';
-import { GroupModule } from '@/modules/group/group.module';
 import { ProjectModule } from '@/modules/project/project.module';
 import { UserModule } from '@/modules/user/user.module';
-import { WorkstreamModule } from '@/modules/workstream/workstream.module';
 
 import type { NestModule, MiddlewareConsumer } from '@nestjs/common';
 
@@ -43,8 +41,6 @@ import type { NestModule, MiddlewareConsumer } from '@nestjs/common';
     HealthModule,
     UserModule,
     ProjectModule,
-    GroupModule,
-    WorkstreamModule,
   ],
   controllers: [
     ...(process.env.NODE_ENV === 'production' ? [] : [SwaggerDevController]),

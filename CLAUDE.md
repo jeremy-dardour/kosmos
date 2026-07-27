@@ -22,9 +22,10 @@ Project knowledge — one home per fact. Read these to get oriented:
 | [CONTEXT.md](./CONTEXT.md)                                     | Domain glossary — entities, statuses, rules                          |
 | [docs/current-state.md](./docs/current-state.md)               | The live "where we are" — phase, status, next steps, open questions  |
 | [docs/sessions/](./docs/sessions/)                             | One dated summary per session (what was done, learnings, status)     |
+| [docs/reviews/](./docs/reviews/)                               | PR review write-ups, point-in-time; deleted once fully actioned      |
 | [docs/prototype/](./docs/prototype/)                           | Chosen UI design spec (Pipeline Stack wireframe)                     |
 | [docs/entity-schema-design.md](./docs/entity-schema-design.md) | Concrete MikroORM schema spec (entities, columns, constraints)       |
-| [docs/module-layout.md](./docs/module-layout.md)               | NestJS module structure and boundary rules                           |
+| [apps/api/module-layout.md](./apps/api/module-layout.md)       | NestJS module structure and boundary rules                           |
 | [docs/specs/v1-tech-design.md](./docs/specs/v1-tech-design.md) | V1 technical design — links schema, API, state machine, auth, deploy |
 | [docs/adr/](./docs/adr/)                                       | Technical/architectural decisions                                    |
 

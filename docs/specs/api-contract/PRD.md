@@ -296,17 +296,10 @@ the Pipeline Stack needs for first paint.
 
 ```ts
 class OverviewDto {
-  project!: OverviewProjectDto;
+  project!: ProjectDto;
   groups!: GroupDto[];
   workstreams!: OverviewWorkstreamDto[];
-  users!: UserDto[]; // all users (for owner avatars/filter)
-}
-
-class OverviewProjectDto {
-  id!: string;
-  name!: string;
-  eventDate?: string | null; // ISO date (YYYY-MM-DD)
-  daysUntilEvent?: number | null; // derived: days from today to eventDate
+  users!: UserSummaryDto[]; // canonical display data for owner IDs
 }
 
 class OverviewWorkstreamDto {
@@ -315,9 +308,9 @@ class OverviewWorkstreamDto {
   icon!: string;
   groupId?: string | null;
   lifecycle!: 'not_started' | 'active' | 'complete'; // derived
-  owner?: UserSummaryDto | null; // resolved (workstream default)
+  ownerId?: string | null;
   steps!: OverviewStepDto[];
-  nearestDeadline?: NearestDeadlineDto | null; // derived
+  nearestDeadlineStepId?: string | null; // derived
 }
 
 class OverviewStepDto {
@@ -327,15 +320,9 @@ class OverviewStepDto {
   status!: 'not_started' | 'in_progress' | 'done' | 'skipped'; // derived from pointer
   blocked!: boolean;
   deadline?: string | null; // ISO date
-  outcome?: 'done' | 'skipped' | null;
-  owner?: UserSummaryDto | null; // resolved: step owner ?? workstream owner
+  explicitOwnerId?: string | null; // null means inherit from workstream
+  effectiveOwnerId?: string | null; // resolved after inheritance
   checklistItems!: ChecklistItemDto[]; // full items (small — name + done + position)
-}
-
-class NearestDeadlineDto {
-  stepName!: string;
-  date!: string; // ISO date
-  daysUntil!: number; // negative = overdue
 }
 
 class UserSummaryDto {
@@ -475,22 +462,25 @@ error cases:
 
 These are computed at read time by the workstream service, not stored:
 
-| Field                            | Logic                                                                                                                                           |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `workstream.lifecycle`           | `(startedAt, completedAt)` → `not_started` / `active` / `complete` (ADR 0005)                                                                   |
-| `step.status`                    | Position relative to `currentStepId`: before pointer with outcome → `done`/`skipped`; at pointer → `in_progress`; after pointer → `not_started` |
-| `step.owner` (resolved)          | `step.ownerId ?? workstream.ownerId` → look up User                                                                                             |
-| `workstream.nearestDeadline`     | Among steps at or after the pointer with a deadline, the one with the earliest date (includes overdue — `daysUntil` is negative when past)      |
-| `overviewProject.daysUntilEvent` | `eventDate - today` in days (null if no eventDate)                                                                                              |
-| `step.checklistItems`            | Full items included inline in overview (small payload)                                                                                          |
+| Field                              | Logic                                                                                                                                           |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workstream.lifecycle`             | `(startedAt, completedAt)` → `not_started` / `active` / `complete` (ADR 0005)                                                                   |
+| `step.status`                      | Position relative to `currentStepId`: before pointer with outcome → `done`/`skipped`; at pointer → `in_progress`; after pointer → `not_started` |
+| `step.effectiveOwnerId`            | `step.ownerId ?? workstream.ownerId`; `explicitOwnerId` preserves whether inheritance applies                                                   |
+| `workstream.nearestDeadlineStepId` | Among unpassed steps with a deadline, the ID of the one with the earliest date (includes overdue)                                               |
+| `step.checklistItems`              | Full items included inline in overview (small payload)                                                                                          |
 
 ---
 
 ## Notes on implementation
 
-- **Overview performance.** One query with eager loading (Project → Workstreams →
-  Steps → ChecklistItems, plus Groups and Users). MikroORM's `populate` handles
-  this. At 20–50 workstreams this is cheap. Notes are excluded (loaded on demand).
+- **Overview consistency and performance.** The project, groups, populated
+  workstreams and user summaries are read inside one read-only repeatable-read
+  transaction, so the aggregate represents one database snapshot. At 20–50
+  workstreams this is cheap. Notes are excluded (loaded on demand).
+- **Countdown presentation.** The API returns stable calendar dates. The client
+  derives event and deadline countdown labels and refreshes them at local
+  midnight, so a mounted overview does not retain yesterday's relative values.
 - **Notes loaded on demand.** `GET /workstreams/:workstreamId/notes` returns all
   notes across all steps of that workstream in one call, each with `stepId`. Called
   once when the detail panel opens. The overview carries no note data.

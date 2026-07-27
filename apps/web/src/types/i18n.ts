@@ -33,6 +33,27 @@ export interface Translations {
   'items.form.description': string;
   'items.form.submit': string;
   'items.form.cancel': string;
+  'overview.header.eventToday': string;
+  'overview.header.eventTomorrow': string;
+  'overview.header.eventYesterday': string;
+  'overview.header.eventInDays': string;
+  'overview.header.eventPassed': string;
+  'overview.ungrouped': string;
+  'overview.card.notStarted': string;
+  'overview.card.complete': string;
+  'overview.card.unassigned': string;
+  'overview.card.noSteps': string;
+  'overview.stepStatus.notStarted': string;
+  'overview.stepStatus.inProgress': string;
+  'overview.stepStatus.done': string;
+  'overview.stepStatus.skipped': string;
+  'overview.stepStatus.blocked': string;
+  'overview.empty.title': string;
+  'overview.empty.description': string;
+  'overview.noProject.title': string;
+  'overview.noProject.description': string;
+  'overview.detail.title': string;
+  'overview.detail.description': string;
 }
 
 export interface Resources {
