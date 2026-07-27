@@ -16,13 +16,13 @@ describe('fakeAuthProvider', () => {
     });
   });
 
-  it('should go anonymous on signOut and back on signIn', async () => {
+  it('should go anonymous on signOut and back on authenticate', () => {
     const provider = new FakeAuthProvider();
 
     provider.signOut();
     expect(provider.getState()).toEqual({ status: 'anonymous' });
 
-    await provider.signIn();
+    provider.authenticate();
 
     expect(provider.getState().status).toBe('authenticated');
   });

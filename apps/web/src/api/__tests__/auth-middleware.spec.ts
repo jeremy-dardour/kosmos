@@ -3,17 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAuthMiddleware } from '@/api/middlewares/auth-middleware';
 import { createStubAuth } from '@/testing/stub-auth';
 
-import type { Auth } from '@/auth/auth.interface';
+import type { AuthSession } from '@/auth/auth.interface';
 
 describe('createAuthMiddleware', () => {
-  let mockAuth: Auth;
-  let getAuth: ReturnType<typeof vi.fn<() => Auth | null>>;
+  let mockAuth: AuthSession;
+  let getAuth: ReturnType<typeof vi.fn<() => AuthSession | null>>;
 
   beforeEach(() => {
     mockAuth = createStubAuth().auth;
     mockAuth.getAccessToken = vi.fn().mockResolvedValue('test-token-123');
 
-    getAuth = vi.fn<() => Auth | null>().mockReturnValue(mockAuth);
+    getAuth = vi.fn<() => AuthSession | null>().mockReturnValue(mockAuth);
   });
 
   describe('onRequest', () => {

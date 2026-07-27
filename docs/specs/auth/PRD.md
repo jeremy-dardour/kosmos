@@ -159,6 +159,12 @@ Either way, `request.user` should carry the DB `User` entity (or at least its
 
 ## Web changes (`apps/web/`)
 
+> **Implementation note:** the web design below is the original delivery plan.
+> [ADR 0007](../../adr/0007-web-auth-module-boundaries.md) supersedes its
+> `AuthProvider`, imperative login, provider-selection, and One Tap details. The
+> shipped module uses `AuthSystem`, `AuthSession`, and the official GIS rendered
+> button as its only Google acquisition path.
+
 ### 1. Env config
 
 Add to web env (Vite: `VITE_` prefix):

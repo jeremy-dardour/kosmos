@@ -1,7 +1,8 @@
 import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AuthContext, useAuth, useAuthState } from '@/auth/auth-context';
+import { AuthContext, useAuthState } from '@/auth/auth-context';
+import { SignInButton } from '@/auth/sign-in-button';
 import { createStubAuth, STUB_USER } from '@/testing/stub-auth';
 
 function SessionStatus() {
@@ -24,22 +25,12 @@ function PersonalComponent() {
   );
 }
 
-function SignInButton() {
-  const auth = useAuth();
-
-  return (
-    <button onClick={() => void auth.signIn()} type="button">
-      Sign in
-    </button>
-  );
-}
-
 describe('authContext', () => {
   it('should expose the session state to consumers', () => {
-    const { auth } = createStubAuth();
+    const { authSystem } = createStubAuth();
 
     render(
-      <AuthContext value={auth}>
+      <AuthContext value={authSystem}>
         <SessionStatus />
       </AuthContext>,
     );
@@ -54,16 +45,16 @@ describe('authContext', () => {
 
     expect(() => {
       render(<SessionStatus />);
-    }).toThrow('useAuth must be used within AuthContext.Provider');
+    }).toThrow('useAuthSystem must be used within AuthContext.Provider');
 
     consoleError.mockRestore();
   });
 
   it('should expose the authenticated user', () => {
-    const { auth } = createStubAuth();
+    const { authSystem } = createStubAuth();
 
     render(
-      <AuthContext value={auth}>
+      <AuthContext value={authSystem}>
         <PersonalComponent />
       </AuthContext>,
     );
@@ -71,25 +62,27 @@ describe('authContext', () => {
     expect(screen.getByTestId('email')).toHaveTextContent(STUB_USER.email);
   });
 
-  it('should expose provider actions', () => {
-    const { auth } = createStubAuth();
+  it('should expose the provider sign-in affordance', () => {
+    const { authSystem } = createStubAuth();
 
     render(
-      <AuthContext value={auth}>
+      <AuthContext value={authSystem}>
         <SignInButton />
       </AuthContext>,
     );
 
-    screen.getByRole('button', { name: 'Sign in' }).click();
-
-    expect(auth.signIn).toHaveBeenCalledOnce();
+    expect(
+      screen.getByRole('button', {
+        name: 'auth.landing.action.continueInDevMode',
+      }),
+    ).toBeVisible();
   });
 
   it('should re-render consumers when the provider changes outside React', () => {
-    const { auth, setState } = createStubAuth();
+    const { authSystem, setState } = createStubAuth();
 
     render(
-      <AuthContext value={auth}>
+      <AuthContext value={authSystem}>
         <SessionStatus />
       </AuthContext>,
     );

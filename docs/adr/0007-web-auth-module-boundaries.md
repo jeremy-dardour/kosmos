@@ -1,159 +1,138 @@
 # ADR 0007: Web auth module boundaries
 
-**Status:** Accepted — 2026-07
+**Status:** Accepted — 2026-07, amended 2026-07-27
 
 Supersedes the frontend-flow details in
 [V1 Tech Design § Auth](../specs/v1-tech-design.md#auth), which described
-`GoogleAuthProvider.login()` as the single entry point used by `ProtectedRoute`.
+imperative Google login as the entry point used by `ProtectedRoute`.
 
 ## Decision
 
-Four boundaries in the web auth module.
+Four seams define the web auth module.
 
-### 1. Acquiring a token and validating a session are separate concerns
+### 1. `AuthSystem` is the complete auth module
 
-`Auth` implementations own **identity acquisition only** — the
-Google-specific business of getting an ID token out of GIS. Exchanging any
-token for "who is this in our app" is provider-agnostic and lives in
-`apps/web/src/api/current-user.ts`:
+Authentication has two capabilities with different shapes:
 
 ```ts
-fetchCurrentUser(token): Promise<CurrentUser>   // owns GET /api/users/me
+interface AuthSystem {
+  session: AuthSession;
+  SignInButton: React.ComponentType;
+}
+
+interface AuthSession {
+  getState(): AuthState;
+  subscribe(listener): () => void;
+  signOut(): void;
+  getAccessToken(): Promise<string>;
+}
 ```
 
-It maps HTTP status onto `AuthError` codes and is the only place that knows the
-endpoint exists. `CurrentUser` is derived from the generated OpenAPI `paths`, so
-contract drift surfaces as a type error rather than a runtime surprise.
+`AuthSession` owns the authenticated-session lifecycle: restoration, observable
+state, bearer-token access, expiry, and logout. The object outlives individual
+sessions and reports `anonymous` between them.
 
-It deliberately uses `fetch` rather than the shared openapi-fetch client: it
-runs _during_ authentication, before a session exists, and the client's auth
-middleware signs out on 401 — precisely the response this call exists to report.
+`SignInButton` owns identity acquisition. This is UI because Google Identity
+Services (GIS) requires a provider-rendered button for its reliable interactive
+flow; it cannot be represented honestly as an imperative `signIn()` method.
 
-### 2. `Auth` is a state machine, and nothing else
+`createAuthSystem()` composes one session adapter with its matching bound
+sign-in component. `AuthContext` carries this stable system. `useAuth()` returns
+the session for state-independent actions, `useAuthState()` subscribes through
+`useSyncExternalStore`, and the shared `<SignInButton />` delegates to
+`AuthSystem.SignInButton`. No consumer branches on a concrete provider.
 
-Five members, no DOM:
+`getState()` must return a stable reference until state changes because
+`useSyncExternalStore` loops when given a fresh snapshot on every read.
+
+### 2. Google uses the rendered button only
+
+The Google adapter loads GIS, calls `initialize`, and renders the official
+button with `renderButton`. Its credential callback validates the returned ID
+token and updates `AuthSession`.
+
+Google One Tap (`google.accounts.id.prompt`) is not used. Browser and FedCM
+prompt lifecycle notifications do not form a reliable promise: prompt
+dismissal can also mean a credential was returned, callbacks can arrive after
+application timeouts, and the prompt may be suppressed. Maintaining a second
+One Tap acquisition path added state and races without improving the normal
+flow.
+
+`GoogleAuthProvider.renderSignInButton` renders into a node it creates and
+cleans up only that node. React StrictMode can run concurrent effects, so
+clearing the caller's container could delete the live button created by another
+effect.
+
+Loading GIS follows the inverse rule: an existing script tag is awaited rather
+than replaced. Replacing it restarts the download and races two script copies.
+After a load failure, the failed tag and cached initialization promise are
+cleared so the rendered button can retry.
+
+### 3. Token acquisition and app-session validation are separate
+
+GIS proves that Google issued a credential; it does not decide who the user is
+inside this application. `apps/web/src/api/current-user.ts` owns:
 
 ```ts
-getState(): AuthState                      // one snapshot, discriminated union
-subscribe(listener): () => void            // read via useSyncExternalStore
-signIn(): Promise<void>
-signOut(): void
-getAccessToken(): Promise<string>
+fetchCurrentUser(token): Promise<CurrentUser>
 ```
 
-Named `Auth`. It is emphatically **not** `AuthSession`: the object exists before
-anyone signs in, survives sign-out, and reports `anonymous` — while `signIn()`
-on a "session" inverts the lifecycle, since a session is _created_ by signing
-in rather than creating itself. The real session is the `authenticated` state
-plus its token; internally `GoogleAuthProvider` already uses "session" for that
-(`restoreStoredSession`, `clearSession`), and it keeps the word.
+It is the only web module that knows about `GET /api/users/me` and maps its HTTP
+responses to `AuthError` codes. `CurrentUser` comes from generated OpenAPI
+types, so contract drift is a type error.
 
-`Auth` over a more descriptive noun (`Authenticator`, `AuthClient`) because the
-module already says `auth` at every boundary — `createAuth()`, `useAuth()`,
-`<AuthContext value={auth}>`. Naming the type `Auth` collapses the vocabulary
-onto the one already in use instead of adding another, and it is the only
-option where the hook and its return type agree.
+It deliberately uses `fetch` rather than the shared API client. Validation runs
+before an app session exists, while the shared client's auth middleware signs
+out on `401`, which is the response this call exists to interpret.
 
-The concrete implementations keep the `…AuthProvider` suffix. With the
-interface no longer squatting on the word, "provider" reads correctly as the
-**identity provider** adapter, and `implements Auth` distinguishes it on sight
-from Firebase's same-named class — which is a throwaway IdP descriptor, not the
-stateful singleton. Firebase calls that singleton `Auth` too.
+A credential is persisted and exposed only after `/users/me` succeeds. Each
+validation captures an operation generation. A newer credential, logout, token
+expiry, or validation failure advances that generation, so stale asynchronous
+results cannot authenticate or clear a newer session.
+
+Session recovery starts on provider construction. The state begins as
+`restoring`, reads the short-lived token from `sessionStorage`, checks its local
+`exp`, and validates it through `/users/me`. There is no public `restore()`
+command because recovery is a lifecycle invariant rather than a caller action.
 
 `AuthState` is `restoring | anonymous | authenticated | forbidden | error`.
-Consumers render from the status directly, so no component derives a parallel
-view-state enum or holds a rerender counter.
+Consumers render these states directly. Token rejection settles on `anonymous`;
+an allow-list rejection settles on `forbidden`; failures that prevent
+validation settle on `error`.
 
-**`signOut()` takes no argument.** It once took the `AuthError` that caused the
-sign-out, which the provider mapped onto the next state. That was inert in
-practice: the one caller passing a reason was the 401 middleware, and
-`token_rejected` mapped to `anonymous` — exactly what a bare `signOut()` does.
-It was also a divergence the type could not catch, since the fake provider
-mapped the same argument to `error`. Non-anonymous outcomes (`forbidden`,
-`error`) are only ever reached from inside token validation, which is where
-they are now set.
+Token expiry uses a timer armed after validation. `getState()` remains a pure
+snapshot read and never mutates state during React render.
 
-Two rules the types cannot carry:
+### 4. Only `401` invalidates an established session
 
-- **`getState()` must return a stable reference until the state changes.**
-  `useSyncExternalStore` loops if handed a fresh object per call.
-- **Session recovery happens on construction, not on a caller's command.** The
-  provider starts at `restoring` and settles itself. An explicit `restore()`
-  would put back a method whose real contract — returns nothing, throws on some
-  failures but not others, check a separate accessor afterwards — was invisible
-  at the signature.
+The shared API auth middleware signs out on `401` alone. This API uses `403` for
+domain permissions, so treating every `403` as auth invalidation would log users
+out of ordinary feature denials.
 
-The concrete providers take no injected dependencies. An optional
-`{ validateToken, storage, now }` bag existed for tests that never used it —
-the specs drive the provider through the real `sessionStorage`, a stubbed
-`fetch`, and fake timers.
+The special `403` from `/users/me` is handled during validation and becomes the
+`forbidden` auth state.
 
-### 3. The sign-in affordance ships beside the session, not inside it
+## Constraint: fake auth stays offline
 
-Google's One Tap prompt (`prompt()`, the callback-only path) is suppressed
-unpredictably by browser state — it is what produced the FedCM `AbortError`
-that made the first unauthenticated landing unusable. The reliable interactive
-path is `renderButton`, where Google renders its own iframe. So a sign-in
-affordance cannot always be "a button wired to `signIn()`", and it is
-provider-specific: the fake needs nothing but an `onClick`.
+`FakeAuthProvider` makes no network calls. Web e2e runs with
+`VITE_FAKE_AUTH=true` and the API mocked at the Playwright layer, so a real
+request would break the suite.
 
-Putting `renderSignInButton(container: HTMLElement)` on the shared interface
-forced every adapter to implement a widget it may not need, and put a DOM node
-in an otherwise DOM-free interface. Instead a single `<SignInButton />`
-component branches on the concrete session in context:
-
-```tsx
-auth instanceof GoogleAuthProvider ? <GoogleSignInButton … /> : <FakeSignInButton />
-```
-
-`createAuth()` therefore returns an `Auth` and nothing else — it briefly
-returned a `{ provider, signInButton }` pair, which put a rendered element in
-the context value for every consumer to carry.
-
-`GoogleAuthProvider.renderSignInButton` survives as a concrete method that only
-`GoogleSignInButton` calls. It **must render into a node it creates and clean up
-only that node**: callers' effects run twice under React StrictMode, so a
-cleanup that cleared the whole container would delete the other call's button.
-
-Loading the GIS script follows the same rule in reverse — a script tag already
-in the document must be **awaited, not replaced**. Removing and re-adding it
-restarts the download and races two copies.
-
-Token expiry is handled by a timer armed when the session is established, not by
-a check inside `getState()` — `getState()` is read during render and could not
-report a lapse without mutating mid-render.
-
-### 4. Only 401 invalidates the session
-
-The API auth middleware signs out on `401` alone. `403` is a domain permission
-code in this API, so treating it as auth invalidation would sign users out of
-ordinary feature denials. The forbidden case is handled where it actually
-occurs — inside `fetchCurrentUser`, which maps `403` to `AuthError('forbidden')`.
-
-## Constraint: fake auth must stay offline
-
-`FakeAuthProvider` must make **no network calls**. Web e2e runs with
-`VITE_FAKE_AUTH=true` _and_ the API mocked at the Playwright layer
-(`PLAYWRIGHT_USE_API_MOCK`), so a real request would break the suite. Fake auth
-exists to make the web app e2e-testable without Google — not to be a second
-implementation of session validation.
-
-API-side, `MockAuthStrategy` is unused by API e2e (`.env.e2e` sets
-`FAKE_AUTH=false`), so its hardcoded identity never meets the web's.
+The fake session starts authenticated, mints its local JWT on demand, and
+exposes a concrete `authenticate()` method used only by its bound
+`FakeSignInButton`. It is an identity-provider adapter for development and e2e,
+not a second implementation of backend session validation.
 
 ## Trade-offs
 
-- **Gained:** the endpoint has one home; the interface went from ten members to
-  five, with no DOM and no arguments that only one implementation honours;
-  `AuthProviderBoundary` and both `useReducer` rerender hacks deleted
-  themselves; the context value is a bare session, stable, so `useAuth()` is
-  safe in a dependency array; dev/e2e stays offline and fast.
-- **Lost:** `SignInButton` needs an `instanceof` check against a concrete class,
-  which is the price of not carrying the widget on the interface. Tests that
-  drive auth need a state stub (`@/testing/stub-auth`) rather than an ad-hoc
-  object literal.
-- **Accepted:** `signIn()` still rejects _and_ records the failure in state.
-  Callers can use either; the state is the one consumers should read.
-- **Accepted:** a token-expiry timer flips an idle tab to anonymous with no
-  network call. The next request's 401 would reach the same state, so this
-  buys UX on an idle tab for ~30 lines.
+- **Gained:** one reliable Google acquisition path; no One Tap promise,
+  notification, or timeout state; stale validations cannot undo logout or
+  overwrite newer credentials; callers receive the correct sign-in affordance
+  without provider checks.
+- **Lost:** `AuthSystem` is React-aware through `SignInButton`. This is accepted
+  because identity acquisition is provider-owned UI and the module is web-only.
+- **Accepted:** `AuthSession` outlives individual authenticated sessions. Its
+  name denotes ownership of their lifecycle, including the anonymous periods
+  between them.
+- **Accepted:** a token-expiry timer flips an idle tab to anonymous without a
+  network call. The next request's `401` would reach the same state.

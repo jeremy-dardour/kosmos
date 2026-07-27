@@ -1,6 +1,6 @@
-import type { Auth } from '@/auth/auth.interface';
+import type { AuthSession } from '@/auth/auth.interface';
 
-export function createAuthMiddleware(getAuth: () => Auth | null) {
+export function createAuthMiddleware(getAuth: () => AuthSession | null) {
   return {
     async onRequest({ request }: { request: Request }) {
       const auth = getAuth();

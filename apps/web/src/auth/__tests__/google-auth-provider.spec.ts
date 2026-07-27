@@ -8,7 +8,6 @@ type GoogleTestGlobal = typeof globalThis & {
       id: {
         initialize: ReturnType<typeof vi.fn>;
         renderButton: ReturnType<typeof vi.fn>;
-        prompt: ReturnType<typeof vi.fn>;
         disableAutoSelect: ReturnType<typeof vi.fn>;
       };
     };
@@ -22,12 +21,6 @@ interface CredentialResponse {
 interface InitializeConfig {
   client_id: string;
   callback: (response: CredentialResponse) => void;
-}
-
-interface PromptNotification {
-  isNotDisplayed(): boolean;
-  isSkippedMoment(): boolean;
-  isDismissedMoment(): boolean;
 }
 
 const googleAuthTestState: {
@@ -65,11 +58,7 @@ describe('googleAuthProvider', () => {
     };
     vi.stubGlobal('fetch', fetchMock);
     fetchMock.mockReset();
-    fetchMock.mockResolvedValue(
-      Response.json(validatedUser, {
-        status: 200,
-      }),
-    );
+    fetchMock.mockResolvedValue(Response.json(validatedUser, { status: 200 }));
 
     token = createToken({
       email: 'jane.doe@example.com',
@@ -77,15 +66,16 @@ describe('googleAuthProvider', () => {
       exp: Math.floor(Date.now() / 1000) + 3600,
     });
 
-    installGoogleIdentityMock({
-      prompt: () => handleCredential({ credential: token }),
-    });
+    installGoogleIdentityMock();
   });
 
-  it('should initialize GIS and authenticate from credential callback', async () => {
+  it('should authenticate from the rendered button credential callback', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
+    const container = document.createElement('div');
 
-    await provider.signIn();
+    await provider.renderSignInButton(container);
+    handleCredential({ credential: token });
+    await waitForState(provider, 'authenticated');
 
     expect(googleGlobal.google?.accounts.id.initialize).toHaveBeenCalledWith({
       client_id: 'google-client-id',
@@ -99,7 +89,6 @@ describe('googleAuthProvider', () => {
         },
       },
     );
-    expect(provider.getState().status).toBe('authenticated');
     expect(provider.getState()).toEqual({
       status: 'authenticated',
       user: validatedUser,
@@ -108,30 +97,13 @@ describe('googleAuthProvider', () => {
     await expect(provider.getAccessToken()).resolves.toBe(token);
   });
 
-  it('should reuse the pending login promise for concurrent login calls', async () => {
-    const provider = new GoogleAuthProvider('google-client-id');
-    installGoogleIdentityMock({ prompt: noop });
-
-    const firstLogin = provider.signIn();
-    const secondLogin = provider.signIn();
-
-    expect(secondLogin).toBe(firstLogin);
-    await vi.waitFor(() => {
-      expect(googleGlobal.google?.accounts.id.prompt).toHaveBeenCalledOnce();
-    });
-
-    handleCredential({ credential: token });
-    await expect(firstLogin).resolves.toBeUndefined();
-    await expect(secondLogin).resolves.toBeUndefined();
-  });
-
-  it('should restore a stored session on construction without prompting GIS', async () => {
+  it('should restore a stored session on construction without loading GIS', async () => {
     sessionStorage.setItem(storageKey, token);
 
     const provider = new GoogleAuthProvider('google-client-id');
     await settle(provider);
 
-    expect(googleGlobal.google?.accounts.id.prompt).not.toHaveBeenCalled();
+    expect(googleGlobal.google?.accounts.id.initialize).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(provider.getState()).toEqual({
       status: 'authenticated',
@@ -143,7 +115,6 @@ describe('googleAuthProvider', () => {
     const provider = new GoogleAuthProvider('google-client-id');
     await settle(provider);
 
-    expect(googleGlobal.google?.accounts.id.prompt).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
     expect(provider.getState()).toEqual({ status: 'anonymous' });
   });
@@ -166,7 +137,7 @@ describe('googleAuthProvider', () => {
     expect(provider.getState()).toBe(provider.getState());
   });
 
-  it('should render the Google sign-in button for interactive login', async () => {
+  it('should render the official Google sign-in button', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
     const container = document.createElement('div');
 
@@ -180,13 +151,9 @@ describe('googleAuthProvider', () => {
       }),
     );
     expect(container.children).toHaveLength(1);
-    expect(googleGlobal.google?.accounts.id.prompt).not.toHaveBeenCalled();
   });
 
   it('should leave a concurrent sign-in button intact when a stale cleanup runs', async () => {
-    // React StrictMode runs the caller's effect twice, so two renders can be
-    // in flight against the same container. The first call's cleanup must
-    // remove only its own button, not whichever one is currently live.
     const provider = new GoogleAuthProvider('google-client-id');
     const container = document.createElement('div');
 
@@ -196,13 +163,11 @@ describe('googleAuthProvider', () => {
     ]);
 
     expect(container.children).toHaveLength(2);
-
     cleanupFirst();
-
     expect(container.children).toHaveLength(1);
   });
 
-  it('should clear rejected restore token and continue with a new prompt after 401', async () => {
+  it('should recover from a rejected restored token through the rendered button', async () => {
     const freshToken = createToken({
       email: 'jane.doe@example.com',
       name: 'Jane Doe',
@@ -211,157 +176,89 @@ describe('googleAuthProvider', () => {
     sessionStorage.setItem(storageKey, token);
     fetchMock
       .mockResolvedValueOnce(new Response(null, { status: 401 }))
-      .mockResolvedValueOnce(
-        Response.json(validatedUser, {
-          status: 200,
-        }),
-      );
-    installGoogleIdentityMock({
-      prompt: () => handleCredential({ credential: freshToken }),
-    });
+      .mockResolvedValueOnce(Response.json(validatedUser, { status: 200 }));
 
     const provider = new GoogleAuthProvider('google-client-id');
     await settle(provider);
-
-    // A 401 on the stored token is not an error state — it just means there is
-    // no session, so the provider settles on anonymous and a prompt can follow.
     expect(provider.getState()).toEqual({ status: 'anonymous' });
 
-    await provider.signIn();
+    await provider.renderSignInButton(document.createElement('div'));
+    handleCredential({ credential: freshToken });
+    await waitForState(provider, 'authenticated');
 
-    expect(googleGlobal.google?.accounts.id.prompt).toHaveBeenCalledOnce();
     expect(sessionStorage.getItem(storageKey)).toBe(freshToken);
     await expect(provider.getAccessToken()).resolves.toBe(freshToken);
   });
 
-  it('should reject when the Google prompt is dismissed', async () => {
+  it('should remain anonymous when the credential response is empty', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
-    installGoogleIdentityMock({
-      prompt: (notify) => notify(createPromptNotification('dismissed')),
-    });
+    await provider.renderSignInButton(document.createElement('div'));
 
-    await expect(provider.signIn()).rejects.toMatchObject({
-      code: 'sign_in_failed',
-      message: 'Google sign-in prompt was dismissed',
-    });
-    expect(provider.getState().status).not.toBe('authenticated');
+    handleCredential({});
+
+    expect(provider.getState()).toEqual({ status: 'anonymous' });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('should reject when the Google prompt throws', async () => {
+  it('should enter error state for a malformed credential payload', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
-    installGoogleIdentityMock({
-      prompt: () => {
-        throw new Error('Prompt failed');
-      },
-    });
+    await provider.renderSignInButton(document.createElement('div'));
 
-    await expect(provider.signIn()).rejects.toThrow('Prompt failed');
-    expect(provider.getState().status).not.toBe('authenticated');
+    handleCredential({ credential: 'not.a-json.signature' });
+
+    expect(provider.getState()).toMatchObject({ status: 'error' });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('should reject when credential response is empty', async () => {
-    const provider = new GoogleAuthProvider('google-client-id');
-    installGoogleIdentityMock({
-      prompt: () => handleCredential({}),
-    });
-
-    await expect(provider.signIn()).rejects.toThrow(
-      'Google credential response was empty',
-    );
-    expect(provider.getState().status).not.toBe('authenticated');
-  });
-
-  it('should reject when credential payload is malformed', async () => {
-    const provider = new GoogleAuthProvider('google-client-id');
-    installGoogleIdentityMock({
-      prompt: () => handleCredential({ credential: 'not.a-json.signature' }),
-    });
-
-    await expect(provider.signIn()).rejects.toThrow();
-    expect(provider.getState().status).not.toBe('authenticated');
-  });
-
-  it('should reject and clear the stored token when /users/me returns 403', async () => {
+  it('should enter forbidden state and clear a rejected credential', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 403 }));
-    installGoogleIdentityMock({
-      prompt: () => handleCredential({ credential: token }),
-    });
+    await provider.renderSignInButton(document.createElement('div'));
 
-    await expect(provider.signIn()).rejects.toMatchObject({
-      code: 'forbidden',
-      message: 'This Google account is not allowed for this app',
+    handleCredential({ credential: token });
+    await waitForState(provider, 'forbidden');
+
+    expect(provider.getState()).toMatchObject({
+      status: 'forbidden',
+      error: {
+        code: 'forbidden',
+        message: 'This Google account is not allowed for this app',
+      },
     });
-    expect(provider.getState()).toMatchObject({ status: 'forbidden' });
     expect(sessionStorage.getItem(storageKey)).toBeNull();
   });
 
-  it('should reject when the prompt never returns a credential', async () => {
-    vi.useFakeTimers();
-    const provider = new GoogleAuthProvider('google-client-id');
-    installGoogleIdentityMock({ prompt: noop });
-
-    const login = provider.signIn();
-    const rejectedLogin = getRejectedValue(login);
-    await vi.advanceTimersByTimeAsync(60_000);
-
-    await expect(rejectedLogin).resolves.toEqual(
-      expect.objectContaining({
-        message: 'Google sign-in prompt did not return a credential',
-      }),
-    );
-    expect(provider.getState().status).not.toBe('authenticated');
-  });
-
-  it('should reject when GIS script fails to load', async () => {
+  it('should reject when the GIS script fails to load', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
     delete googleGlobal.google;
 
-    const login = provider.signIn();
-    await vi.waitFor(() => {
-      expect(
-        document.querySelector<HTMLScriptElement>(
-          'script[src="https://accounts.google.com/gsi/client"]',
-        ),
-      ).not.toBeNull();
-    });
-    const script = document.querySelector<HTMLScriptElement>(
-      'script[src="https://accounts.google.com/gsi/client"]',
+    const rendering = provider.renderSignInButton(
+      document.createElement('div'),
     );
-    script?.dispatchEvent(new Event('error'));
+    const script = await findGsiScript();
+    script.dispatchEvent(new Event('error'));
 
-    await expect(login).rejects.toThrow(
+    await expect(rendering).rejects.toThrow(
       'Failed to load Google Identity Services',
     );
   });
 
-  it('should allow login retry after GIS script load failure', async () => {
+  it('should allow rendering retry after a GIS script load failure', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
+    const container = document.createElement('div');
     delete googleGlobal.google;
 
-    const failedLogin = provider.signIn();
-    await vi.waitFor(() => {
-      expect(
-        document.querySelector<HTMLScriptElement>(
-          'script[src="https://accounts.google.com/gsi/client"]',
-        ),
-      ).not.toBeNull();
-    });
-    const script = document.querySelector<HTMLScriptElement>(
-      'script[src="https://accounts.google.com/gsi/client"]',
-    );
-    script?.dispatchEvent(new Event('error'));
-    await expect(failedLogin).rejects.toThrow(
+    const failedRendering = provider.renderSignInButton(container);
+    const script = await findGsiScript();
+    script.dispatchEvent(new Event('error'));
+    await expect(failedRendering).rejects.toThrow(
       'Failed to load Google Identity Services',
     );
 
-    installGoogleIdentityMock({
-      prompt: () => handleCredential({ credential: token }),
-    });
+    installGoogleIdentityMock();
+    await provider.renderSignInButton(container);
 
-    await provider.signIn();
-
-    expect(provider.getState().status).toBe('authenticated');
+    expect(container.children).toHaveLength(1);
   });
 
   it('should await a GIS script already in flight instead of replacing it', async () => {
@@ -371,45 +268,89 @@ describe('googleAuthProvider', () => {
     document.head.append(pending);
 
     const provider = new GoogleAuthProvider('google-client-id');
-    const signIn = provider.signIn();
+    const rendering = provider.renderSignInButton(
+      document.createElement('div'),
+    );
 
-    await vi.waitFor(() => {
-      expect(
-        document.querySelectorAll(
-          'script[src="https://accounts.google.com/gsi/client"]',
-        ),
-      ).toHaveLength(1);
-    });
-    expect(document.head.contains(pending)).toBe(true);
-
-    installGoogleIdentityMock({
-      prompt: () => handleCredential({ credential: token }),
-    });
+    expect(
+      document.querySelectorAll(
+        'script[src="https://accounts.google.com/gsi/client"]',
+      ),
+    ).toHaveLength(1);
+    installGoogleIdentityMock();
     pending.dispatchEvent(new Event('load'));
 
-    await signIn;
-    expect(provider.getState().status).toBe('authenticated');
+    await rendering;
+    expect(document.head.contains(pending)).toBe(true);
   });
 
   it('should clear local state on logout', async () => {
     const provider = new GoogleAuthProvider('google-client-id');
-    await provider.signIn();
+    await provider.renderSignInButton(document.createElement('div'));
+    handleCredential({ credential: token });
+    await waitForState(provider, 'authenticated');
 
     provider.signOut();
 
-    expect(provider.getState().status).not.toBe('authenticated');
+    expect(provider.getState()).toEqual({ status: 'anonymous' });
     expect(sessionStorage.getItem(storageKey)).toBeNull();
     expect(
       googleGlobal.google?.accounts.id.disableAutoSelect,
     ).toHaveBeenCalledOnce();
   });
+
+  it('should ignore validation that finishes after logout', async () => {
+    const validation = deferred<Response>();
+    fetchMock.mockReturnValueOnce(validation.promise);
+    const provider = new GoogleAuthProvider('google-client-id');
+    await provider.renderSignInButton(document.createElement('div'));
+
+    handleCredential({ credential: token });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    provider.signOut();
+    validation.resolve(Response.json(validatedUser, { status: 200 }));
+    await flushAsyncWork();
+
+    expect(provider.getState()).toEqual({ status: 'anonymous' });
+    expect(sessionStorage.getItem(storageKey)).toBeNull();
+    await expect(provider.getAccessToken()).rejects.toThrow(
+      'User is not authenticated',
+    );
+  });
+
+  it('should ignore an older validation after a newer credential wins', async () => {
+    const firstValidation = deferred<Response>();
+    const secondValidation = deferred<Response>();
+    const newerToken = createToken({
+      exp: Math.floor(Date.now() / 1000) + 7200,
+    });
+    const newerUser = {
+      ...validatedUser,
+      id: '00000000-0000-4000-8000-000000000456',
+      email: 'newer@example.com',
+    };
+    fetchMock
+      .mockReturnValueOnce(firstValidation.promise)
+      .mockReturnValueOnce(secondValidation.promise);
+    const provider = new GoogleAuthProvider('google-client-id');
+    await provider.renderSignInButton(document.createElement('div'));
+
+    handleCredential({ credential: token });
+    handleCredential({ credential: newerToken });
+    secondValidation.resolve(Response.json(newerUser, { status: 200 }));
+    await waitForState(provider, 'authenticated');
+    firstValidation.resolve(Response.json(validatedUser, { status: 200 }));
+    await flushAsyncWork();
+
+    expect(provider.getState()).toEqual({
+      status: 'authenticated',
+      user: newerUser,
+    });
+    expect(sessionStorage.getItem(storageKey)).toBe(newerToken);
+  });
 });
 
-function installGoogleIdentityMock({
-  prompt,
-}: {
-  prompt: (notify: (notification: PromptNotification) => void) => void;
-}): void {
+function installGoogleIdentityMock(): void {
   const googleGlobal = globalThis as GoogleTestGlobal;
 
   googleGlobal.google = {
@@ -419,7 +360,6 @@ function installGoogleIdentityMock({
           googleAuthTestState.credentialCallback = config.callback;
         }),
         renderButton: vi.fn(),
-        prompt: vi.fn(prompt),
         disableAutoSelect: vi.fn(),
       },
     },
@@ -434,35 +374,44 @@ function handleCredential(response: CredentialResponse): void {
   googleAuthTestState.credentialCallback(response);
 }
 
-function noop(): void {
-  return;
-}
-
-/** Waits for the constructor's restore to leave the initial `restoring` state. */
 async function settle(provider: GoogleAuthProvider): Promise<void> {
   await vi.waitFor(() => {
     expect(provider.getState().status).not.toBe('restoring');
   });
 }
 
-async function getRejectedValue(promise: Promise<unknown>): Promise<unknown> {
-  try {
-    await promise;
-  } catch (error) {
-    return error;
-  }
-
-  throw new Error('Expected promise to reject');
+async function waitForState(
+  provider: GoogleAuthProvider,
+  status: 'authenticated' | 'forbidden',
+): Promise<void> {
+  await vi.waitFor(() => {
+    expect(provider.getState().status).toBe(status);
+  });
 }
 
-function createPromptNotification(
-  moment: 'dismissed' | 'not-displayed' | 'skipped',
-): PromptNotification {
-  return {
-    isNotDisplayed: () => moment === 'not-displayed',
-    isSkippedMoment: () => moment === 'skipped',
-    isDismissedMoment: () => moment === 'dismissed',
-  };
+async function findGsiScript(): Promise<HTMLScriptElement> {
+  let script: HTMLScriptElement | null = null;
+  await vi.waitFor(() => {
+    script = document.querySelector<HTMLScriptElement>(
+      'script[src="https://accounts.google.com/gsi/client"]',
+    );
+    expect(script).not.toBeNull();
+  });
+
+  return script!;
+}
+
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  const { promise, resolve } = Promise.withResolvers<T>();
+
+  return { promise, resolve };
+}
+
+async function flushAsyncWork(): Promise<void> {
+  await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
 }
 
 function createToken(payload: Record<string, unknown>): string {

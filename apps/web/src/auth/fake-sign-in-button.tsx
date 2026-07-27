@@ -1,14 +1,20 @@
 import { useTranslation } from 'react-i18next';
 
-import { useAuth } from '@/auth/auth-context';
 import { Button } from '@/components/ui/button';
 
-export function FakeSignInButton(): React.JSX.Element {
+import type { FakeAuthProvider } from '@/auth/fake-auth-provider';
+
+interface FakeSignInButtonProps {
+  provider: FakeAuthProvider;
+}
+
+export function FakeSignInButton({
+  provider,
+}: FakeSignInButtonProps): React.JSX.Element {
   const { t } = useTranslation();
-  const auth = useAuth();
 
   return (
-    <Button onClick={() => void auth.signIn()} type="button">
+    <Button onClick={() => provider.authenticate()} type="button">
       {t('auth.landing.action.continueInDevMode')}
     </Button>
   );

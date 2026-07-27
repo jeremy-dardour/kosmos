@@ -1,18 +1,9 @@
-import { useAuth } from '@/auth/auth-context';
-import { FakeSignInButton } from '@/auth/fake-sign-in-button';
-import { GoogleAuthProvider } from '@/auth/google-auth-provider';
-import { GoogleSignInButton } from '@/auth/google-sign-in-button';
+import { createElement } from 'react';
 
-/**
- * Google must render its own iframe button: a plain button wired to `signIn()`
- * goes through One Tap, which browsers suppress unpredictably (ADR 0007).
- */
+import { useAuthSystem } from '@/auth/auth-context';
+
 export function SignInButton(): React.JSX.Element {
-  const auth = useAuth();
+  const authSystem = useAuthSystem();
 
-  if (auth instanceof GoogleAuthProvider) {
-    return <GoogleSignInButton provider={auth} />;
-  }
-
-  return <FakeSignInButton />;
+  return createElement(authSystem.SignInButton);
 }

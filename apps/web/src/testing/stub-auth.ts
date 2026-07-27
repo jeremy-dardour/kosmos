@@ -1,7 +1,8 @@
+import { createElement } from 'react';
 import { vi } from 'vitest';
 
 import type { AuthState } from '@/auth/auth-state';
-import type { Auth } from '@/auth/auth.interface';
+import type { AuthSession, AuthSystem } from '@/auth/auth.interface';
 
 export const STUB_USER = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -11,7 +12,8 @@ export const STUB_USER = {
 
 /** `setState` notifies subscribers, so wrap the call in `act`. */
 export function createStubAuth(initialState?: AuthState): {
-  auth: Auth;
+  auth: AuthSession;
+  authSystem: AuthSystem;
   setState: (next: AuthState) => void;
 } {
   let state: AuthState = initialState ?? {
@@ -20,15 +22,23 @@ export function createStubAuth(initialState?: AuthState): {
   };
   const listeners = new Set<() => void>();
 
-  const auth: Auth = {
+  const auth: AuthSession = {
     getState: () => state,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    signIn: vi.fn(),
     signOut: vi.fn(),
     getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
+  };
+  const authSystem: AuthSystem = {
+    session: auth,
+    SignInButton: () =>
+      createElement(
+        'button',
+        { type: 'button' },
+        'auth.landing.action.continueInDevMode',
+      ),
   };
 
   const setState = (next: AuthState) => {
@@ -36,5 +46,5 @@ export function createStubAuth(initialState?: AuthState): {
     for (const listener of listeners) listener();
   };
 
-  return { auth, setState };
+  return { auth, authSystem, setState };
 }

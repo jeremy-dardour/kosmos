@@ -48,17 +48,19 @@ Two PRs open in parallel: auth refinement (#32) and the first overview slice
   ([ADR 0007](./adr/0007-web-auth-module-boundaries.md)): `/users/me` extracted
   out of `GoogleAuthProvider`, only `401` invalidates a session, fake auth stays
   offline for e2e.
-- **`Auth` interface collapsed to 5 members** (#33) — `getState()` + `subscribe()`
-  read via `useSyncExternalStore`, sign-in widget moved out of the interface;
-  `AuthProviderBoundary` and both rerender hacks deleted
-  ([sessions 15–20](./sessions/session-15-20-2026-07-24-auth-v1-1.md)).
+- **Web auth composed as `AuthSystem`** (#33) — a four-member `AuthSession` plus
+  the provider-specific sign-in affordance. Google uses only the official GIS
+  rendered button; One Tap and its prompt state machine are removed. Stale
+  credential validation cannot undo logout or overwrite a newer session.
+  `AuthProviderBoundary` and both rerender hacks remain deleted
+  ([sessions 15–21](./sessions/session-15-20-2026-07-24-auth-v1-1.md)).
 
 ## In flight
 
 - **PR #32 (`auth-v1.1`)** — session restore (#30), the sign-in button fix,
   `/users/me` extraction, landing-page cleanup, the interface collapse (#33),
-  and the review round that followed (`AuthProvider` → `Auth`, argument-free
-  `signOut()`, `SignInButton`). All checks green; ready to merge.
+  and the review round that followed (`AuthSystem`, argument-free `signOut()`,
+  provider-bound `SignInButton`). All checks green; ready to merge.
 - **PR #31 (`feat/slice-1-overview`)** — Slice 1: overview aggregate read +
   Pipeline Stack UI (#18).
 

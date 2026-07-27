@@ -185,15 +185,14 @@ pointer. Violations → 409 `step-frozen` or `step-not-deletable`.
 
 ## Auth
 
-Full implementation spec in the [Auth PRD](./auth/PRD.md). Research in
-[auth-internals.md](../research/auth-internals.md).
+Original feature requirements are in the [Auth PRD](./auth/PRD.md). Research is
+in [auth-internals.md](../research/auth-internals.md).
 
 > **Web module structure:** see
-> [ADR 0007](../adr/0007-web-auth-module-boundaries.md) — the `Auth`
-> interface, where `/users/me` lives, why the session recovers on construction
-> rather than on a caller's command, why only `401` invalidates a session, and
-> the fake-auth-stays-offline constraint. It owns the frontend flow; this
-> document owns the API contract.
+> [ADR 0007](../adr/0007-web-auth-module-boundaries.md) — the `AuthSystem`
+> composition, provider-rendered sign-in affordance, session lifecycle, stale
+> validation protection, and fake-auth-stays-offline constraint. It owns the
+> frontend flow; this document owns the API contract.
 
 - **Identity:** Google Identity Services (GIS) — `openid`, `email`, `profile`
   scopes. Consent screen published "In production" (non-sensitive scopes, no
@@ -202,8 +201,9 @@ Full implementation spec in the [Auth PRD](./auth/PRD.md). Research in
   in-app user management.
 - **API:** OIDC/JWT validation pipeline (already wired in template). Adapt
   payload schema for Google ID token shape. User upsert on first login.
-- **Web:** `GoogleAuthProvider` via GIS JS SDK, env-driven selection vs
-  `FakeAuth`.
+- **Web:** `AuthSystem` composes an env-selected session adapter with its sign-in
+  component. Google uses the official GIS rendered button and credential
+  callback; fake auth uses a local button and stays offline.
 - **Dev/test:** `FakeAuth` path remains fully functional. All auth env vars
   optional when `FAKE_AUTH=true`.
 
@@ -240,9 +240,12 @@ belong here because they are contract, not structure:
   pre-check — the backend normalizes names and avatar URLs during provisioning,
   so decoded claims drift.
 - The unauthenticated route renders an explicit state, never a blank page:
-  `restoring`, `anonymous`, `forbidden`, `error`. GIS and FedCM can fail without
-  returning a credential — reliably so in private browsing — and a route that
-  only awaits a successful callback lands on nothing.
+  `restoring`, `anonymous`, `forbidden`, `error`. Anonymous and retryable error
+  states render the provider's sign-in affordance. Google uses one acquisition
+  path, the official GIS button, rather than a parallel One Tap prompt flow.
+- Credential validation is operation-scoped. Logout and newer credentials
+  invalidate older `/users/me` requests so stale results cannot recreate or
+  overwrite the current session.
 
 #### Rationale
 
@@ -262,7 +265,9 @@ again.
 
 API e2e covers `200` / `401` / `403` on `/users/me`. Web unit tests cover
 restore-from-storage, marking authenticated only after `/me` succeeds, clearing
-expired and rejected tokens, and rendering the forbidden and error states.
+expired and rejected tokens, rendering the forbidden and error states, retrying
+GIS button loading, and ignoring validation results superseded by logout or a
+newer credential.
 
 ---
 

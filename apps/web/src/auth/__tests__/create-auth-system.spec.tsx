@@ -10,19 +10,20 @@ vi.mock('@/config/env', () => ({
 }));
 
 import { AuthContext } from '@/auth/auth-context';
-import { createAuth } from '@/auth/create-auth';
+import { createAuthSystem } from '@/auth/create-auth-system';
 import { SignInButton } from '@/auth/sign-in-button';
 
-describe('createAuth', () => {
-  it('should build an auth the matching sign-in button drives', async () => {
-    const auth = createAuth();
+describe('createAuthSystem', () => {
+  it('should compose a session with the sign-in button that drives it', async () => {
+    const authSystem = createAuthSystem();
+    const { session } = authSystem;
 
-    expect(auth.getState().status).toBe('authenticated');
-    auth.signOut();
-    expect(auth.getState().status).toBe('anonymous');
+    expect(session.getState().status).toBe('authenticated');
+    session.signOut();
+    expect(session.getState().status).toBe('anonymous');
 
     render(
-      <AuthContext value={auth}>
+      <AuthContext value={authSystem}>
         <SignInButton />
       </AuthContext>,
     );
@@ -31,7 +32,7 @@ describe('createAuth', () => {
       .click();
 
     await vi.waitFor(() => {
-      expect(auth.getState().status).toBe('authenticated');
+      expect(session.getState().status).toBe('authenticated');
     });
   });
 });

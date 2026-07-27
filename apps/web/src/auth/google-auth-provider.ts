@@ -4,16 +4,10 @@ import { ANONYMOUS, RESTORING } from '@/auth/auth-state';
 import { env } from '@/config/env';
 
 import type { AuthState } from '@/auth/auth-state';
-import type { Auth, AuthChangeListener } from '@/auth/auth.interface';
+import type { AuthChangeListener, AuthSession } from '@/auth/auth.interface';
 
 interface GoogleCredentialResponse {
   credential?: string;
-}
-
-interface GooglePromptMomentNotification {
-  isNotDisplayed(): boolean;
-  isSkippedMoment(): boolean;
-  isDismissedMoment(): boolean;
 }
 
 interface GoogleAccountsId {
@@ -31,9 +25,6 @@ interface GoogleAccountsId {
       type?: 'standard' | 'icon';
       width?: string | number;
     },
-  ): void;
-  prompt(
-    callback?: (notification: GooglePromptMomentNotification) => void,
   ): void;
   disableAutoSelect(): void;
 }
@@ -60,7 +51,6 @@ interface GoogleIdTokenPayload {
 
 const GSI_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 const ID_TOKEN_STORAGE_KEY = 'wedding-planner.google-id-token';
-const SIGN_IN_PROMPT_TIMEOUT_MS = 60_000;
 
 const SIGN_IN_BUTTON_OPTIONS = {
   shape: 'rectangular',
@@ -72,31 +62,26 @@ const SIGN_IN_BUTTON_OPTIONS = {
 } as const;
 
 /**
- * `Auth` backed by Google Identity Services: owns the GIS lifecycle (script
- * load, prompt, credential callback, sign-in button) and the ID token it
- * yields — persisting it, restoring it on construction, and expiring it.
+ * `AuthSession` backed by Google Identity Services: owns the GIS lifecycle
+ * (script load, credential callback, sign-in button) and the ID token it yields
+ * — persisting it, restoring it on construction, and expiring it.
  *
  * It does not decide who the user is. `fetchCurrentUser` exchanges the token
  * for an app identity and produces the `AuthError` this maps onto the next
  * state, so a token Google accepts can still land on `forbidden` (ADR 0007).
  */
-export class GoogleAuthProvider implements Auth {
+export class GoogleAuthProvider implements AuthSession {
   private readonly clientId: string;
   private state: AuthState = RESTORING;
-  private readonly restorePromise: Promise<void>;
   private initializePromise: Promise<void> | null = null;
-  private signInPromise: Promise<void> | null = null;
   private idToken: string | null = null;
+  private operation = 0;
   private expiryTimeout: ReturnType<typeof globalThis.setTimeout> | undefined;
   private readonly listeners = new Set<AuthChangeListener>();
-  private pendingSignIn: {
-    resolve: () => void;
-    reject: (error: Error) => void;
-  } | null = null;
 
   constructor(clientId: string = env.googleClientId) {
     this.clientId = clientId;
-    this.restorePromise = this.restoreStoredSession();
+    void this.restoreStoredSession();
   }
 
   getState(): AuthState {
@@ -109,16 +94,6 @@ export class GoogleAuthProvider implements Auth {
     return () => {
       this.listeners.delete(listener);
     };
-  }
-
-  signIn(): Promise<void> {
-    if (this.state.status === 'authenticated') {
-      return Promise.resolve();
-    }
-
-    this.signInPromise ??= this.startSignIn();
-
-    return this.signInPromise;
   }
 
   signOut(): void {
@@ -170,81 +145,13 @@ export class GoogleAuthProvider implements Auth {
     }
   }
 
-  private async startSignIn(): Promise<void> {
-    try {
-      await this.restorePromise;
-      if (this.state.status === 'authenticated') {
-        return;
-      }
-
-      await this.initialize();
-      const google = this.getGoogle();
-
-      if (!google?.accounts.id) {
-        throw new Error('Google Identity Services is not available');
-      }
-
-      let timeout: ReturnType<typeof globalThis.setTimeout> | undefined;
-      try {
-        await new Promise<void>((resolve, reject) => {
-          timeout = globalThis.setTimeout(() => {
-            this.rejectPendingSignIn(
-              new AuthError(
-                'sign_in_failed',
-                'Google sign-in prompt did not return a credential',
-              ),
-            );
-          }, SIGN_IN_PROMPT_TIMEOUT_MS);
-
-          this.pendingSignIn = { resolve, reject };
-
-          try {
-            google.accounts.id.prompt((notification) => {
-              if (
-                notification.isNotDisplayed() ||
-                notification.isSkippedMoment() ||
-                notification.isDismissedMoment()
-              ) {
-                this.rejectPendingSignIn(
-                  new AuthError(
-                    'sign_in_failed',
-                    'Google sign-in prompt was dismissed',
-                  ),
-                );
-              }
-            });
-          } catch (error) {
-            this.rejectPendingSignIn(
-              error instanceof Error
-                ? new AuthError('sign_in_failed', error.message)
-                : new AuthError(
-                    'sign_in_failed',
-                    'Google sign-in prompt failed',
-                  ),
-            );
-          }
-        });
-      } finally {
-        if (timeout) {
-          globalThis.clearTimeout(timeout);
-        }
-      }
-    } finally {
-      this.signInPromise = null;
-    }
-  }
-
   private handleCredential(response: GoogleCredentialResponse): void {
-    void this.completeCredentialSignIn(response);
-  }
-
-  private async completeCredentialSignIn(
-    response: GoogleCredentialResponse,
-  ): Promise<void> {
     if (!response.credential) {
-      this.rejectPendingSignIn(
-        new Error('Google credential response was empty'),
+      const error = new AuthError(
+        'sign_in_failed',
+        'Google credential response was empty',
       );
+      this.clearSession(this.stateForError(error));
       return;
     }
 
@@ -261,23 +168,10 @@ export class GoogleAuthProvider implements Auth {
         'Google credential response was invalid',
       );
       this.clearSession(this.stateForError(authError));
-      this.rejectPendingSignIn(authError);
       return;
     }
 
-    await this.adoptToken(response.credential, { persist: true });
-
-    if (this.state.status === 'authenticated') {
-      this.pendingSignIn?.resolve();
-      this.pendingSignIn = null;
-      return;
-    }
-
-    this.rejectPendingSignIn(
-      this.state.status === 'forbidden' || this.state.status === 'error'
-        ? this.state.error
-        : new AuthError('validation_failed', 'Google sign-in did not complete'),
-    );
+    void this.adoptToken(response.credential, { persist: true });
   }
 
   private async restoreStoredSession(): Promise<void> {
@@ -302,23 +196,32 @@ export class GoogleAuthProvider implements Auth {
 
   /**
    * A rejected token settles on `anonymous`, not `error`: it means there is no
-   * session, which calls for a sign-in prompt rather than a failure the user
-   * can do nothing about.
+   * session, which calls for the sign-in affordance rather than a failure the
+   * user can do nothing about.
    */
   private async adoptToken(
     token: string,
     { persist }: { persist: boolean },
   ): Promise<void> {
-    this.idToken = token;
-    if (persist) {
-      this.writeStoredToken(token);
-    }
+    const operation = ++this.operation;
 
     try {
       const user = await fetchCurrentUser(token);
+      if (operation !== this.operation) {
+        return;
+      }
+
+      this.idToken = token;
+      if (persist) {
+        this.writeStoredToken(token);
+      }
       this.scheduleExpiry(token);
       this.setState({ status: 'authenticated', user });
     } catch (error) {
+      if (operation !== this.operation) {
+        return;
+      }
+
       const authError = this.toAuthError(
         error,
         'Google credential validation failed',
@@ -456,12 +359,8 @@ export class GoogleAuthProvider implements Auth {
     return atob(padded);
   }
 
-  private rejectPendingSignIn(error: Error): void {
-    this.pendingSignIn?.reject(error);
-    this.pendingSignIn = null;
-  }
-
   private clearSession(next: AuthState): void {
+    this.operation++;
     this.idToken = null;
     this.clearExpiryTimeout();
     this.removeStoredToken();

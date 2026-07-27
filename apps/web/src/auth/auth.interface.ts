@@ -1,25 +1,32 @@
 import type { AuthState } from '@/auth/auth-state';
+import type { ComponentType } from 'react';
 
 export type AuthChangeListener = () => void;
 
 /**
- * The app's auth state machine: owns identity acquisition, the session it
- * yields, and the bearer token every API call carries. One instance exists for
- * the lifetime of the app.
+ * The app's authenticated-session lifecycle. It restores and exposes the
+ * current session, supplies its bearer token, and ends it. One instance exists
+ * for the lifetime of the app.
  *
- * It is not itself a session — it outlives every session and reports
- * `anonymous` between them. Implementations are named `…AuthProvider` because
- * each adapts one identity provider.
+ * It outlives individual sessions and reports `anonymous` between them.
+ * Identity acquisition belongs to `AuthSystem.SignInButton` because some
+ * providers, including Google, require provider-owned UI rather than an
+ * imperative sign-in command.
  *
  * `getState()` must return a stable reference until the state actually changes:
  * it feeds `useSyncExternalStore`, which loops if handed a fresh object.
  *
- * What this interface leaves out, and why: ADR 0007.
+ * How this composes into the complete auth module: ADR 0007.
  */
-export interface Auth {
+export interface AuthSession {
   getState(): AuthState;
   subscribe(listener: AuthChangeListener): () => void;
-  signIn(): Promise<void>;
   signOut(): void;
   getAccessToken(): Promise<string>;
+}
+
+/** The complete auth module: session lifecycle plus identity acquisition UI. */
+export interface AuthSystem {
+  session: AuthSession;
+  SignInButton: ComponentType;
 }

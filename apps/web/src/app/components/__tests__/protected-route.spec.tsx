@@ -12,7 +12,7 @@ function renderProtectedRoute(initialState: AuthState) {
   const stub = createStubAuth(initialState);
 
   render(
-    <AuthContext value={stub.auth}>
+    <AuthContext value={stub.authSystem}>
       <ProtectedRoute>
         <div>Private content</div>
       </ProtectedRoute>
@@ -84,19 +84,17 @@ describe('protectedRoute', () => {
     expect(auth.signOut).toHaveBeenCalledOnce();
   });
 
-  it('should retry sign-in from the error state', async () => {
-    const user = userEvent.setup();
-    const { auth } = renderProtectedRoute({
+  it('should show the sign-in affordance in the error state', () => {
+    renderProtectedRoute({
       status: 'error',
       error: new AuthError('validation_failed', 'boom'),
     });
 
     expect(screen.getByText('auth.landing.status.error')).toBeVisible();
-
-    await user.click(
-      screen.getByRole('button', { name: 'auth.landing.action.retry' }),
-    );
-
-    expect(auth.signIn).toHaveBeenCalledOnce();
+    expect(
+      screen.getByRole('button', {
+        name: 'auth.landing.action.continueInDevMode',
+      }),
+    ).toBeVisible();
   });
 });

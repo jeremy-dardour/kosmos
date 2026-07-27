@@ -2,7 +2,7 @@ import { ANONYMOUS } from '@/auth/auth-state';
 import { generateFakeJwt } from '@/auth/utils/generate-fake-jwt';
 
 import type { AuthState } from '@/auth/auth-state';
-import type { Auth, AuthChangeListener } from '@/auth/auth.interface';
+import type { AuthChangeListener, AuthSession } from '@/auth/auth.interface';
 import type { AuthenticatedUser } from '@/auth/types';
 
 const DEV_USER: AuthenticatedUser = {
@@ -12,8 +12,8 @@ const DEV_USER: AuthenticatedUser = {
 };
 
 /**
- * `Auth` for dev and e2e: starts already signed in as a fixed user and mints a
- * local JWT, so the app can be driven end to end without Google.
+ * `AuthSession` for dev and e2e: starts already signed in as a fixed user and
+ * mints a local JWT, so the app can be driven end to end without Google.
  *
  * It exists to make the app testable, not to be a second implementation of
  * session validation — there is no token exchange and no restore.
@@ -21,7 +21,7 @@ const DEV_USER: AuthenticatedUser = {
  * Must make no network call of any kind: web e2e runs with the API mocked at
  * the Playwright layer, so a real request would break the suite (ADR 0007).
  */
-export class FakeAuthProvider implements Auth {
+export class FakeAuthProvider implements AuthSession {
   private state: AuthState = { status: 'authenticated', user: DEV_USER };
   private readonly listeners = new Set<AuthChangeListener>();
 
@@ -37,10 +37,8 @@ export class FakeAuthProvider implements Auth {
     };
   }
 
-  signIn(): Promise<void> {
+  authenticate(): void {
     this.setState({ status: 'authenticated', user: DEV_USER });
-
-    return Promise.resolve();
   }
 
   signOut(): void {

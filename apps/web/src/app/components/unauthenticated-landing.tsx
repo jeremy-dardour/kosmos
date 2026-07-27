@@ -50,7 +50,9 @@ export function UnauthenticatedLanding({
                   <div className="h-full w-1/3 animate-pulse bg-primary" />
                 </div>
               ) : null}
-              {status === 'anonymous' ? <SignInButton /> : null}
+              {status === 'anonymous' || status === 'error' ? (
+                <SignInButton />
+              ) : null}
               {status === 'forbidden' ? (
                 <Button
                   onClick={() => auth.signOut()}
@@ -58,15 +60,6 @@ export function UnauthenticatedLanding({
                   variant="outline"
                 >
                   {t('auth.landing.action.tryAnotherAccount')}
-                </Button>
-              ) : null}
-              {status === 'error' ? (
-                <Button
-                  onClick={() => void auth.signIn()}
-                  type="button"
-                  variant="outline"
-                >
-                  {t('auth.landing.action.retry')}
                 </Button>
               ) : null}
             </div>

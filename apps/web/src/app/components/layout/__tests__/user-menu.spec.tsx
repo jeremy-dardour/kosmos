@@ -6,10 +6,10 @@ import { UserMenu } from '@/app/components/layout/user-menu';
 import { AuthContext } from '@/auth';
 import { createStubAuth } from '@/testing/stub-auth';
 
-import type { Auth } from '@/auth';
+import type { AuthSession } from '@/auth';
 
 const setup = () => {
-  const { auth } = createStubAuth({
+  const { auth, authSystem } = createStubAuth({
     status: 'authenticated',
     user: {
       id: '00000000-0000-4000-8000-000000000010',
@@ -19,7 +19,7 @@ const setup = () => {
   });
 
   render(
-    <AuthContext value={auth}>
+    <AuthContext value={authSystem}>
       <UserMenu />
     </AuthContext>,
   );
@@ -28,7 +28,7 @@ const setup = () => {
 };
 
 describe('userMenu', () => {
-  let auth: Auth;
+  let auth: AuthSession;
 
   beforeEach(() => {
     vi.clearAllMocks();

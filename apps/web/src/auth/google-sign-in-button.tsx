@@ -10,8 +10,8 @@ interface GoogleSignInButtonProps {
 }
 
 /**
- * Takes the concrete provider rather than reading `useAuth()`: rendering the
- * widget is not part of `Auth` (ADR 0007).
+ * Bound to its concrete provider once by `createAuthSystem`; consumers render
+ * the provider-agnostic `SignInButton` from context (ADR 0007).
  */
 export function GoogleSignInButton({
   provider,
@@ -19,6 +19,7 @@ export function GoogleSignInButton({
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [renderError, setRenderError] = useState(false);
+  const [renderAttempt, setRenderAttempt] = useState(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -48,16 +49,14 @@ export function GoogleSignInButton({
       isMounted = false;
       cleanup?.();
     };
-  }, [provider]);
+  }, [provider, renderAttempt]);
 
   if (renderError) {
     return (
       <Button
         onClick={() => {
           setRenderError(false);
-          void provider.signIn().catch(() => {
-            setRenderError(true);
-          });
+          setRenderAttempt((attempt) => attempt + 1);
         }}
         type="button"
       >
