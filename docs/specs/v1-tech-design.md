@@ -185,20 +185,9 @@ pointer. Violations → 409 `step-frozen` or `step-not-deletable`.
 
 ## Auth
 
-Full implementation spec in the [Auth PRD](./auth/PRD.md). Research in
-[auth-internals.md](../research/auth-internals.md).
-
-- **Identity:** Google Identity Services (GIS) — `openid`, `email`, `profile`
-  scopes. Consent screen published "In production" (non-sensitive scopes, no
-  verification needed).
-- **Access control:** Static `.env` allow-list (`AUTH_ALLOWED_EMAILS`). No
-  in-app user management.
-- **API:** OIDC/JWT validation pipeline (already wired in template). Adapt
-  payload schema for Google ID token shape. User upsert on first login.
-- **Web:** `GoogleAuthProvider` via GIS JS SDK, env-driven selection vs
-  `FakeAuth`.
-- **Dev/test:** `FakeAuth` path remains fully functional. All auth env vars
-  optional when `FAKE_AUTH=true`.
+Authentication architecture, contracts, implementation decisions, and
+rationale are documented in
+[ADR 0007](../adr/0007-web-auth-module-boundaries.md).
 
 ---
 
@@ -221,7 +210,7 @@ Hosting research in [hosting-deploy.md](../research/hosting-deploy.md).
 
 ## Build sequence
 
-10 GitHub issues. End-to-end slices — each produces a visible, testable result
+11 GitHub issues. End-to-end slices — each produces a visible, testable result
 (backend + frontend together). Auth and deployment are independent technical
 tracks.
 
@@ -240,10 +229,11 @@ tracks.
 
 ### Technical (independent)
 
-| #   | Issue                                                                                             | Scope                               | Blocking?                  |
-| --- | ------------------------------------------------------------------------------------------------- | ----------------------------------- | -------------------------- |
-| 8   | [#25 — Auth: Google OAuth](https://github.com/jeremy-dardour/wedding-planner/issues/25)           | GIS wiring, allow-list, user upsert | Required before production |
-| 9   | [#26 — Deployment: Cloud Run + Neon](https://github.com/jeremy-dardour/wedding-planner/issues/26) | Infra, CD pipeline, custom domain   | Non-blocking               |
+| #   | Issue                                                                                                        | Scope                                                         | Blocking?                  |
+| --- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | -------------------------- |
+| 8   | [#25 — Auth: Google OAuth](https://github.com/jeremy-dardour/wedding-planner/issues/25)                      | GIS wiring, allow-list, user upsert                           | Required before production |
+| 9   | [#30 — Auth: backend-validated session restore](https://github.com/jeremy-dardour/wedding-planner/issues/30) | `/api/users/me`, local ID-token restore, explicit auth states | Required before production |
+| 10  | [#26 — Deployment: Cloud Run + Neon](https://github.com/jeremy-dardour/wedding-planner/issues/26)            | Infra, CD pipeline, custom domain                             | Non-blocking               |
 
 ### Dependency graph
 
@@ -254,7 +244,7 @@ tracks.
         ├──→ #21 (badges + filters)
         └──→ #24 (workstream management)
 
-#25 (independent — FakeAuth covers dev)
+#25 → #30 (independent — FakeAuth covers dev)
 #26 (independent — can land anytime)
 ```
 

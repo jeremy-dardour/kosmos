@@ -4,33 +4,35 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LayoutHeader } from '@/app/components/layout/layout-header';
 import { AuthContext } from '@/auth';
+import { createStubAuth } from '@/testing/stub-auth';
 
-import type { AuthProvider } from '@/auth';
-
-const mockAuthProvider: AuthProvider = {
-  initialize: vi.fn(),
-  login: vi.fn(),
-  isAuthenticated: vi.fn().mockReturnValue(true),
-  getAuthenticatedUser: vi.fn().mockReturnValue({
-    username: 'jane.doe@example.com',
-    name: 'Jane Doe',
-  }),
-  logout: vi.fn(),
-  getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
-};
+import type { AuthSession } from '@/auth';
 
 const setup = () => {
+  const { auth, authSystem } = createStubAuth({
+    status: 'authenticated',
+    user: {
+      id: '00000000-0000-4000-8000-000000000010',
+      email: 'jane.doe@example.com',
+      name: 'Jane Doe',
+    },
+  });
+
   render(
-    <AuthContext value={mockAuthProvider}>
+    <AuthContext value={authSystem}>
       <LayoutHeader />
     </AuthContext>,
   );
+
+  return auth;
 };
 
 describe('layoutHeader', () => {
+  let auth: AuthSession;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    setup();
+    auth = setup();
   });
 
   it('should render the app title', () => {
@@ -51,15 +53,13 @@ describe('layoutHeader', () => {
   });
 
   it('should call logout when logout button is clicked', async () => {
-    const mockLogout = vi.fn();
-    mockAuthProvider.logout = mockLogout;
     const button = screen.getByText('Jane Doe');
     await userEvent.click(button);
 
     const logoutButton = screen.getByText('app.userMenu.logout');
     await userEvent.click(logoutButton);
 
-    expect(mockLogout).toHaveBeenCalledOnce();
+    expect(auth.signOut).toHaveBeenCalledOnce();
   });
 
   it('should navigate to home page when title is clicked', async () => {

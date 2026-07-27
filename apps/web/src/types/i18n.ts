@@ -1,4 +1,16 @@
 export interface Translations {
+  'auth.landing.badge': string;
+  'auth.landing.title': string;
+  'auth.landing.subtitle': string;
+  'auth.landing.access.title': string;
+  'auth.landing.status.checking': string;
+  'auth.landing.status.signIn': string;
+  'auth.landing.status.forbidden': string;
+  'auth.landing.status.error': string;
+  'auth.landing.action.continueInDevMode': string;
+  'auth.landing.action.signInWithGoogle': string;
+  'auth.landing.action.tryAnotherAccount': string;
+  'auth.landing.action.retry': string;
   'app.error.render.title': string;
   'app.error.render.message': string;
   'app.errorDialog.title': string;

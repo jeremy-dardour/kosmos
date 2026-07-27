@@ -1,49 +1,64 @@
+import { ANONYMOUS } from '@/auth/auth-state';
 import { generateFakeJwt } from '@/auth/utils/generate-fake-jwt';
 
-import type { AuthenticatedUser } from './types';
-import type { AuthProvider } from '@/auth/auth-provider.interface';
+import type { AuthState } from '@/auth/auth-state';
+import type { AuthChangeListener, AuthSession } from '@/auth/auth.interface';
+import type { AuthenticatedUser } from '@/auth/types';
 
-// provider for local developments
-export class FakeAuthProvider implements AuthProvider {
-  private authenticated = false;
-  private authenticatedUser: AuthenticatedUser = this.mockAuthenticateUser();
+const DEV_USER: AuthenticatedUser = {
+  id: '00000000-0000-4000-8000-000000000001',
+  email: 'dev.user@example.com',
+  name: 'DevUser',
+};
 
-  initialize(): void {
-    this.authenticated = true;
+/**
+ * `AuthSession` for dev and e2e: starts already signed in as a fixed user and
+ * mints a local JWT, so the app can be driven end to end without Google.
+ *
+ * It exists to make the app testable, not to be a second implementation of
+ * session validation — there is no token exchange and no restore.
+ *
+ * Must make no network call of any kind: web e2e runs with the API mocked at
+ * the Playwright layer, so a real request would break the suite (ADR 0007).
+ */
+export class FakeAuthProvider implements AuthSession {
+  private state: AuthState = { status: 'authenticated', user: DEV_USER };
+  private readonly listeners = new Set<AuthChangeListener>();
+
+  getState(): AuthState {
+    return this.state;
   }
 
-  login(): void {
-    this.authenticated = true;
+  subscribe(listener: AuthChangeListener): () => void {
+    this.listeners.add(listener);
+
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
-  logout(): void {
-    this.authenticated = false;
+  authenticate(): void {
+    this.setState({ status: 'authenticated', user: DEV_USER });
   }
 
-  isAuthenticated(): boolean {
-    return this.authenticated;
-  }
-
-  getAuthenticatedUser(): AuthenticatedUser | null {
-    return this.authenticated ? this.authenticatedUser : null;
+  signOut(): void {
+    this.setState(ANONYMOUS);
   }
 
   getAccessToken(): Promise<string> {
-    if (!this.authenticated) {
+    if (this.state.status !== 'authenticated') {
       return Promise.reject(
         new Error('[FakeAuthProvider] User is not authenticated'),
       );
     }
 
-    const { username } = this.mockAuthenticateUser();
-
-    return Promise.resolve(generateFakeJwt(username, username));
+    return Promise.resolve(generateFakeJwt(DEV_USER.email, DEV_USER.email));
   }
 
-  private mockAuthenticateUser() {
-    return {
-      username: 'dev.user@example.com',
-      name: 'DevUser',
-    };
+  private setState(next: AuthState): void {
+    this.state = next;
+    for (const listener of this.listeners) {
+      listener();
+    }
   }
 }

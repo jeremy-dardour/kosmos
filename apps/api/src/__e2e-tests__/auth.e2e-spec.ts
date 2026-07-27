@@ -28,6 +28,7 @@ describe('Auth E2E Tests', () => {
   });
 
   const PROTECTED_ENDPOINT = '/__e2e__/protected';
+  const CURRENT_USER_ENDPOINT = '/users/me';
 
   describe('with valid OIDC configuration', () => {
     let app: INestApplication;
@@ -49,8 +50,30 @@ describe('Auth E2E Tests', () => {
         .expect(200);
     });
 
+    it('should return current user for valid token and allowed email', async () => {
+      const token = await tokenFactory.validToken();
+
+      const response = await createRequest(app)
+        .get(CURRENT_USER_ENDPOINT)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        id: expect.stringMatching(
+          /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu,
+        ) as string,
+        email: 'e2e@example.com',
+        name: 'E2E Test User',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      });
+    });
+
     it('should return 401 when no authorization header is provided', async () => {
       await createRequest(app).get(PROTECTED_ENDPOINT).expect(401);
+    });
+
+    it('should return 401 for /users/me when no authorization header is provided', async () => {
+      await createRequest(app).get(CURRENT_USER_ENDPOINT).expect(401);
     });
 
     it('should return 401 for malformed authorization header', async () => {
@@ -106,6 +129,15 @@ describe('Auth E2E Tests', () => {
 
       await createRequest(app)
         .get(PROTECTED_ENDPOINT)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(403);
+    });
+
+    it('should return 403 for /users/me with email outside allow-list', async () => {
+      const token = await tokenFactory.disallowedEmailToken();
+
+      await createRequest(app)
+        .get(CURRENT_USER_ENDPOINT)
         .set('Authorization', `Bearer ${token}`)
         .expect(403);
     });

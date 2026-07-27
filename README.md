@@ -72,6 +72,9 @@ This copies `.env.example` → `.env` for the root, `apps/api`, and
 dev server. The E2E test database port is handled separately — see
 [apps/api/README.md](./apps/api/README.md#parallel-workspace-ports).
 
+[PORTS.md](./PORTS.md) lists which file holds which port, and the gotchas
+(Vite's IPv6-only bind, its silent fallback to the next free port).
+
 ## What's Included
 
 ### Item CRUD Example

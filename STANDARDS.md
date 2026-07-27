@@ -13,3 +13,7 @@ Applies to all packages and apps in this monorepo.
 - ESLint 10 (flat config) via `@workspace/eslint-config`
 - Prettier for formatting
 - No default exports for components or modules
+
+## Comments
+
+DO NOT comment something that is self explanatory in the code.

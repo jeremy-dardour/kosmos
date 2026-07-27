@@ -1,94 +1,100 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
 
 import { ProtectedRoute } from '@/app/components/protected-route';
-import { AuthContext } from '@/auth';
+import { AuthContext, AuthError } from '@/auth';
+import { createStubAuth } from '@/testing/stub-auth';
 
-import type { AuthProvider } from '@/auth';
+import type { AuthState } from '@/auth';
+
+function renderProtectedRoute(initialState: AuthState) {
+  const stub = createStubAuth(initialState);
+
+  render(
+    <AuthContext value={stub.authSystem}>
+      <ProtectedRoute>
+        <div>Private content</div>
+      </ProtectedRoute>
+    </AuthContext>,
+  );
+
+  return stub;
+}
 
 describe('protectedRoute', () => {
-  it('should render children when already authenticated', () => {
-    const auth = createAuthProvider({ isAuthenticated: true });
-
-    render(
-      <AuthContext value={auth}>
-        <ProtectedRoute>
-          <div>Private content</div>
-        </ProtectedRoute>
-      </AuthContext>,
-    );
+  it('should render children when authenticated', () => {
+    renderProtectedRoute({
+      status: 'authenticated',
+      user: { id: 'id', email: 'a@example.com', name: 'A' },
+    });
 
     expect(screen.getByText('Private content')).toBeVisible();
-    expect(auth.login).not.toHaveBeenCalled();
   });
 
-  it('should login and render children when authentication succeeds', async () => {
-    const auth = createAuthProvider({
-      isAuthenticated: false,
-      login: () => {
-        auth.setAuthenticated(true);
-        return Promise.resolve();
-      },
-    });
+  it('should show the pending state while the session is restoring', () => {
+    renderProtectedRoute({ status: 'restoring' });
 
-    render(
-      <AuthContext value={auth}>
-        <ProtectedRoute>
-          <div>Private content</div>
-        </ProtectedRoute>
-      </AuthContext>,
-    );
+    expect(screen.getByText('auth.landing.status.checking')).toBeVisible();
+    expect(screen.queryByText('Private content')).not.toBeInTheDocument();
+  });
+
+  it('should swap to children when the session settles as authenticated', () => {
+    const { setState } = renderProtectedRoute({ status: 'restoring' });
 
     expect(screen.queryByText('Private content')).not.toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('Private content')).toBeVisible();
+    act(() => {
+      setState({
+        status: 'authenticated',
+        user: { id: 'id', email: 'a@example.com', name: 'A' },
+      });
     });
-    expect(auth.login).toHaveBeenCalledOnce();
+
+    expect(screen.getByText('Private content')).toBeVisible();
   });
 
-  it('should not render children when login fails', async () => {
-    const auth = createAuthProvider({
-      isAuthenticated: false,
-      login: () =>
-        Promise.reject(new Error('Google sign-in prompt was dismissed')),
+  it('should show the sign-in button when anonymous', () => {
+    renderProtectedRoute({ status: 'anonymous' });
+
+    expect(screen.getByText('auth.landing.status.signIn')).toBeVisible();
+    expect(
+      screen.getByRole('button', {
+        name: 'auth.landing.action.continueInDevMode',
+      }),
+    ).toBeVisible();
+    expect(screen.queryByText('Private content')).not.toBeInTheDocument();
+  });
+
+  it('should show forbidden state for disallowed accounts', async () => {
+    const user = userEvent.setup();
+    const { auth } = renderProtectedRoute({
+      status: 'forbidden',
+      error: new AuthError('forbidden', 'not allowed'),
     });
 
-    render(
-      <AuthContext value={auth}>
-        <ProtectedRoute>
-          <div>Private content</div>
-        </ProtectedRoute>
-      </AuthContext>,
+    expect(screen.getByText('auth.landing.status.forbidden')).toBeVisible();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'auth.landing.action.tryAnotherAccount',
+      }),
     );
 
-    await waitFor(() => {
-      expect(auth.login).toHaveBeenCalledOnce();
+    expect(auth.signOut).toHaveBeenCalledOnce();
+  });
+
+  it('should show the sign-in affordance in the error state', () => {
+    renderProtectedRoute({
+      status: 'error',
+      error: new AuthError('validation_failed', 'boom'),
     });
-    expect(screen.queryByText('Private content')).not.toBeInTheDocument();
+
+    expect(screen.getByText('auth.landing.status.error')).toBeVisible();
+    expect(
+      screen.getByRole('button', {
+        name: 'auth.landing.action.continueInDevMode',
+      }),
+    ).toBeVisible();
   });
 });
-
-function createAuthProvider({
-  isAuthenticated,
-  login,
-}: {
-  isAuthenticated: boolean;
-  login?: () => Promise<void>;
-}): AuthProvider & {
-  setAuthenticated: (isAuthenticatedValue: boolean) => void;
-} {
-  let isAuthenticatedState = isAuthenticated;
-
-  return {
-    initialize: vi.fn(),
-    login: vi.fn(login ?? (() => Promise.resolve())),
-    logout: vi.fn(),
-    isAuthenticated: vi.fn(() => isAuthenticatedState),
-    getAuthenticatedUser: vi.fn(() => null),
-    getAccessToken: vi.fn(() => Promise.resolve('token')),
-    setAuthenticated: (isAuthenticatedValue: boolean) => {
-      isAuthenticatedState = isAuthenticatedValue;
-    },
-  };
-}

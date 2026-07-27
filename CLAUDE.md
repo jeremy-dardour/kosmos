@@ -33,6 +33,7 @@ Project knowledge — one home per fact. Read these to get oriented:
 @docs/project-purpose.md
 @CONTEXT.md
 @docs/current-state.md
+@STANDARDS.md
 
 Documentation conventions:
 
@@ -71,9 +72,18 @@ pnpm --filter web test:e2e      # Web E2E tests
 pnpm generate:api-types         # Regenerate OpenAPI types from running API
 ```
 
+## Ports
+
+**Never assume the default ports (5432 / 3000 / 5173)** — this checkout may be a
+parallel workspace with randomized ports. Read the value from the right file
+before curling, screenshotting, or connecting: [PORTS.md](./PORTS.md).
+
 ## Standards
 
-See [Global standards](./STANDARDS.md) — TypeScript, imports, naming, testing basics
+[Global standards](./STANDARDS.md) — TypeScript, code style, comments — is
+imported above, so it is always in context. The app-specific ones below are
+loaded on demand by the path-scoped rules in `.claude/rules/`:
+
 See [API standards](./apps/api/STANDARDS.md) — entities, modules, DTOs, architecture boundaries
 See [Web standards](./apps/web/STANDARDS.md) — components, hooks, API layer, auth, i18n
 

@@ -1,4 +1,3 @@
-export interface AuthenticatedUser {
-  username: string;
-  name?: string;
-}
+import type { CurrentUser } from '@/api/current-user';
+
+export type AuthenticatedUser = CurrentUser;

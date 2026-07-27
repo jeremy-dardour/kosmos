@@ -56,6 +56,54 @@
 - This allows CI to start the API for `/openapi.yaml` without providing real
   OIDC configuration.
 
+## Auth v1.1 ticket planning
+
+- Manual Google auth testing exposed follow-up gaps in the first auth pass:
+  - a Google account outside `AUTH_ALLOWED_EMAILS` could briefly enter the web
+    app because the frontend treated the GIS credential callback as sufficient
+    authentication before any backend call ran
+  - the displayed user name/avatar came from client-decoded Google claims rather
+    than the backend-provisioned app user
+  - browser refresh lost auth state because the Google ID token only lived in
+    memory
+  - GIS/FedCM failures in private browsing could leave the protected route blank
+    instead of showing a sign-in or error state
+- Decided to keep the backend stateless:
+  - no server-side session
+  - no backend refresh-token storage
+  - persist only the short-lived Google ID token in web `localStorage`
+  - clear the token on logout, expiry, `401`, or `403`
+- Designed `GET /api/users/me` as the backend validation/current-user endpoint:
+  - protected by the existing auth guard
+  - verifies the Google token
+  - checks `AUTH_ALLOWED_EMAILS`
+  - provisions/updates the `User`
+  - returns the server-trusted current user as `{ id, email, name, avatarUrl }`
+- Defined the frontend flow:
+  - `GoogleAuthProvider.login()` first tries to restore from a stored,
+    non-expired ID token through `/api/users/me`
+  - if restore fails or no token exists, GIS is prompted
+  - after GIS returns a credential, the provider stores it temporarily and calls
+    `/api/users/me`
+  - frontend authenticated state is set only after `/api/users/me` succeeds
+  - decoded Google claims may be used only for local expiry checks, not rendered
+    identity data
+  - `ProtectedRoute` should render explicit `checking`, `sign-in`,
+    `authenticated`, `forbidden`, and `error` states
+- Updated
+  [docs/specs/v1-tech-design.md](../specs/v1-tech-design.md#auth-validation-and-restore-follow-up)
+  with the full flow, rationale, expected API status semantics, and test
+  requirements.
+- Created
+  [#30 — T-9: Backend-validated auth session restore](https://github.com/jeremy-dardour/wedding-planner/issues/30)
+  using the ticket format:
+  - backend endpoint and DTO requirements
+  - frontend behavior and affected modules
+  - key decisions and rationale
+  - references and done-when checklist
+- Linked #30 into the V1 tech design build sequence as a required auth
+  hardening follow-up after #25.
+
 ## Validation
 
 - `pnpm --filter web test`
@@ -91,3 +139,6 @@
 `fix-auth` is rebased on `main`, auth event overengineering is removed, the
 duplicate user migration/snapshot changes are gone, and the branch passes unit,
 type, lint, API e2e, and API type generation verification.
+
+Later addendum: branch `auth-v1.1` now contains the uncommitted tech-design
+update for #30. No implementation for #30 has been started yet.

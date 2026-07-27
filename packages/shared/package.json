@@ -16,6 +16,7 @@
     "build": "tsup",
     "check-types": "tsc --noEmit",
     "dev": "tsup --watch",
+    "start": "tsup",
     "format": "prettier --write .",
     "test": "NODE_ENV=test vitest run"
   },

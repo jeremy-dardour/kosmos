@@ -1,6 +1,5 @@
-import { useEffect, useReducer } from 'react';
-
-import { useAuth } from '@/auth';
+import { UnauthenticatedLanding } from '@/app/components/unauthenticated-landing';
+import { useAuthState } from '@/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,37 +8,11 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({
   children,
 }: ProtectedRouteProps): React.JSX.Element {
-  const auth = useAuth();
-  const [, rerender] = useReducer((revision: number) => revision + 1, 0);
-  const isAuthenticated = auth.isAuthenticated();
+  const state = useAuthState();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      return;
-    }
-
-    let isMounted = true;
-
-    void Promise.resolve(auth.login())
-      .then(() => {
-        if (isMounted) {
-          rerender();
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          rerender();
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [auth, isAuthenticated]);
-
-  if (isAuthenticated) {
+  if (state.status === 'authenticated') {
     return <>{children}</>;
   }
 
-  return <></>;
+  return <UnauthenticatedLanding status={state.status} />;
 }

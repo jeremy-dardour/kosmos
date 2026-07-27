@@ -1,6 +1,13 @@
-export { AuthContext, useAuth } from './auth-context';
-export { AuthProviderBoundary } from './auth-provider-boundary';
-export { createAuthProvider } from './create-auth-provider';
+export {
+  AuthContext,
+  useAuth,
+  useAuthState,
+  useAuthSystem,
+} from './auth-context';
+export { AuthError } from './auth-error';
+export { createAuthSystem } from './create-auth-system';
 export { GoogleAuthProvider } from './google-auth-provider';
+export { SignInButton } from './sign-in-button';
+export type { AuthState } from './auth-state';
 export type { AuthenticatedUser } from './types';
-export type { AuthProvider } from './auth-provider.interface';
+export type { AuthSession, AuthSystem } from './auth.interface';

@@ -1,134 +1,98 @@
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AuthContext, useAuth } from '@/auth/auth-context';
-import { AuthProviderBoundary } from '@/auth/auth-provider-boundary';
+import { AuthContext, useAuthState } from '@/auth/auth-context';
+import { SignInButton } from '@/auth/sign-in-button';
+import { createStubAuth, STUB_USER } from '@/testing/stub-auth';
 
-import type { AuthProvider } from '@/auth/auth-provider.interface';
+function SessionStatus() {
+  const state = useAuthState();
 
-function PersonalComponent() {
-  const auth = useAuth();
-  const account = auth.getAuthenticatedUser();
-  return <div data-testid="username">{account?.username}</div>;
-}
-
-function LoginButton() {
-  const auth = useAuth();
   return (
-    <button onClick={() => auth.login()} type="button">
-      Login
-    </button>
+    <div>
+      {state.status === 'authenticated' ? 'Authenticated' : 'Not authenticated'}
+    </div>
   );
 }
 
-function LogoutStatus() {
-  const auth = useAuth();
+function PersonalComponent() {
+  const state = useAuthState();
+
   return (
-    <>
-      <span>
-        {auth.isAuthenticated() ? 'Authenticated' : 'Not authenticated'}
-      </span>
-      <button onClick={() => auth.logout()} type="button">
-        Logout
-      </button>
-    </>
+    <div data-testid="email">
+      {state.status === 'authenticated' ? state.user.email : null}
+    </div>
   );
 }
 
 describe('authContext', () => {
-  const mockAuthProvider: AuthProvider = {
-    initialize: vi.fn(),
-    login: vi.fn(),
-    isAuthenticated: vi.fn().mockReturnValue(true),
-    getAuthenticatedUser: vi.fn().mockReturnValue({
-      username: 'test@example.com',
-      name: 'TestUser',
-      localAccountId: 'testId',
-    }),
-    logout: vi.fn(),
-    getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
-  };
+  it('should expose the session state to consumers', () => {
+    const { authSystem } = createStubAuth();
 
-  describe('useAuth', () => {
-    it('should return auth provider when used within AuthContext', () => {
-      render(
-        <AuthContext value={mockAuthProvider}>
-          <TestComponent />
-        </AuthContext>,
-      );
+    render(
+      <AuthContext value={authSystem}>
+        <SessionStatus />
+      </AuthContext>,
+    );
 
-      expect(screen.getByText('Authenticated')).toBeInTheDocument();
+    expect(screen.getByText('Authenticated')).toBeInTheDocument();
+  });
+
+  it('should throw when used outside AuthContext', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {
+      return;
     });
 
-    it('should throw error when used outside AuthContext', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {
-        return;
-      });
+    expect(() => {
+      render(<SessionStatus />);
+    }).toThrow('useAuthSystem must be used within AuthContext.Provider');
 
-      expect(() => {
-        render(<TestComponent />);
-      }).toThrow('useAuth must be used within AuthContext.Provider');
+    consoleError.mockRestore();
+  });
 
-      consoleError.mockRestore();
+  it('should expose the authenticated user', () => {
+    const { authSystem } = createStubAuth();
+
+    render(
+      <AuthContext value={authSystem}>
+        <PersonalComponent />
+      </AuthContext>,
+    );
+
+    expect(screen.getByTestId('email')).toHaveTextContent(STUB_USER.email);
+  });
+
+  it('should expose the provider sign-in affordance', () => {
+    const { authSystem } = createStubAuth();
+
+    render(
+      <AuthContext value={authSystem}>
+        <SignInButton />
+      </AuthContext>,
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: 'auth.landing.action.continueInDevMode',
+      }),
+    ).toBeVisible();
+  });
+
+  it('should re-render consumers when the provider changes outside React', () => {
+    const { authSystem, setState } = createStubAuth();
+
+    render(
+      <AuthContext value={authSystem}>
+        <SessionStatus />
+      </AuthContext>,
+    );
+
+    expect(screen.getByText('Authenticated')).toBeInTheDocument();
+
+    act(() => {
+      setState({ status: 'anonymous' });
     });
 
-    it('should return the correct auth provider instance', () => {
-      render(
-        <AuthContext value={mockAuthProvider}>
-          <PersonalComponent />
-        </AuthContext>,
-      );
-
-      expect(screen.getByTestId('username')).toHaveTextContent(
-        'test@example.com',
-      );
-    });
-
-    it('should allow calling auth provider methods', () => {
-      render(
-        <AuthContext value={mockAuthProvider}>
-          <LoginButton />
-        </AuthContext>,
-      );
-
-      const button = screen.getByRole('button', { name: 'Login' });
-      button.click();
-
-      expect(mockAuthProvider.login).toHaveBeenCalledOnce();
-    });
-
-    it('should refresh consumers after auth boundary logout', async () => {
-      let isAuthenticated = true;
-      const authProvider: AuthProvider = {
-        initialize: vi.fn(),
-        login: vi.fn(),
-        isAuthenticated: vi.fn(() => isAuthenticated),
-        getAuthenticatedUser: vi.fn().mockReturnValue(null),
-        logout: vi.fn(() => {
-          isAuthenticated = false;
-        }),
-        getAccessToken: vi.fn().mockResolvedValue('mockAccessToken'),
-      };
-
-      render(
-        <AuthProviderBoundary authProvider={authProvider}>
-          <LogoutStatus />
-        </AuthProviderBoundary>,
-      );
-
-      expect(screen.getByText('Authenticated')).toBeInTheDocument();
-
-      await userEvent.click(screen.getByRole('button', { name: 'Logout' }));
-
-      expect(screen.getByText('Not authenticated')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Not authenticated')).toBeInTheDocument();
   });
 });
-
-const TestComponent = () => {
-  const auth = useAuth();
-  return (
-    <div>{auth.isAuthenticated() ? 'Authenticated' : 'Not authenticated'}</div>
-  );
-};

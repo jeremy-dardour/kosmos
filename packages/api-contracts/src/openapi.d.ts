@@ -64,10 +64,37 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/users/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the current authenticated user
+     * @description Returns the server-trusted current user for the provided bearer token.
+     */
+    get: operations['UserController_me'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    CurrentUserDto: {
+      /** Format: uuid */
+      id: string;
+      email: string;
+      name: string;
+      avatarUrl?: string | null;
+    };
     ProblemDetailsDto: {
       /**
        * @description Problem type URI (should dereference to human-readable docs)
@@ -530,6 +557,48 @@ export interface operations {
             };
           };
         };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  UserController_me: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CurrentUserDto'];
+        };
+      };
+      /** @description Authentication is required or the bearer token is invalid. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The bearer token is valid but the account is not allowed. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Error response (400/401/403/404/422/429/500 etc.) */
       default: {
