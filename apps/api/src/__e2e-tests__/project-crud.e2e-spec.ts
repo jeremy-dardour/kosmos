@@ -422,7 +422,6 @@ describe('Project CRUD E2E Tests', () => {
       expect(body.steps).toHaveLength(1);
       expect(body.steps[0]).toMatchObject({
         status: 'not_started',
-        noteCount: 1,
       });
       expect(body.steps[0]?.owner).toMatchObject({ name: 'Owner One' });
     });

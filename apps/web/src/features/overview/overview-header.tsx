@@ -1,9 +1,9 @@
 import { EventCountdown } from '@/features/overview/event-countdown';
 
-import type { dtos } from '@/types/openapi';
+import type { Project } from '@/api/hooks/use-overview';
 
 interface OverviewHeaderProperties {
-  project: dtos['ProjectDto'];
+  project: Project;
 }
 
 export const OverviewHeader = ({ project }: OverviewHeaderProperties) => {

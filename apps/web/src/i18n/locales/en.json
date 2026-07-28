@@ -38,6 +38,7 @@
   "overview.header.eventYesterday": "Yesterday",
   "overview.header.eventInDays": "{{count}} days to go",
   "overview.header.eventPassed": "{{count}} days ago",
+  "overview.loading": "Loading overview",
   "overview.ungrouped": "Ungrouped",
   "overview.card.notStarted": "Not started",
   "overview.card.complete": "Complete",
@@ -53,5 +54,17 @@
   "overview.noProject.title": "No project yet",
   "overview.noProject.description": "Create a project to start tracking preparation.",
   "overview.detail.title": "Select a workstream",
-  "overview.detail.description": "Its steps, checklist and notes appear here."
+  "overview.detail.description": "Its steps, checklist and notes appear here.",
+  "overview.detail.close": "Close",
+  "overview.detail.current": "Current",
+  "overview.detail.checklist": "Checklist",
+  "overview.detail.checklistProgress": "{{done}}/{{total}}",
+  "overview.detail.notes": "Notes",
+  "overview.detail.notesEmpty": "No notes yet",
+  "overview.detail.notesError": "Could not load notes.",
+  "overview.detail.unknownAuthor": "Unknown",
+  "overview.detail.deadline.in": "in {{count}}d",
+  "overview.detail.deadline.today": "today",
+  "overview.detail.deadline.tomorrow": "tomorrow",
+  "overview.detail.deadline.overdue": "{{count}}d overdue"
 }

@@ -1,15 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
 import { WorkstreamCard } from '@/features/overview/workstream-card';
 
-import type { dtos } from '@/types/openapi';
+import type { Step, StepStatus, Workstream } from '@/api/hooks/use-overview';
 
-function step(
-  name: string,
-  status: dtos['StepStatus'],
-  isBlocked = false,
-): dtos['OverviewStepDto'] {
+function step(name: string, status: StepStatus, isBlocked = false): Step {
   return {
     id: name,
     name,
@@ -17,15 +13,16 @@ function step(
     status,
     blocked: isBlocked,
     deadline: null,
-    explicitOwnerId: null,
-    effectiveOwnerId: null,
+    outcome: null,
+    outcomeAt: null,
+    owner: null,
     checklistItems: [],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
   };
 }
 
-function workstream(
-  overrides: Partial<dtos['OverviewWorkstreamDto']> = {},
-): dtos['OverviewWorkstreamDto'] {
+function workstream(overrides: Partial<Workstream> = {}): Workstream {
   return {
     id: 'w1',
     name: 'Catering',
@@ -103,7 +100,6 @@ describe('workstreamCard', () => {
       />,
     );
 
-    // The pipeline dot announces the same status; match the visible badge.
     const badges = screen
       .getAllByText('overview.stepStatus.blocked')
       .filter((element) => !element.classList.contains('sr-only'));
@@ -123,5 +119,35 @@ describe('workstreamCard', () => {
     expect(
       screen.queryByText('overview.stepStatus.blocked'),
     ).not.toBeInTheDocument();
+  });
+
+  it('applies selected styling when isSelected is true', () => {
+    render(
+      <WorkstreamCard
+        workstream={workstream()}
+        isSelected
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const card = screen.getByRole('button');
+    expect(card).toHaveClass('border-step-in-progress');
+    expect(card).toHaveClass('bg-step-in-progress/8');
+  });
+
+  it('calls onSelect when clicked', () => {
+    const onSelect = vi.fn();
+    render(<WorkstreamCard workstream={workstream()} onSelect={onSelect} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    expect(onSelect).toHaveBeenCalledOnce();
+  });
+
+  it('calls onSelect on Enter key', () => {
+    const onSelect = vi.fn();
+    render(<WorkstreamCard workstream={workstream()} onSelect={onSelect} />);
+
+    fireEvent.keyDown(screen.getByRole('button'), { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledOnce();
   });
 });

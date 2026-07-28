@@ -5,16 +5,20 @@ import { OwnerAvatar } from '@/features/overview/owner-avatar';
 import { PipelineDots } from '@/features/overview/pipeline-dots';
 import { cn } from '@/lib/utils';
 
-import type { dtos } from '@/types/openapi';
+import type { UserSummary, Workstream } from '@/api/hooks/use-overview';
 
 interface WorkstreamCardProperties {
-  workstream: dtos['OverviewWorkstreamDto'];
-  owner?: dtos['UserSummaryDto'] | null;
+  workstream: Workstream;
+  owner?: UserSummary | null;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
 export const WorkstreamCard = ({
   workstream,
   owner,
+  isSelected = false,
+  onSelect,
 }: WorkstreamCardProperties) => {
   const { t } = useTranslation();
 
@@ -23,10 +27,22 @@ export const WorkstreamCard = ({
   const isBlocked = workstream.steps.some((step) => isBlockedNow(step));
 
   return (
-    <article
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        onSelect?.();
+      }}
       className={cn(
-        'rounded-lg border bg-card p-card shadow-xs transition-colors',
-        isBlocked && 'border-step-blocked/40',
+        'cursor-pointer rounded-lg border bg-card p-card shadow-xs transition-colors',
+        isSelected
+          ? 'border-step-in-progress bg-step-in-progress/8'
+          : 'hover:border-muted-foreground/30',
+        isBlocked && !isSelected && 'border-step-blocked/40',
         isComplete && 'opacity-65',
       )}
     >
@@ -58,6 +74,6 @@ export const WorkstreamCard = ({
       <div className="mt-3">
         <PipelineDots steps={workstream.steps} />
       </div>
-    </article>
+    </div>
   );
 };

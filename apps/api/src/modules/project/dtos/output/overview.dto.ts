@@ -1,59 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { StepStatus } from '@/database/entities/step.entity';
 import { WorkstreamLifecycle } from '@/database/entities/workstream.entity';
-import {
-  ChecklistItemDto,
-  sortChecklistItems,
-  toChecklistItemDto,
-} from '@/modules/project/dtos/output/checklist-item.dto';
 import { GroupDto } from '@/modules/project/dtos/output/group.dto';
 import { ProjectDto } from '@/modules/project/dtos/output/project.dto';
-import { sortSteps } from '@/modules/project/dtos/output/step.dto';
+import {
+  StepDto,
+  sortSteps,
+  toStepDto,
+} from '@/modules/project/dtos/output/step.dto';
 import { UserSummaryDto } from '@/modules/project/dtos/output/user-summary.dto';
-import { resolveOwner } from '@/modules/project/utils/resolve-owner.util';
 
-import type { Step } from '@/database/entities/step.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
-import type { StepParent } from '@/modules/project/dtos/output/step.dto';
-
-/** A step as the overview needs it; the detail panel loads the rest. */
-export class OverviewStepDto {
-  @ApiProperty({ format: 'uuid' })
-  id!: string;
-
-  @ApiProperty()
-  name!: string;
-
-  @ApiProperty({ description: '1-indexed position in the pipeline' })
-  position!: number;
-
-  @ApiProperty({ enum: StepStatus, enumName: 'StepStatus' })
-  status!: StepStatus;
-
-  @ApiProperty()
-  blocked!: boolean;
-
-  @ApiPropertyOptional({ format: 'date', nullable: true })
-  deadline?: string | null;
-
-  @ApiPropertyOptional({
-    format: 'uuid',
-    nullable: true,
-    description: 'Explicit step owner; null means inherit from the workstream',
-  })
-  explicitOwnerId?: string | null;
-
-  @ApiPropertyOptional({
-    format: 'uuid',
-    nullable: true,
-    description: 'Effective owner after applying workstream inheritance',
-  })
-  effectiveOwnerId?: string | null;
-
-  @ApiProperty({ type: [ChecklistItemDto] })
-  checklistItems!: ChecklistItemDto[];
-}
 
 export class OverviewWorkstreamDto {
   @ApiProperty({ format: 'uuid' })
@@ -77,8 +34,8 @@ export class OverviewWorkstreamDto {
   @ApiPropertyOptional({ format: 'uuid', nullable: true })
   ownerId?: string | null;
 
-  @ApiProperty({ type: [OverviewStepDto] })
-  steps!: OverviewStepDto[];
+  @ApiProperty({ type: [StepDto] })
+  steps!: StepDto[];
 
   @ApiPropertyOptional({
     format: 'uuid',
@@ -107,27 +64,6 @@ export class OverviewDto {
   users!: UserSummaryDto[];
 }
 
-function toOverviewStepDto(
-  step: Step,
-  workstream: StepParent,
-): OverviewStepDto {
-  const owner = resolveOwner(step, workstream);
-
-  return {
-    id: step.id,
-    name: step.name,
-    position: step.position,
-    status: step.getStatus(workstream.currentStep?.position ?? null),
-    blocked: step.blocked,
-    deadline: step.deadline ?? null,
-    explicitOwnerId: step.owner?.id ?? null,
-    effectiveOwnerId: owner?.id ?? null,
-    checklistItems: sortChecklistItems(step.getChecklistItems()).map((item) =>
-      toChecklistItemDto(item),
-    ),
-  };
-}
-
 export function toOverviewWorkstreamDto(
   workstream: Workstream,
 ): OverviewWorkstreamDto {
@@ -139,7 +75,7 @@ export function toOverviewWorkstreamDto(
     lifecycle: workstream.getLifecycle(),
     ownerId: workstream.owner?.id ?? null,
     steps: sortSteps(workstream.getSteps()).map((step) =>
-      toOverviewStepDto(step, workstream),
+      toStepDto(step, workstream),
     ),
     nearestDeadlineStepId: workstream.nearestDeadlineStep()?.id ?? null,
   };

@@ -2,11 +2,11 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 
-import type { dtos } from '@/types/openapi';
+import type { UserSummary } from '@/api/hooks/use-overview';
 import type { CSSProperties } from 'react';
 
 interface OwnerAvatarProperties {
-  owner?: dtos['UserSummaryDto'] | null;
+  owner?: UserSummary | null;
   className?: string;
 }
 

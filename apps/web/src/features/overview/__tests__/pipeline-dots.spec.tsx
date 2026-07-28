@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest';
 
 import { PipelineDots } from '@/features/overview/pipeline-dots';
 
-import type { dtos } from '@/types/openapi';
+import type { Step, StepStatus } from '@/api/hooks/use-overview';
 
 function step(
   name: string,
-  status: dtos['StepStatus'],
-  overrides: Partial<dtos['OverviewStepDto']> = {},
-): dtos['OverviewStepDto'] {
+  status: StepStatus,
+  overrides: Partial<Step> = {},
+): Step {
   return {
     id: name,
     name,
@@ -17,9 +17,12 @@ function step(
     status,
     blocked: false,
     deadline: null,
-    explicitOwnerId: null,
-    effectiveOwnerId: null,
+    outcome: null,
+    outcomeAt: null,
+    owner: null,
     checklistItems: [],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };
 }

@@ -220,6 +220,23 @@ export interface paths {
     patch: operations['WorkstreamController_update'];
     trace?: never;
   };
+  '/api/workstreams/{workstreamId}/notes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List notes for a workstream */
+    get: operations['NoteController_getWorkstreamNotes'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -331,8 +348,19 @@ export interface components {
     };
     /** @enum {string} */
     WorkstreamLifecycle: 'not_started' | 'active' | 'complete';
-    /** @enum {string} */
+    /**
+     * @description Derived from the workstream pointer, never stored
+     * @enum {string}
+     */
     StepStatus: 'not_started' | 'in_progress' | 'done' | 'skipped';
+    /** @enum {string} */
+    StepOutcome: 'done' | 'skipped';
+    UserSummaryDto: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      avatarUrl?: string | null;
+    };
     ChecklistItemDto: {
       /** Format: uuid */
       id: string;
@@ -345,27 +373,28 @@ export interface components {
       /** Format: date-time */
       updatedAt: string;
     };
-    OverviewStepDto: {
+    StepDto: {
       /** Format: uuid */
       id: string;
       name: string;
       /** @description 1-indexed position in the pipeline */
       position: number;
+      /** @description Derived from the workstream pointer, never stored */
       status: components['schemas']['StepStatus'];
+      /** @description Informational flag; meaningful only on the current step */
       blocked: boolean;
       /** Format: date */
       deadline?: string | null;
-      /**
-       * Format: uuid
-       * @description Explicit step owner; null means inherit from the workstream
-       */
-      explicitOwnerId?: string | null;
-      /**
-       * Format: uuid
-       * @description Effective owner after applying workstream inheritance
-       */
-      effectiveOwnerId?: string | null;
+      outcome?: components['schemas']['StepOutcome'] | null;
+      /** Format: date-time */
+      outcomeAt?: string | null;
+      /** @description Effective owner, inherited from the workstream when unset */
+      owner?: components['schemas']['UserSummaryDto'] | null;
       checklistItems: components['schemas']['ChecklistItemDto'][];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
     };
     OverviewWorkstreamDto: {
       /** Format: uuid */
@@ -377,18 +406,12 @@ export interface components {
       lifecycle: components['schemas']['WorkstreamLifecycle'];
       /** Format: uuid */
       ownerId?: string | null;
-      steps: components['schemas']['OverviewStepDto'][];
+      steps: components['schemas']['StepDto'][];
       /**
        * Format: uuid
        * @description The earliest unpassed step with a deadline
        */
       nearestDeadlineStepId?: string | null;
-    };
-    UserSummaryDto: {
-      /** Format: uuid */
-      id: string;
-      name: string;
-      avatarUrl?: string | null;
     };
     OverviewDto: {
       project: components['schemas']['ProjectDto'];
@@ -424,33 +447,6 @@ export interface components {
       groupId?: string | null;
       /** Format: uuid */
       ownerId?: string | null;
-    };
-    /** @enum {string} */
-    StepOutcome: 'done' | 'skipped';
-    StepDto: {
-      /** Format: uuid */
-      id: string;
-      name: string;
-      /** @description 1-indexed position in the pipeline */
-      position: number;
-      /** @description Derived from the workstream pointer, never stored */
-      status: components['schemas']['StepStatus'];
-      /** @description Informational flag; meaningful only on the current step */
-      blocked: boolean;
-      /** Format: date */
-      deadline?: string | null;
-      outcome?: components['schemas']['StepOutcome'] | null;
-      /** Format: date-time */
-      outcomeAt?: string | null;
-      /** @description Effective owner, inherited from the workstream when unset */
-      owner?: components['schemas']['UserSummaryDto'] | null;
-      checklistItems: components['schemas']['ChecklistItemDto'][];
-      /** @description Notes themselves are loaded on demand */
-      noteCount: number;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
     };
     WorkstreamDto: {
       /** Format: uuid */
@@ -489,6 +485,18 @@ export interface components {
        * @description null to unassign
        */
       ownerId?: string | null;
+    };
+    NoteDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      stepId: string;
+      content: string;
+      author?: components['schemas']['UserSummaryDto'] | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
     };
   };
   responses: never;
@@ -1885,6 +1893,90 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['WorkstreamDto'];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  NoteController_getWorkstreamNotes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workstreamId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NoteDto'][];
         };
       };
       /** @description Invalid request format */
