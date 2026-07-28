@@ -5,12 +5,12 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-28 (session 25)_
+_Last updated: 2026-07-28 (session 26)_
 
 ## Phase
 
-**Building.** Slices 1 and 2 are merged; Slice 3 is in draft PR #37. Five
-build-slice/deployment issues remain (#21–#24, #26).
+**Building.** Slices 1 and 2 are merged; Slices 3 and 6 are in draft PRs #37
+and #38. Four build-slice/deployment issues remain (#21, #22, #24, #26).
 
 ## Done
 
@@ -97,11 +97,30 @@ build-slice/deployment issues remain (#21–#24, #26).
   is deferred by the web testing standard. A CI follow-up made the global auth
   guard read-only and moved concurrency-safe provisioning to `/users/me`
   ([session 25](./sessions/session-25-2026-07-28-slice-3-advance-actions.md)).
+- **#23 — Slice 6: pipeline and checklist editing** — complete on
+  `feat/slice-6` (draft PR #38). The canonical Workstream/Step DTO migration is
+  finished. A locked, atomic Workstream-level command replaces the editable
+  pipeline tail with optimistic concurrency, while checklist completion uses
+  an immediate item-level mutation. Past Steps stay frozen; current-Step
+  structure is guarded; explicit Step owners override inherited Workstream
+  owners. The editor supports Step details and full Step/checklist
+  add/remove/reorder flows. Stale drafts are discarded and refreshed. Current
+  checklists default expanded; past/future checklists are compact and past
+  controls remain disabled. Frontend coverage is Testing Library/MSW
+  integration only; no Playwright E2E was added. Standards and spec re-reviews
+  are clear
+  ([session 26](./sessions/session-26-2026-07-28-slice-6-pipeline-editing.md)).
+- **Step-editing UI/design review** tracked separately in
+  [#39](https://github.com/jeremy-dardour/wedding-planner/issues/39), covering
+  editor density, hierarchy, control discoverability, constrained widths, and
+  accessibility without reopening settled domain behavior.
 
 ## In flight
 
 - **Draft PR #37 (`feat/slice-3`)** — Slice 3: advance + start pipeline actions
   (#20).
+- **Draft PR #38 (`feat/slice-6`)** — Slice 6: pipeline and checklist editing
+  (#23).
 
 ## Open questions
 
@@ -110,8 +129,9 @@ build-slice/deployment issues remain (#21–#24, #26).
 
 ## Next steps
 
-1. Review and land PR #37.
-2. Build slices #21–#24, then deployment (#26). Reorder repositories use
+1. Review and land PRs #37 and #38.
+2. Review and refine the step-editing UI/design in #39.
+3. Build slices #21, #22, and #24, then deployment (#26). Reorder repositories use
    two-phase temporary positions because the generated constraints are not
    deferrable.
-3. Mobile responsiveness deferred to #35.
+4. Mobile responsiveness deferred to #35.
