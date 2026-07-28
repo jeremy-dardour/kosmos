@@ -71,6 +71,12 @@ src/
   HTTP via MSW (`server.use(http.get(...))`). Do not mock hooks, query
   layer, or internal components. See `src/testing/render-with-app.tsx`,
   `src/testing/mock-api.ts`.
+- MSW responses must match the real API contract, including RFC 9457 Problem
+  Details fields. Do not substitute transport fields such as `statusText` for
+  response-body fields such as `title`.
+- For journeys involving multiple requests and server-side state transitions,
+  encapsulate state in a focused test adapter instead of repeating raw route
+  handlers in each test.
 - **Browser E2E is deferred.** Do not add Playwright coverage for now. Cover web
   journeys at the integration layer with real providers and MSW; retain the
   existing Playwright setup for when browser tests are resumed.

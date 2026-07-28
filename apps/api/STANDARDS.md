@@ -50,6 +50,10 @@ Controller → Service → Repository → EntityManager
 - Repositories accept and return entities, IDs, query criteria, or
   query-specific entity graphs—never input or output DTOs. Repository `save`
   methods call `persist(entity)` followed by `flush()`.
+- Operations that create or update rows identified by a unique key must use an
+  atomic database operation (`upsert`, conflict handling, or an appropriate
+  lock). Do not implement them as find-then-insert when concurrent requests are
+  possible.
 - A read model such as the overview gets a query-focused repository rather
   than being forced through an entity CRUD repository.
 - Services instantiate and mutate entities from input DTOs; services or
