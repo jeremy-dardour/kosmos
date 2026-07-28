@@ -4,7 +4,6 @@ import { AuthGuard } from '@/app/auth/auth.guard';
 import { IS_PUBLIC_KEY } from '@/app/auth/decorators';
 import { AuthenticationException } from '@/app/auth/exceptions/authentication.exception';
 
-import type { AuthUserProvisionerService } from '@/app/auth/auth-user-provisioner.service';
 import type { JwtAuthStrategy } from '@/app/auth/strategies/jwt/jwt-auth.strategy';
 import type { MockAuthStrategy } from '@/app/auth/strategies/mock-auth.strategy';
 import type {
@@ -22,17 +21,11 @@ describe('authGuard', () => {
   let reflector: Reflector;
   let jwtAuthStrategy: JwtAuthStrategy;
   let mockAuthStrategy: MockAuthStrategy;
-  let authUserProvisioner: AuthUserProvisionerService;
 
   const mockPayload: AuthenticatedUser = {
     email: 'user@example.com',
     name: 'Test User',
     avatarUrl: 'https://example.com/avatar.jpg',
-  };
-
-  const provisionedUser: AuthenticatedUser = {
-    ...mockPayload,
-    id: '8fdff8a9-918d-4a3c-9368-2a8b9d69f3f8',
   };
 
   beforeEach(() => {
@@ -49,10 +42,6 @@ describe('authGuard', () => {
     mockAuthStrategy = {
       authenticate: vi.fn().mockResolvedValue(mockPayload),
     } as unknown as MockAuthStrategy;
-
-    authUserProvisioner = {
-      provision: vi.fn().mockResolvedValue(provisionedUser),
-    } as unknown as AuthUserProvisionerService;
   });
 
   describe('strategy selection', () => {
@@ -70,7 +59,6 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
-        authUserProvisioner,
       );
 
       vi.mocked(reflector.getAllAndOverride).mockReturnValueOnce(false);
@@ -98,7 +86,6 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
-        authUserProvisioner,
       );
 
       vi.mocked(reflector.getAllAndOverride).mockReturnValueOnce(false);
@@ -126,7 +113,6 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
-        authUserProvisioner,
       );
 
       vi.mocked(reflector.getAllAndOverride).mockReturnValueOnce(false);
@@ -156,7 +142,6 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
-        authUserProvisioner,
       );
     });
 
@@ -199,7 +184,6 @@ describe('authGuard', () => {
         reflector,
         jwtAuthStrategy,
         mockAuthStrategy,
-        authUserProvisioner,
       );
     });
 
@@ -213,15 +197,14 @@ describe('authGuard', () => {
       expect(jwtAuthStrategy.authenticate).toHaveBeenCalledTimes(1);
     });
 
-    it('should provision and set user on request after successful authentication', async () => {
+    it('should set the verified identity without provisioning a database user', async () => {
       vi.mocked(reflector.getAllAndOverride).mockReturnValueOnce(false);
 
       const context = createMockExecutionContext();
       await guard.canActivate(context);
 
       const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-      expect(authUserProvisioner.provision).toHaveBeenCalledWith(mockPayload);
-      expect(request.user).toEqual(provisionedUser);
+      expect(request.user).toEqual(mockPayload);
     });
 
     it('should propagate authentication errors from strategy', async () => {

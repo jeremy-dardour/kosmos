@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 
-import { User } from '@/database/entities/user.entity';
 import { UserRepository } from '@/database/repositories/user.repository';
 
 import type { AuthenticatedUser } from '@/app/auth/types/token.types';
@@ -13,14 +12,11 @@ export class AuthUserProvisionerService {
     authenticatedUser: AuthenticatedUser,
   ): Promise<AuthenticatedUser> {
     const email = authenticatedUser.email.toLowerCase();
-    const user =
-      (await this.userRepository.findOneByEmail(email)) ?? new User();
-
-    user.email = email;
-    user.name = authenticatedUser.name ?? email;
-    user.avatarUrl = authenticatedUser.avatarUrl ?? null;
-
-    await this.userRepository.save(user);
+    const user = await this.userRepository.upsertProfile({
+      email,
+      name: authenticatedUser.name ?? email,
+      avatarUrl: authenticatedUser.avatarUrl ?? null,
+    });
 
     return {
       ...authenticatedUser,

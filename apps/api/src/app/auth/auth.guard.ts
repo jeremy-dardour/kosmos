@@ -2,7 +2,6 @@ import { Injectable, CanActivate } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 
-import { AuthUserProvisionerService } from '@/app/auth/auth-user-provisioner.service';
 import { IS_PUBLIC_KEY } from '@/app/auth/decorators';
 import { JwtAuthStrategy } from '@/app/auth/strategies/jwt/jwt-auth.strategy';
 import { MockAuthStrategy } from '@/app/auth/strategies/mock-auth.strategy';
@@ -22,7 +21,6 @@ export class AuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly jwtAuthStrategy: JwtAuthStrategy,
     private readonly mockAuthStrategy: MockAuthStrategy,
-    private readonly authUserProvisioner: AuthUserProvisionerService,
   ) {
     this.authStrategy = shouldUseMockAuth(this.configService)
       ? this.mockAuthStrategy
@@ -40,8 +38,7 @@ export class AuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const payload = await this.authStrategy.authenticate(request);
-    request.user = await this.authUserProvisioner.provision(payload);
+    request.user = await this.authStrategy.authenticate(request);
 
     return true;
   }
