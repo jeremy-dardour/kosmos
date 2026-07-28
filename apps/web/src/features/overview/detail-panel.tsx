@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useToggleChecklistItem } from '@/api/hooks/use-toggle-checklist-item';
 import { useUpdatePipeline } from '@/api/hooks/use-update-pipeline';
 import { Button } from '@/components/ui/button';
+import { formatToApiError } from '@/errors/format-error';
 import { NotesSection } from '@/features/overview/notes-section';
 import { PipelineEditor } from '@/features/overview/pipeline-editor';
 import { VerticalPipeline } from '@/features/overview/vertical-pipeline';
@@ -103,7 +104,18 @@ export const DetailPanel = ({
           onSave={(body) =>
             updatePipeline.mutate(
               { params: { path: { id: workstream.id } }, body },
-              { onSuccess: () => setEditingWorkstreamId(null) },
+              {
+                onSuccess: () => setEditingWorkstreamId(null),
+                onError: (error) => {
+                  if (
+                    formatToApiError(error)?.problemType?.endsWith(
+                      '/pipeline-stale',
+                    )
+                  ) {
+                    setEditingWorkstreamId(null);
+                  }
+                },
+              },
             )
           }
         />

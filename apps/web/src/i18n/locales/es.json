@@ -72,6 +72,8 @@
   "overview.detail.current": "Actual",
   "overview.detail.checklist": "Checklist",
   "overview.detail.checklistProgress": "{{done}}/{{total}}",
+  "overview.detail.showChecklist": "Mostrar checklist de {{name}}",
+  "overview.detail.hideChecklist": "Ocultar checklist de {{name}}",
   "overview.detail.notes": "Notas",
   "overview.detail.notesEmpty": "Sin notas aún",
   "overview.detail.notesError": "No se pudieron cargar las notas.",

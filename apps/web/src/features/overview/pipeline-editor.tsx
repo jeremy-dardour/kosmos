@@ -91,7 +91,12 @@ export const PipelineEditor = ({
     setDraftSteps((steps) => {
       const targetIndex = index + direction;
       if (targetIndex < 0 || targetIndex >= steps.length) return steps;
-      if (steps[index]?.id === currentStepId || targetIndex === 0) return steps;
+      if (
+        steps[index]?.id === currentStepId ||
+        (currentStepId != null && targetIndex === 0)
+      ) {
+        return steps;
+      }
       const moved = [...steps];
       const [step] = moved.splice(index, 1);
       moved.splice(targetIndex, 0, step!);

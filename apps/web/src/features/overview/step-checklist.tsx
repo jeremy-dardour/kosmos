@@ -1,3 +1,5 @@
+import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -16,6 +18,7 @@ export const StepChecklist = ({
   onToggle,
 }: StepChecklistProperties) => {
   const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(step.status === 'in_progress');
 
   if (step.checklistItems.length === 0) return null;
 
@@ -29,39 +32,57 @@ export const StepChecklist = ({
         isPast && 'opacity-55',
       )}
     >
-      <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {t('overview.detail.checklist')}{' '}
+      <button
+        type="button"
+        aria-expanded={isExpanded}
+        aria-label={t(
+          isExpanded
+            ? 'overview.detail.hideChecklist'
+            : 'overview.detail.showChecklist',
+          { name: step.name },
+        )}
+        className="flex w-full items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+        onClick={() => setIsExpanded((expanded) => !expanded)}
+      >
+        {isExpanded ? (
+          <ChevronDownIcon className="size-3" />
+        ) : (
+          <ChevronRightIcon className="size-3" />
+        )}
+        <span>{t('overview.detail.checklist')}</span>
         <span className="tabular-nums">
           {t('overview.detail.checklistProgress', {
             done: doneCount,
             total: step.checklistItems.length,
           })}
         </span>
-      </p>
-      <ul className="flex flex-col gap-0.5">
-        {step.checklistItems.map((item) => (
-          <li key={item.id}>
-            <label className="flex min-w-0 items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                aria-label={item.name}
-                checked={item.done}
-                disabled={isPast || pendingItemId === item.id}
-                onChange={(event) => onToggle?.(item, event.target.checked)}
-                className="size-3.5 shrink-0 accent-step-done"
-              />
-              <span
-                className={cn(
-                  'truncate',
-                  item.done && 'text-muted-foreground line-through',
-                )}
-              >
-                {item.name}
-              </span>
-            </label>
-          </li>
-        ))}
-      </ul>
+      </button>
+      {isExpanded && (
+        <ul className="mt-1 flex flex-col gap-0.5">
+          {step.checklistItems.map((item) => (
+            <li key={item.id}>
+              <label className="flex min-w-0 items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  aria-label={item.name}
+                  checked={item.done}
+                  disabled={isPast || pendingItemId === item.id}
+                  onChange={(event) => onToggle?.(item, event.target.checked)}
+                  className="size-3.5 shrink-0 accent-step-done"
+                />
+                <span
+                  className={cn(
+                    'truncate',
+                    item.done && 'text-muted-foreground line-through',
+                  )}
+                >
+                  {item.name}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };

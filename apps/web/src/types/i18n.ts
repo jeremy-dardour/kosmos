@@ -72,6 +72,8 @@ export interface Translations {
   'overview.detail.current': string;
   'overview.detail.checklist': string;
   'overview.detail.checklistProgress': string;
+  'overview.detail.showChecklist': string;
+  'overview.detail.hideChecklist': string;
   'overview.detail.notes': string;
   'overview.detail.notesEmpty': string;
   'overview.detail.notesError': string;

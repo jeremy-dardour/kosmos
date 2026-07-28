@@ -53,11 +53,26 @@ describe('checklist interactions', () => {
     );
 
     expect(
+      screen.queryByRole('checkbox', { name: 'Family addresses' }),
+    ).not.toBeInTheDocument();
+    const current = screen.getByRole('checkbox', { name: 'Choose wording' });
+    expect(current).toBeEnabled();
+
+    await agent.click(
+      screen.getByRole('button', {
+        name: 'Show checklist for Collect addresses',
+      }),
+    );
+    expect(
       screen.getByRole('checkbox', { name: 'Family addresses' }),
     ).toBeDisabled();
-    const current = screen.getByRole('checkbox', { name: 'Choose wording' });
+
+    await agent.click(
+      screen.getByRole('button', {
+        name: 'Show checklist for Post invitations',
+      }),
+    );
     const future = screen.getByRole('checkbox', { name: 'Buy stamps' });
-    expect(current).toBeEnabled();
     expect(future).toBeEnabled();
 
     await agent.click(current);
@@ -132,5 +147,99 @@ describe('atomic pipeline editor', () => {
     expect(
       screen.queryByRole('button', { name: 'Edit pipeline' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('discards a stale draft and reloads the latest pipeline', async () => {
+    const api = setupOverviewApi(defaultOverview);
+    const agent = userEvent.setup();
+    renderWithApp(<OverviewPage />);
+
+    await agent.click(
+      await screen.findByRole('button', { name: 'View Catering' }),
+    );
+    await agent.click(screen.getByRole('button', { name: 'Edit pipeline' }));
+
+    const editor = screen.getByRole('form', { name: 'Edit Catering pipeline' });
+    const currentName = within(editor).getByRole('textbox', {
+      name: 'Step 2 name',
+    });
+    await agent.clear(currentName);
+    await agent.type(currentName, 'My stale change');
+
+    api.updateWorkstream('w-catering', (workstream) => ({
+      ...workstream,
+      updatedAt: '2026-07-28T13:00:00.000Z',
+      steps: workstream.steps.map((item) =>
+        item.id === 's2' ? { ...item, name: 'Server version' } : item,
+      ),
+    }));
+    api.mockPipelineError('w-catering', 409, {
+      type: 'https://wedding-planner.dev/problems/pipeline-stale',
+      title: 'Conflict',
+      detail: 'This pipeline changed after editing began',
+      instance: '/api/workstreams/w-catering/pipeline',
+    });
+
+    await agent.click(
+      within(editor).getByRole('button', { name: 'Save pipeline' }),
+    );
+
+    expect(
+      await screen.findByText('This pipeline changed after editing began'),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('form', { name: 'Edit Catering pipeline' }),
+    ).not.toBeInTheDocument();
+    const refreshedNames = await screen.findAllByText('Server version');
+    expect(refreshedNames.length).toBeGreaterThan(0);
+  });
+
+  it('allows the second step to move first before a workstream starts', async () => {
+    setupOverviewApi({
+      ...defaultOverview,
+      workstreams: [
+        workstream({
+          id: 'w-planning',
+          name: 'Planning',
+          lifecycle: 'not_started',
+          steps: [
+            step('First task', 'not_started', {
+              id: 's-first',
+              position: 1,
+            }),
+            step('Second task', 'not_started', {
+              id: 's-second',
+              position: 2,
+            }),
+          ],
+        }),
+      ],
+    });
+    const agent = userEvent.setup();
+    renderWithApp(<OverviewPage />);
+
+    await agent.click(
+      await screen.findByRole('button', { name: 'View Planning' }),
+    );
+    await agent.click(screen.getByRole('button', { name: 'Edit pipeline' }));
+    const editor = screen.getByRole('form', { name: 'Edit Planning pipeline' });
+
+    const moveUp = within(editor).getByRole('button', {
+      name: 'Move Second task up',
+    });
+    expect(moveUp).toBeEnabled();
+    await agent.click(moveUp);
+    await agent.click(
+      within(editor).getByRole('button', { name: 'Save pipeline' }),
+    );
+
+    const panel = await screen.findByRole('complementary', {
+      name: 'Planning',
+    });
+    const second = within(panel).getByText('Second task');
+    const first = within(panel).getByText('First task');
+    expect(
+      second.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

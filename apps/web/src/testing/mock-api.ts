@@ -9,6 +9,30 @@ const API_BASE = 'http://localhost:3000';
 export const server = setupServer();
 
 type AdvanceResponse = Record<string, unknown>;
+type ProblemOverrides = Partial<{
+  type: string;
+  title: string;
+  detail: string;
+  instance: string;
+}>;
+
+function problemDetails(
+  status: number,
+  overrides: ProblemOverrides = {},
+): Record<string, unknown> {
+  return {
+    type: 'https://wedding-planner.dev/problems/not-found',
+    title: 'Not Found',
+    status,
+    detail: 'The requested resource was not found',
+    instance: '/api/testing',
+    request_id: 'test-request-id',
+    correlation_id: 'test-correlation-id',
+    trace_id: 'test-trace-id',
+    timestamp: '2026-07-28T12:00:00.000Z',
+    ...overrides,
+  };
+}
 
 interface AdvanceRequest {
   body: unknown;
@@ -38,7 +62,7 @@ export function setupOverviewApi(initialOverview: Overview) {
           (item) => item.id === workstreamId,
         );
         if (!workstream) {
-          return HttpResponse.json({ status: 404 }, { status: 404 });
+          return HttpResponse.json(problemDetails(404), { status: 404 });
         }
 
         const pastSteps = workstream.steps.filter(
@@ -130,7 +154,7 @@ export function setupOverviewApi(initialOverview: Overview) {
 
         return responseItem
           ? HttpResponse.json(responseItem)
-          : HttpResponse.json({ status: 404 }, { status: 404 });
+          : HttpResponse.json(problemDetails(404), { status: 404 });
       },
     ),
   );
@@ -176,6 +200,14 @@ export function setupOverviewApi(initialOverview: Overview) {
       server.use(
         http.post(`${API_BASE}/api/workstreams/${id}/advance`, () =>
           HttpResponse.json(problem, { status }),
+        ),
+      );
+    },
+
+    mockPipelineError(id: string, status: number, problem: ProblemOverrides) {
+      server.use(
+        http.put(`${API_BASE}/api/workstreams/${id}/pipeline`, () =>
+          HttpResponse.json(problemDetails(status, problem), { status }),
         ),
       );
     },
