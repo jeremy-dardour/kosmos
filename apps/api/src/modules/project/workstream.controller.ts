@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -27,6 +28,7 @@ import {
 } from '@/app/decorators/api-problem-responses.decorator';
 import { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
+import { UpdatePipelineDto } from '@/modules/project/dtos/input/update-pipeline.dto';
 import { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
 import { WorkstreamService } from '@/modules/project/workstream.service';
@@ -78,6 +80,19 @@ export class WorkstreamController {
     @Body() dto: AdvanceWorkstreamDto,
   ): Promise<WorkstreamDto> {
     return this.workstreamService.progress(id, dto);
+  }
+
+  @Put('workstreams/:id/pipeline')
+  @ApiOperation({ summary: 'Atomically replace the editable pipeline tail' })
+  @ApiOkResponse({ type: WorkstreamDto })
+  @ApiConflictResponse(
+    'The pipeline is stale, frozen, or does not match the editable tail',
+  )
+  async updatePipeline(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePipelineDto,
+  ): Promise<WorkstreamDto> {
+    return this.workstreamService.updatePipeline(id, dto);
   }
 
   @Delete('workstreams/:id')

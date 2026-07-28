@@ -25,6 +25,7 @@ import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exc
 
 import type { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import type { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
+import type { UpdatePipelineDto } from '@/modules/project/dtos/input/update-pipeline.dto';
 import type { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
 
 /**
@@ -119,6 +120,18 @@ export class WorkstreamService {
     );
 
     return toWorkstreamDto(workstream);
+  }
+
+  async updatePipeline(
+    id: string,
+    dto: UpdatePipelineDto,
+  ): Promise<WorkstreamDto> {
+    await this.workstreamRepository.replacePipeline(id, {
+      expectedUpdatedAt: dto.expectedUpdatedAt,
+      steps: dto.steps,
+    });
+
+    return this.buildDto(id);
   }
 
   private start(workstream: Workstream): void {

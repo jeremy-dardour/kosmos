@@ -237,6 +237,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/workstreams/{id}/pipeline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Atomically replace the editable pipeline tail */
+    put: operations['WorkstreamController_updatePipeline'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workstreams/{workstreamId}/notes': {
     parameters: {
       query?: never;
@@ -506,6 +523,37 @@ export interface components {
     AdvanceWorkstreamDto: {
       /** @description Defaults to done for an active workstream */
       outcome?: components['schemas']['StepOutcome'];
+    };
+    EditableChecklistItemDto: {
+      /** Format: uuid */
+      id?: string;
+      name: string;
+      done: boolean;
+    };
+    EditableStepDto: {
+      /** Format: uuid */
+      id?: string;
+      name: string;
+      /**
+       * Format: date
+       * @description Calendar day (YYYY-MM-DD), or null to clear
+       */
+      deadline: string | null;
+      /**
+       * Format: uuid
+       * @description Step-level override; null inherits the workstream owner
+       */
+      ownerId: string | null;
+      blocked: boolean;
+      checklistItems: components['schemas']['EditableChecklistItemDto'][];
+    };
+    UpdatePipelineDto: {
+      /**
+       * Format: date-time
+       * @description Workstream updatedAt value read before editing began
+       */
+      expectedUpdatedAt: string;
+      steps: components['schemas']['EditableStepDto'][];
     };
     NoteDto: {
       /** Format: uuid */
@@ -2032,6 +2080,103 @@ export interface operations {
         };
       };
       /** @description The workstream cannot advance from its current state */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  WorkstreamController_updatePipeline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdatePipelineDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkstreamDto'];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The pipeline is stale, frozen, or does not match the editable tail */
       409: {
         headers: {
           [name: string]: unknown;
