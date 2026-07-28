@@ -21,6 +21,9 @@
 - Fixed the CI-only concurrent-advance failure: the workstream lock was sound,
   but the global auth guard raced while provisioning the same email. User
   provisioning now occurs only on `/users/me` through an atomic email upsert.
+- Addressed the first maintainer review pass by moving the pipeline-action
+  scenarios into `overview-workstream-actions.integration.spec.tsx` with a
+  shared fixture, and inlining the single-use user-upsert input shape.
 
 ## Decisions
 
@@ -35,6 +38,8 @@
 - Keep the global auth guard read-only and make `/users/me` the explicit,
   concurrency-safe user provisioning boundary; recorded in the
   [Auth PRD](../specs/auth/PRD.md).
+- Keep the workstream-action journey coverage separate from the broader
+  overview and detail-panel integration suite.
 
 ## Learnings / tensions surfaced
 
@@ -47,9 +52,14 @@
   handlers and keeps action controls as valid sibling buttons.
 - Green, cohesive commits should be made as each implementation unit closes,
   rather than waiting for the whole frontend slice.
+- A single TanStack mutation observer exposes only the latest mutation's
+  variables. If actions on different workstream cards may overlap, row-local
+  pending state must track every in-flight workstream ID rather than one ID.
 
 ## Status at end of session
 
 Slice 3 is complete on `feat/slice-3` in draft PR #37. Full type-check and lint
-pass, along with 166 unit/integration tests and 81 API E2E tests. The next step
-is to review and land PR #37, then continue with Slice 4 (#21).
+pass, along with 166 unit/integration tests and 81 API E2E tests. One maintainer
+decision remains: either track all concurrently advancing workstream IDs or
+allow only one workstream action at a time. After that review decision, land PR
+#37 and continue with Slice 4 (#21).
