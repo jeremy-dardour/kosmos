@@ -149,7 +149,8 @@
           "constraint": true,
           "keyName": "checklist_item_step_id_position_unique",
           "primary": false,
-          "unique": true
+          "unique": true,
+          "deferMode": "deferred"
         }
       ],
       "checks": [],
@@ -757,7 +758,8 @@
           "constraint": true,
           "keyName": "step_workstream_id_position_unique",
           "primary": false,
-          "unique": true
+          "unique": true,
+          "deferMode": "deferred"
         }
       ],
       "checks": [],

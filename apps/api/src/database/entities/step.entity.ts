@@ -31,7 +31,7 @@ export enum StepStatus {
 @Entity()
 @Unique({
   properties: ['workstream', 'position'],
-  options: { deferMode: 'deferred' },
+  deferMode: 'deferred',
 })
 export class Step {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
