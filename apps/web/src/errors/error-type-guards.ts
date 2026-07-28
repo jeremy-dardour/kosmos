@@ -50,5 +50,10 @@ export function isNonNullObject(
 
 export function toApiErrorFromApiLike(error: ApiLikeError): ApiError {
   const statusText = error.statusText?.trim() ?? 'API Error';
-  return new ApiError(statusText, error.status, statusText, error.data);
+  return new ApiError(
+    statusText,
+    error.status,
+    statusText,
+    error.data ?? error,
+  );
 }

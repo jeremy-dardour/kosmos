@@ -42,6 +42,16 @@ describe('formatToApiError', () => {
     expect(formatted?.statusText).toBe('Not Found');
   });
 
+  it('preserves problem details returned as the top-level API error', () => {
+    const formatted = formatToApiError({
+      status: 409,
+      statusText: 'Conflict',
+      detail: 'This workstream is already complete.',
+    });
+
+    expect(formatted?.detail).toBe('This workstream is already complete.');
+  });
+
   it('should return null for standard Error', () => {
     const error = new Error('Unknown error');
     const formatted = formatToApiError(error);

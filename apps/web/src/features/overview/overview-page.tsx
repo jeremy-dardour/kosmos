@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useAdvanceWorkstream } from '@/api/hooks/use-advance-workstream';
 import { useOverview } from '@/api/hooks/use-overview';
 import { useProjects } from '@/api/hooks/use-projects';
 import { DetailPanel } from '@/features/overview/detail-panel';
@@ -8,6 +9,7 @@ import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
 import { WorkstreamCardList } from '@/features/overview/workstream-card-list';
 
+import type { AdvanceOutcome } from '@/api/hooks/use-advance-workstream';
 import type { UserSummary } from '@/api/hooks/use-overview';
 
 /**
@@ -20,6 +22,7 @@ export const OverviewPage = () => {
   const projects = useProjects();
   const projectId = projects.data?.[0]?.id;
   const overview = useOverview(projectId);
+  const advance = useAdvanceWorkstream(projectId);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -39,6 +42,16 @@ export const OverviewPage = () => {
 
   const isLoading =
     projects.isPending || (Boolean(projectId) && overview.isPending);
+  const advancingId = advance.isPending
+    ? advance.variables.params.path.id
+    : null;
+
+  const handleAdvance = (workstreamId: string, outcome?: AdvanceOutcome) => {
+    advance.mutate({
+      params: { path: { id: workstreamId } },
+      body: outcome ? { outcome } : {},
+    });
+  };
 
   return (
     <div className="grid h-full min-h-0 grid-cols-1 gap-4 lg:grid-cols-[58fr_42fr]">
@@ -66,6 +79,8 @@ export const OverviewPage = () => {
               usersById={usersById}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              advancingId={advancingId}
+              onAdvance={handleAdvance}
             />
           )}
         </div>

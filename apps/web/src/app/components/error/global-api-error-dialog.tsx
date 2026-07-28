@@ -21,7 +21,7 @@ export const GlobalApiErrorDialog = () => {
         <DialogHeader>
           <DialogTitle>{t('app.errorDialog.title')}</DialogTitle>
           <DialogDescription>
-            {t('app.errorDialog.description')}
+            {error?.detail ?? t('app.errorDialog.description')}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
