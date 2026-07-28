@@ -1,16 +1,18 @@
 import { LockMode } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/postgresql';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
-import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
 
 @Injectable()
 export class ChecklistItemRepository {
   constructor(private readonly em: SqlEntityManager) {}
 
-  async setDoneLocked(id: string, isDone: boolean): Promise<ChecklistItem> {
+  async updateLocked(
+    id: string,
+    apply: (item: ChecklistItem, workstream: Workstream) => void,
+  ): Promise<ChecklistItem> {
     return this.em.transactional(async (em) => {
       const initialItem = await em.findOneOrFail(
         ChecklistItem,
@@ -29,18 +31,7 @@ export class ChecklistItemRepository {
         { populate: ['step'], refresh: true },
       );
 
-      if (item.step.outcome != null) {
-        throw new ProblemDetailsException(
-          HttpStatus.CONFLICT,
-          'step-frozen',
-          'Past checklist items cannot be changed',
-        );
-      }
-
-      item.done = isDone;
-      workstream.updatedAt = new Date(
-        Math.max(Date.now(), workstream.updatedAt.getTime() + 1),
-      );
+      apply(item, workstream);
       await em.flush();
 
       return item;
