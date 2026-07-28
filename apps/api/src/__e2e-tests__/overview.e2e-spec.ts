@@ -262,18 +262,18 @@ describe('Overview E2E Tests', () => {
       const active = findWorkstream(await fetchOverview(), activeId);
 
       expect(active.ownerId).toBe(workstreamOwnerId);
-      expect(active.steps[1]?.owner).toMatchObject({
-        id: stepOwnerId,
-        name: 'Step Owner',
+      expect(active.steps[1]).toMatchObject({
+        explicitOwnerId: stepOwnerId,
+        effectiveOwnerId: stepOwnerId,
       });
     });
 
     it('inherits the workstream owner when the step has none', async () => {
       const active = findWorkstream(await fetchOverview(), activeId);
 
-      expect(active.steps[0]?.owner).toMatchObject({
-        id: workstreamOwnerId,
-        name: 'Workstream Owner',
+      expect(active.steps[0]).toMatchObject({
+        explicitOwnerId: null,
+        effectiveOwnerId: workstreamOwnerId,
       });
     });
 
@@ -281,7 +281,10 @@ describe('Overview E2E Tests', () => {
       const notStarted = findWorkstream(await fetchOverview(), notStartedId);
 
       expect(notStarted.ownerId).toBeNull();
-      expect(notStarted.steps[0]?.owner).toBeNull();
+      expect(notStarted.steps[0]).toMatchObject({
+        explicitOwnerId: null,
+        effectiveOwnerId: null,
+      });
     });
 
     it('references the earliest unpassed deadline step', async () => {

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
 import { toGroupDto } from '@/modules/project/dtos/output/group.dto';
-import { toOverviewWorkstreamDto } from '@/modules/project/dtos/output/overview.dto';
 import { toProjectDto } from '@/modules/project/dtos/output/project.dto';
 import { toUserSummaryDto } from '@/modules/project/dtos/output/user-summary.dto';
+import { toWorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
 import { OverviewRepository } from '@/modules/project/repositories/overview.repository';
 
 import type { OverviewDto } from '@/modules/project/dtos/output/overview.dto';
@@ -24,9 +24,7 @@ export class OverviewService {
     return {
       project: toProjectDto(project),
       groups: groups.map((group) => toGroupDto(group)),
-      workstreams: workstreams.map((workstream) =>
-        toOverviewWorkstreamDto(workstream),
-      ),
+      workstreams: workstreams.map((workstream) => toWorkstreamDto(workstream)),
       users: users.map((user) => toUserSummaryDto(user)),
     };
   }

@@ -64,7 +64,9 @@ export const VerticalPipeline = ({
         const visual = stepVisual(step);
         const badgeClass = BADGE_CLASSES[visual];
         const isDone = visual === 'done' || visual === 'skipped';
-        const owner = step.owner;
+        const owner = step.effectiveOwnerId
+          ? usersById.get(step.effectiveOwnerId)
+          : null;
 
         return (
           <li key={step.id} className="relative flex gap-3">
@@ -110,7 +112,7 @@ export const VerticalPipeline = ({
 
                 {owner && (
                   <OwnerAvatar
-                    owner={usersById.get(owner.id) ?? owner}
+                    owner={owner}
                     className="ml-auto size-5 text-[9px]"
                   />
                 )}

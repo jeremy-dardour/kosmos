@@ -16,7 +16,8 @@ function step(name: string, status: StepStatus, isBlocked = false): Step {
     deadline: null,
     outcome: null,
     outcomeAt: null,
-    owner: null,
+    explicitOwnerId: null,
+    effectiveOwnerId: null,
     checklistItems: [],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
@@ -31,8 +32,13 @@ function workstream(overrides: Partial<Workstream> = {}): Workstream {
     groupId: null,
     lifecycle: 'active',
     ownerId: null,
+    currentStepId: null,
+    startedAt: null,
+    completedAt: null,
     steps: [step('Request quotes', 'in_progress')],
     nearestDeadlineStepId: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };
 }

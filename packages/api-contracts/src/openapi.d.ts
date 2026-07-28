@@ -363,7 +363,10 @@ export interface components {
       /** Format: date-time */
       updatedAt: string;
     };
-    /** @enum {string} */
+    /**
+     * @description Derived from (startedAt, completedAt), never stored
+     * @enum {string}
+     */
     WorkstreamLifecycle: 'not_started' | 'active' | 'complete';
     /**
      * @description Derived from the workstream pointer, never stored
@@ -372,12 +375,6 @@ export interface components {
     StepStatus: 'not_started' | 'in_progress' | 'done' | 'skipped';
     /** @enum {string} */
     StepOutcome: 'done' | 'skipped';
-    UserSummaryDto: {
-      /** Format: uuid */
-      id: string;
-      name: string;
-      avatarUrl?: string | null;
-    };
     ChecklistItemDto: {
       /** Format: uuid */
       id: string;
@@ -405,35 +402,61 @@ export interface components {
       outcome?: components['schemas']['StepOutcome'] | null;
       /** Format: date-time */
       outcomeAt?: string | null;
-      /** @description Effective owner, inherited from the workstream when unset */
-      owner?: components['schemas']['UserSummaryDto'] | null;
+      /**
+       * Format: uuid
+       * @description Step-level override; null means inherit from the workstream
+       */
+      explicitOwnerId?: string | null;
+      /**
+       * Format: uuid
+       * @description Resolved from the explicit owner or workstream default
+       */
+      effectiveOwnerId?: string | null;
       checklistItems: components['schemas']['ChecklistItemDto'][];
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
     };
-    OverviewWorkstreamDto: {
+    WorkstreamDto: {
       /** Format: uuid */
       id: string;
       name: string;
+      /** @description Emoji or icon name */
       icon: string;
       /** Format: uuid */
       groupId?: string | null;
+      /** @description Derived from (startedAt, completedAt), never stored */
       lifecycle: components['schemas']['WorkstreamLifecycle'];
       /** Format: uuid */
       ownerId?: string | null;
-      steps: components['schemas']['StepDto'][];
+      /** Format: uuid */
+      currentStepId?: string | null;
+      /** Format: date-time */
+      startedAt?: string | null;
+      /** Format: date-time */
+      completedAt?: string | null;
       /**
        * Format: uuid
        * @description The earliest unpassed step with a deadline
        */
       nearestDeadlineStepId?: string | null;
+      steps: components['schemas']['StepDto'][];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    UserSummaryDto: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      avatarUrl?: string | null;
     };
     OverviewDto: {
       project: components['schemas']['ProjectDto'];
       groups: components['schemas']['GroupDto'][];
-      workstreams: components['schemas']['OverviewWorkstreamDto'][];
+      workstreams: components['schemas']['WorkstreamDto'][];
       /** @description Canonical display data for every user, keyed by owner IDs elsewhere in the aggregate */
       users: components['schemas']['UserSummaryDto'][];
     };
@@ -464,29 +487,6 @@ export interface components {
       groupId?: string | null;
       /** Format: uuid */
       ownerId?: string | null;
-    };
-    WorkstreamDto: {
-      /** Format: uuid */
-      id: string;
-      name: string;
-      /** @description Emoji or icon name */
-      icon: string;
-      /** Format: uuid */
-      groupId?: string | null;
-      /** @description Derived from (startedAt, completedAt), never stored */
-      lifecycle: components['schemas']['WorkstreamLifecycle'];
-      owner?: components['schemas']['UserSummaryDto'] | null;
-      /** Format: uuid */
-      currentStepId?: string | null;
-      /** Format: date-time */
-      startedAt?: string | null;
-      /** Format: date-time */
-      completedAt?: string | null;
-      steps: components['schemas']['StepDto'][];
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      updatedAt: string;
     };
     UpdateWorkstreamDto: {
       name?: string;
