@@ -5,12 +5,12 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-28 (session 24)_
+_Last updated: 2026-07-28 (session 25)_
 
 ## Phase
 
-**Building.** Slices 1 and 2 are open as PRs #31 and #36; six
-build-slice/deployment issues remain (#20–#24, #26).
+**Building.** Slices 1 and 2 are merged; Slice 3 is in draft PR #37. Five
+build-slice/deployment issues remain (#21–#24, #26).
 
 ## Done
 
@@ -88,12 +88,20 @@ build-slice/deployment issues remain (#20–#24, #26).
   11 integration tests cover the overview + detail panel. Hand-rolled fetch
   mock replaced with MSW. The test harness composes the real required providers
   ([sessions 23–24](./sessions/session-23-24-2026-07-27-slice-2-detail-panel-integration.md)).
+- **#20 — Slice 3: advance + start pipeline actions** — complete on
+  `feat/slice-3` (draft PR #37). One locked application command dispatches to
+  distinct start and advance domain transitions. Overview cards expose Start,
+  one-click Advance, Skip, and blocked-step Resolve actions with row-local
+  pending state and descriptive Problem Details errors. A stateful MSW adapter
+  supports all seven component-integration scenarios; new Playwright coverage
+  is deferred by the web testing standard. A CI follow-up made the global auth
+  guard read-only and moved concurrency-safe provisioning to `/users/me`
+  ([session 25](./sessions/session-25-2026-07-28-slice-3-advance-actions.md)).
 
 ## In flight
 
-- **PR #31 (`feat/slice-1-overview`)** — Slice 1: overview aggregate read +
-  Pipeline Stack UI (#18).
-- **PR #36 (`feat/slice-2`)** — Slice 2: detail slide-over (read-only) (#19).
+- **Draft PR #37 (`feat/slice-3`)** — Slice 3: advance + start pipeline actions
+  (#20).
 
 ## Open questions
 
@@ -102,8 +110,8 @@ build-slice/deployment issues remain (#20–#24, #26).
 
 ## Next steps
 
-1. Land PRs #31 and #36.
-2. Build slices #20–#24, then deployment (#26). Reorder repositories use
+1. Review and land PR #37.
+2. Build slices #21–#24, then deployment (#26). Reorder repositories use
    two-phase temporary positions because the generated constraints are not
    deferrable.
 3. Mobile responsiveness deferred to #35.
