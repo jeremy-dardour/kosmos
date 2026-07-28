@@ -16,17 +16,16 @@ endpoints, DTOs, and a read model. Follows the template conventions in
 1. **One overview call.** The Pipeline Stack UI loads everything in one GET —
    Project with nested Groups, Workstreams, Steps. At 20–50 workstreams × ~10
    steps this is a few KB; no pagination needed.
-2. **State-machine actions are named RPCs, not PATCH.** `start` and `advance`
-   are `POST` actions on the workstream — the pointer logic is too specific to
-   express as a generic field update. CRUD mutations (name, deadline, owner) use
-   PATCH.
+2. **Workstream commands own aggregate changes.** `advance` is a named action
+   because pointer movement is not a generic field update. Pipeline editing
+   replaces the complete current/future editable tail in one atomic Workstream
+   command.
 3. **Derived state in responses, not in the DB.** Workstream `lifecycle`,
    Step `status`, owner inheritance, nearest deadline — all computed at read time
    and included in output DTOs.
-4. **Flat CRUD for sub-entities.** Steps, Notes, ChecklistItems are nested
-   _conceptually_ but have their own endpoints scoped under their parent. This
-   matches the template's one-controller-per-entity pattern while keeping URLs
-   navigable.
+4. **Atomic pipeline editing, focused immediate actions.** Structural Step and
+   checklist changes are saved together through the Workstream. Notes remain
+   flat CRUD, and checklist done/undone has a focused immediate endpoint.
 5. **No pagination, no filtering on the API.** The UI has client-side filters
    (owner, group). At this data volume, the server returns everything and the
    client filters.
@@ -43,15 +42,14 @@ A single `project` module owns Project, Group, Workstream, Step, Note and
 ChecklistItem. The `user` module owns the authenticated-user endpoint and user
 registration.
 
-| Controller                | Owns                                  |
-| ------------------------- | ------------------------------------- |
-| `ProjectController`       | Project CRUD + overview read model    |
-| `GroupController`         | Group CRUD                            |
-| `WorkstreamController`    | Workstream CRUD + `start` / `advance` |
-| `StepController`          | Step CRUD + reorder                   |
-| `NoteController`          | Note CRUD (author-guarded)            |
-| `ChecklistItemController` | ChecklistItem CRUD + reorder          |
-| `UserController`          | Authenticated user (`/users/me`)      |
+| Controller                | Owns                                           |
+| ------------------------- | ---------------------------------------------- |
+| `ProjectController`       | Project CRUD + overview read model             |
+| `GroupController`         | Group CRUD                                     |
+| `WorkstreamController`    | Workstream CRUD + `advance` + pipeline editing |
+| `NoteController`          | Note CRUD (author-guarded)                     |
+| `ChecklistItemController` | Immediate done/undone toggle                   |
+| `UserController`          | Authenticated user (`/users/me`)               |
 
 ---
 
@@ -99,6 +97,7 @@ endpoint the Pipeline Stack overview calls on load.
 | `PATCH`  | `/workstreams/:id`                 | `UpdateWorkstreamDto` | `WorkstreamDto` |                                        |
 | `DELETE` | `/workstreams/:id`                 | —                     | `204`           | Cascades steps, notes, checklist items |
 | `POST`   | `/workstreams/:id/advance`         | `AdvanceDto`          | `WorkstreamDto` | Pipeline action — see below            |
+| `PUT`    | `/workstreams/:id/pipeline`        | `UpdatePipelineDto`   | `WorkstreamDto` | Atomically replaces the editable tail  |
 
 No standalone `GET` for workstreams — the overview endpoint provides the
 canonical `WorkstreamDto` data needed by both cards and the detail panel.
@@ -116,9 +115,10 @@ or grouped values.
   workstream instead.
 - **Complete → 409:** workstream is already finished.
 
-### Step
+### Pipeline editing
 
-Scoped under workstream. Mutability follows Decision 33:
+`PUT /workstreams/:id/pipeline` submits the ordered, complete desired state of
+the Workstream's current/future editable tail. Mutability follows Decision 33:
 
 - **Past steps** (have an outcome): frozen — no PATCH, no DELETE, no reorder.
   Only notes can still be appended.
@@ -127,15 +127,16 @@ Scoped under workstream. Mutability follows Decision 33:
 - **Future steps** (after the pointer): fully mutable — create, edit, delete,
   reorder.
 
-The service loads the parent workstream to determine a step's position relative
-to the pointer. Violations return 409.
+Existing IDs preserve entities, missing IDs create entities, omitted future IDs
+delete entities, and array order defines positions. The current Step of an
+Active Workstream must remain present and first. Past Steps are not submitted.
+The Workstream is locked before validation, and the whole replacement commits
+or rolls back as one transaction.
 
-| Method   | Path                                       | Body              | Response    | Notes                                           |
-| -------- | ------------------------------------------ | ----------------- | ----------- | ----------------------------------------------- |
-| `POST`   | `/workstreams/:workstreamId/steps`         | `CreateStepDto`   | `StepDto`   | Appended at end, or at `position` (future only) |
-| `PATCH`  | `/steps/:id`                               | `UpdateStepDto`   | `StepDto`   | Current + future only; 409 on past              |
-| `DELETE` | `/steps/:id`                               | —                 | `204`       | Future only; 409 on past/current                |
-| `POST`   | `/workstreams/:workstreamId/steps/reorder` | `ReorderStepsDto` | `StepDto[]` | Full position list for future steps             |
+`expectedUpdatedAt` is the optimistic-concurrency token captured when editing
+begins. Every pipeline-affecting mutation touches the Workstream timestamp.
+A mismatched token returns 409 `pipeline-stale`, preventing a stale draft from
+overwriting another user's changes.
 
 ### Note
 
@@ -153,16 +154,16 @@ author ID. Notes can be appended to any step (including past steps — Decision
 
 ### Checklist Item
 
-Scoped under step. Lightweight CRUD — toggle done, reorder, add/remove.
-Same mutability rules as steps: checklist items on past steps are frozen;
-current-step items are editable; future-step items are fully mutable.
+Checklist structure and names are part of the atomic pipeline editor. The
+focused endpoint below supports the frequent done/undone interaction without
+entering edit mode:
 
-| Method   | Path                                     | Body                       | Response             |
-| -------- | ---------------------------------------- | -------------------------- | -------------------- |
-| `POST`   | `/steps/:stepId/checklist-items`         | `CreateChecklistItemDto`   | `ChecklistItemDto`   |
-| `PATCH`  | `/checklist-items/:id`                   | `UpdateChecklistItemDto`   | `ChecklistItemDto`   |
-| `DELETE` | `/checklist-items/:id`                   | —                          | `204`                |
-| `POST`   | `/steps/:stepId/checklist-items/reorder` | `ReorderChecklistItemsDto` | `ChecklistItemDto[]` |
+| Method  | Path                   | Body                     | Response           |
+| ------- | ---------------------- | ------------------------ | ------------------ |
+| `PATCH` | `/checklist-items/:id` | `ToggleChecklistItemDto` | `ChecklistItemDto` |
+
+It is allowed on current and future Steps, rejected with `step-frozen` on past
+Steps, and atomically touches the parent Workstream's `updatedAt`.
 
 No standalone `GET` — checklist items are included inline in the overview's step
 data (they're small: name + boolean + position).
@@ -236,30 +237,30 @@ outcome?: 'done' | 'skipped';       // @IsOptional, @IsEnum — defaults to 'don
                                      // (nothing has finished — 400 if present).
 ```
 
-### CreateStepDto
+### UpdatePipelineDto
 
 ```ts
-name!: string;                       // @MaxLength(255)
-position?: number;                   // @IsOptional, @IsInt, @Min(1) — append at end if omitted
-deadline?: string | null;            // @IsOptional, @IsDateString
-ownerId?: string | null;             // @IsOptional, @IsUUID
+expectedUpdatedAt!: string;          // @IsDateString
+steps!: EditableStepDto[];           // ordered current/future editable tail
 ```
 
-### UpdateStepDto
+### EditableStepDto
 
 ```ts
-name?: string;
-deadline?: string | null;            // null to clear
-ownerId?: string | null;             // null to clear (inherit from workstream)
-blocked?: boolean;
+id?: string;                         // existing entity; absent means create
+name!: string;
+deadline!: string | null;
+ownerId!: string | null;             // null means inherit from workstream
+blocked!: boolean;
+checklistItems!: EditableChecklistItemDto[];
 ```
 
-### ReorderStepsDto
+### EditableChecklistItemDto
 
 ```ts
-stepIds!: string[];                  // @IsArray, @IsUUID(undefined, { each: true })
-                                     // Ordered list of future-step IDs in desired order.
-                                     // Must include all and only future steps.
+id?: string;                         // existing entity; absent means create
+name!: string;
+done!: boolean;
 ```
 
 ### CreateNoteDto
@@ -274,23 +275,10 @@ content!: string;                   // @IsString, @MaxLength(5000)
 content!: string;                   // @IsString, @MaxLength(5000)
 ```
 
-### CreateChecklistItemDto
+### ToggleChecklistItemDto
 
 ```ts
-name!: string;                       // @MaxLength(255)
-```
-
-### UpdateChecklistItemDto
-
-```ts
-name?: string;
-done?: boolean;
-```
-
-### ReorderChecklistItemsDto
-
-```ts
-itemIds!: string[];                  // @IsArray, @IsUUID(undefined, { each: true })
+done!: boolean;
 ```
 
 ---
@@ -437,7 +425,8 @@ error cases:
 | 409    | Any mutation on a past step (attributes or structure)    | `step-frozen`                |
 | 409    | Structural mutation (delete/reorder) on current step     | `step-not-deletable`         |
 | 409    | Mutation on a checklist item whose parent step is frozen | `step-frozen`                |
-| 409    | Reorder list doesn't match future steps                  | `reorder-mismatch`           |
+| 409    | Submitted editable tail is inconsistent                  | `pipeline-mismatch`          |
+| 409    | Pipeline changed since the editor opened                 | `pipeline-stale`             |
 | 403    | Edit/delete note by non-author                           | `not-note-author`            |
 
 ---
@@ -475,16 +464,13 @@ stored:
   advance mutations invalidate the overview query. Note mutations invalidate
   only the selected workstream's notes query while the overview contains no
   note data or counts. If that changes, note mutations invalidate both.
-- **Reorder transactions.** `ReorderStepsDto` sends the full ordered ID list of
-  future steps. The service validates it matches the current future set. The
-  repository owns the transaction and uses a two-phase temporary-position
-  strategy for step and checklist reorder because the generated unique
-  constraints are not deferrable.
-- **Step mutability checks.** On PATCH/DELETE of a step (or its checklist items),
-  the service loads the parent workstream to determine if the step is
-  past/current/future relative to the pointer. Past → 409 `step-frozen`.
-  Current + structural → 409 `step-not-deletable`. Current + attribute edit → OK.
-  Future → OK.
+- **Pipeline-edit transaction.** The repository locks and loads the Workstream
+  aggregate, validates the submitted exact editable tail, defers the ordered
+  unique constraints, applies every Step/checklist change, and flushes once.
+- **Step mutability checks.** Past Steps are excluded and frozen. The current
+  Step must remain structurally present but its attributes/checklist are
+  editable. Future Steps are fully mutable. NotStarted means every Step is
+  future; Complete has no editable insertion zone.
 - **`advance` persistence.** The repository performs the atomic entity load and
   save under a transaction with concurrency protection; the service never
   receives an EntityManager. The response is the canonical `WorkstreamDto`, and

@@ -41,13 +41,11 @@ src/modules/
     overview.service.ts
     group.controller.ts         (Group CRUD)
     group.service.ts
-    workstream.controller.ts    (Workstream CRUD + advance)
-    workstream.service.ts       (pipeline transitions + CRUD)
-    step.controller.ts          (Step CRUD + reorder)
-    step.service.ts             (position management, mutability enforcement)
+    workstream.controller.ts    (Workstream CRUD + advance + pipeline edit)
+    workstream.service.ts       (pipeline transitions/editing + CRUD)
     note.controller.ts
     note.service.ts             (author-guarded edit/delete)
-    checklist-item.controller.ts
+    checklist-item.controller.ts (immediate done/undone toggle)
     checklist-item.service.ts
     utils/                      (pure derivation functions)
     dtos/
@@ -157,8 +155,9 @@ Full endpoint spec, DTOs, and error codes in the
    PATCH — the pointer logic is too specific for a generic field update.
 3. **Derived state in responses** — lifecycle, step status, owner inheritance,
    nearest deadline — all computed server-side.
-4. **Flat CRUD for sub-entities** — Steps, Notes, ChecklistItems have their own
-   endpoints scoped under their parent.
+4. **Atomic pipeline editing** — a Workstream-level command replaces its
+   current/future editable tail in one transaction. Notes remain flat CRUD;
+   checklist toggles have a focused immediate endpoint.
 5. **No pagination** — client-side filters at this data volume.
 6. **Canonical entity DTOs** — aggregate reads compose the normal Project,
    Group, Workstream and Step DTOs. A read-model-specific entity shape is
@@ -172,8 +171,10 @@ Full endpoint spec, DTOs, and error codes in the
 | Current |             Frozen             |                  Editable                   |     Yes     |
 | Future  |            Editable            |                  Editable                   |     Yes     |
 
-Enforcement: `StepService` loads the parent workstream, compares position vs
-pointer. Violations → 409 `step-frozen` or `step-not-deletable`.
+Enforcement: the Workstream pipeline command locks the aggregate, compares each
+submitted Step with the pointer, and commits the complete editable tail or
+nothing. Violations → 409 `step-frozen`, `step-not-deletable`,
+`pipeline-mismatch`, or `pipeline-stale`.
 
 ### Error responses
 
@@ -184,7 +185,8 @@ pointer. Violations → 409 `step-frozen` or `step-not-deletable`.
 | 400    | `advance` with outcome on NotStarted    | validation error             |
 | 409    | Mutation on past step                   | `step-frozen`                |
 | 409    | Structural mutation on current step     | `step-not-deletable`         |
-| 409    | Reorder list doesn't match future steps | `reorder-mismatch`           |
+| 409    | Submitted editable tail is inconsistent | `pipeline-mismatch`          |
+| 409    | Pipeline changed since editing began    | `pipeline-stale`             |
 | 403    | Edit/delete note by non-author          | `not-note-author`            |
 
 ---

@@ -176,14 +176,14 @@ outcome?: Opt<StepOutcome> | null;
 ```typescript
 @Unique({
   properties: ['workstream', 'position'],
+  deferMode: 'deferred',
 })
 ```
 
-Do not assume `options: { deferMode: 'deferred' }` produces a deferrable
-constraint: MikroORM's generated migration currently emits an ordinary unique
-constraint. Reorder through a repository-owned transaction using collision-free
-temporary positions before assigning the final contiguous positions, or verify
-and commit a migration that explicitly creates a deferrable constraint.
+`deferMode` belongs at the top level of `@Unique`. Do not put it under
+`options`; MikroORM accepts that dictionary but does not apply it to the
+constraint. Ordered mutations run in a transaction so the deferred uniqueness
+check occurs only after final contiguous positions have been assigned.
 
 ## Explicit indexes
 
