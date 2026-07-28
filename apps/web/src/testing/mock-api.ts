@@ -34,6 +34,13 @@ function problemDetails(
   };
 }
 
+function problemResponse(status: number, problem: Record<string, unknown>) {
+  return HttpResponse.json(problem, {
+    status,
+    headers: { 'Content-Type': 'application/problem+json' },
+  });
+}
+
 interface AdvanceRequest {
   body: unknown;
   overview: Overview;
@@ -62,7 +69,7 @@ export function setupOverviewApi(initialOverview: Overview) {
           (item) => item.id === workstreamId,
         );
         if (!workstream) {
-          return HttpResponse.json(problemDetails(404), { status: 404 });
+          return problemResponse(404, problemDetails(404));
         }
 
         const pastSteps = workstream.steps.filter(
@@ -154,7 +161,7 @@ export function setupOverviewApi(initialOverview: Overview) {
 
         return responseItem
           ? HttpResponse.json(responseItem)
-          : HttpResponse.json(problemDetails(404), { status: 404 });
+          : problemResponse(404, problemDetails(404));
       },
     ),
   );
@@ -199,7 +206,7 @@ export function setupOverviewApi(initialOverview: Overview) {
     ) {
       server.use(
         http.post(`${API_BASE}/api/workstreams/${id}/advance`, () =>
-          HttpResponse.json(problem, { status }),
+          problemResponse(status, problem),
         ),
       );
     },
@@ -207,7 +214,7 @@ export function setupOverviewApi(initialOverview: Overview) {
     mockPipelineError(id: string, status: number, problem: ProblemOverrides) {
       server.use(
         http.put(`${API_BASE}/api/workstreams/${id}/pipeline`, () =>
-          HttpResponse.json(problemDetails(status, problem), { status }),
+          problemResponse(status, problemDetails(status, problem)),
         ),
       );
     },
