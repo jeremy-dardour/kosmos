@@ -80,6 +80,83 @@ describe('checklist interactions', () => {
       await screen.findByRole('checkbox', { name: 'Choose wording' }),
     ).toBeChecked();
   });
+
+  it('moves the expanded checklist to the new current step after advancing', async () => {
+    const overview = {
+      ...defaultOverview,
+      workstreams: [
+        workstream({
+          id: 'w-checklists',
+          name: 'Invitations',
+          currentStepId: 's-current',
+          steps: [
+            step('Draft invitations', 'in_progress', {
+              id: 's-current',
+              position: 1,
+              checklistItems: [
+                checklistItem('Choose wording', false, { id: 'ci-current' }),
+              ],
+            }),
+            step('Post invitations', 'not_started', {
+              id: 's-future',
+              position: 2,
+              checklistItems: [
+                checklistItem('Buy stamps', false, { id: 'ci-future' }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    };
+    const api = setupOverviewApi(overview);
+    api.mockAdvance('w-checklists', () => {
+      api.updateWorkstream('w-checklists', (item) => ({
+        ...item,
+        currentStepId: 's-future',
+        steps: [
+          step('Draft invitations', 'done', {
+            id: 's-current',
+            position: 1,
+            outcome: 'done',
+            checklistItems: [
+              checklistItem('Choose wording', false, { id: 'ci-current' }),
+            ],
+          }),
+          step('Post invitations', 'in_progress', {
+            id: 's-future',
+            position: 2,
+            checklistItems: [
+              checklistItem('Buy stamps', false, { id: 'ci-future' }),
+            ],
+          }),
+        ],
+      }));
+      return { id: 'w-checklists', lifecycle: 'active' };
+    });
+    const agent = userEvent.setup();
+    renderWithApp(<OverviewPage />);
+
+    await agent.click(
+      await screen.findByRole('button', { name: 'View Invitations' }),
+    );
+    expect(
+      screen.getByRole('checkbox', { name: 'Choose wording' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Buy stamps' }),
+    ).not.toBeInTheDocument();
+
+    await agent.click(
+      screen.getByRole('button', { name: 'Advance Invitations' }),
+    );
+
+    expect(
+      await screen.findByRole('checkbox', { name: 'Buy stamps' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Choose wording' }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe('atomic pipeline editor', () => {
@@ -241,5 +318,172 @@ describe('atomic pipeline editor', () => {
     expect(
       second.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it('submits detail, owner, structure, and checklist edits atomically', async () => {
+    const currentChecklist = [
+      checklistItem('First item', false, {
+        id: 'ci-first',
+        position: 1,
+      }),
+      checklistItem('Remove item', false, {
+        id: 'ci-remove',
+        position: 2,
+      }),
+      checklistItem('Last item', false, {
+        id: 'ci-last',
+        position: 3,
+      }),
+    ];
+    const api = setupOverviewApi({
+      ...defaultOverview,
+      workstreams: [
+        workstream({
+          id: 'w-planning',
+          name: 'Planning',
+          ownerId: null,
+          currentStepId: 's-current',
+          steps: [
+            step('Current task', 'in_progress', {
+              id: 's-current',
+              position: 1,
+              checklistItems: currentChecklist,
+            }),
+            step('Future one', 'not_started', {
+              id: 's-future-one',
+              position: 2,
+              explicitOwnerId: 'u1',
+              effectiveOwnerId: 'u1',
+            }),
+            step('Future two', 'not_started', {
+              id: 's-future-two',
+              position: 3,
+            }),
+            step('Delete me', 'not_started', {
+              id: 's-delete',
+              position: 4,
+            }),
+          ],
+        }),
+      ],
+    });
+    const agent = userEvent.setup();
+    renderWithApp(<OverviewPage />);
+
+    await agent.click(
+      await screen.findByRole('button', { name: 'View Planning' }),
+    );
+    await agent.click(screen.getByRole('button', { name: 'Edit pipeline' }));
+    const editor = screen.getByRole('form', { name: 'Edit Planning pipeline' });
+    const current = within(editor).getByRole('region', { name: 'Step 1' });
+    const futureOne = within(editor).getByRole('region', { name: 'Step 2' });
+
+    await agent.type(
+      within(current).getByLabelText('Current task deadline'),
+      '2026-09-10',
+    );
+    await agent.selectOptions(
+      within(current).getByRole('combobox', { name: 'Current task owner' }),
+      'u1',
+    );
+    await agent.click(
+      within(current).getByRole('checkbox', { name: 'Blocked' }),
+    );
+    await agent.selectOptions(
+      within(futureOne).getByRole('combobox', { name: 'Future one owner' }),
+      '',
+    );
+
+    const firstItem = within(current).getByRole('textbox', {
+      name: 'Checklist item 1 for Current task',
+    });
+    await agent.clear(firstItem);
+    await agent.type(firstItem, 'Renamed item');
+    await agent.click(
+      within(current).getByRole('checkbox', { name: 'Renamed item done' }),
+    );
+    await agent.click(
+      within(current).getAllByRole('button', {
+        name: 'Move checklist item up',
+      })[2]!,
+    );
+    await agent.click(
+      within(current).getAllByRole('button', {
+        name: 'Remove checklist item',
+      })[2]!,
+    );
+
+    await agent.click(
+      within(editor).getByRole('button', { name: 'Move Future two up' }),
+    );
+    await agent.click(
+      within(editor).getByRole('button', { name: 'Remove Delete me' }),
+    );
+    await agent.click(
+      within(editor).getByRole('button', { name: 'Save pipeline' }),
+    );
+
+    expect(api.getLastPipelineInput()).toEqual({
+      expectedUpdatedAt: '2026-07-01T00:00:00.000Z',
+      steps: [
+        {
+          id: 's-current',
+          name: 'Current task',
+          deadline: '2026-09-10',
+          ownerId: 'u1',
+          blocked: true,
+          checklistItems: [
+            { id: 'ci-first', name: 'Renamed item', done: true },
+            { id: 'ci-last', name: 'Last item', done: false },
+          ],
+        },
+        {
+          id: 's-future-two',
+          name: 'Future two',
+          deadline: null,
+          ownerId: null,
+          blocked: false,
+          checklistItems: [],
+        },
+        {
+          id: 's-future-one',
+          name: 'Future one',
+          deadline: null,
+          ownerId: null,
+          blocked: false,
+          checklistItems: [],
+        },
+      ],
+    });
+  });
+
+  it('discards the whole draft when editing is cancelled', async () => {
+    setupOverviewApi(defaultOverview);
+    const agent = userEvent.setup();
+    renderWithApp(<OverviewPage />);
+
+    await agent.click(
+      await screen.findByRole('button', { name: 'View Catering' }),
+    );
+    await agent.click(screen.getByRole('button', { name: 'Edit pipeline' }));
+    const editor = screen.getByRole('form', { name: 'Edit Catering pipeline' });
+    const currentName = within(editor).getByRole('textbox', {
+      name: 'Step 2 name',
+    });
+    await agent.clear(currentName);
+    await agent.type(currentName, 'Discard this');
+    await agent.click(within(editor).getByRole('button', { name: 'Cancel' }));
+
+    expect(
+      screen.queryByRole('form', { name: 'Edit Catering pipeline' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Discard this')).not.toBeInTheDocument();
+
+    await agent.click(screen.getByRole('button', { name: 'Edit pipeline' }));
+    expect(
+      within(
+        screen.getByRole('form', { name: 'Edit Catering pipeline' }),
+      ).getByRole('textbox', { name: 'Step 2 name' }),
+    ).toHaveValue('Request quotes');
   });
 });

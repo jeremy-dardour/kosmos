@@ -141,6 +141,7 @@ export const VerticalPipeline = ({
               )}
 
               <StepChecklist
+                key={`${step.id}-${step.status}`}
                 step={step}
                 pendingItemId={pendingChecklistItemId}
                 onToggle={onToggleChecklist}

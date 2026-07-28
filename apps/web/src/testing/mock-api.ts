@@ -49,6 +49,7 @@ interface AdvanceRequest {
 export function setupOverviewApi(initialOverview: Overview) {
   let overview = initialOverview;
   let generatedId = 0;
+  let lastPipelineInput: UpdatePipelineInput | null = null;
 
   server.use(
     http.get(`${API_BASE}/api/projects`, () =>
@@ -64,6 +65,7 @@ export function setupOverviewApi(initialOverview: Overview) {
       `${API_BASE}/api/workstreams/:id/pipeline`,
       async ({ params, request }) => {
         const input = (await request.json()) as UpdatePipelineInput;
+        lastPipelineInput = input;
         const workstreamId = String(params.id);
         const workstream = overview.workstreams.find(
           (item) => item.id === workstreamId,
@@ -167,6 +169,10 @@ export function setupOverviewApi(initialOverview: Overview) {
   );
 
   return {
+    getLastPipelineInput() {
+      return lastPipelineInput;
+    },
+
     updateWorkstream(
       id: string,
       update: (workstream: Workstream) => Workstream,
