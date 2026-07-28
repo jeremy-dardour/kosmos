@@ -71,6 +71,7 @@ src/
   HTTP via MSW (`server.use(http.get(...))`). Do not mock hooks, query
   layer, or internal components. See `src/testing/render-with-app.tsx`,
   `src/testing/mock-api.ts`.
-- **E2E** (Playwright, `e2e/`): critical journeys only (auth, advance, destructive
-  actions). Do not duplicate integration tests in the browser.
+- **Browser E2E is deferred.** Do not add Playwright coverage for now. Cover web
+  journeys at the integration layer with real providers and MSW; retain the
+  existing Playwright setup for when browser tests are resumed.
 - Shared component mocks go in `@/testing/mocks/components.tsx`.
