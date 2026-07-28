@@ -63,6 +63,7 @@
     "@workspace/typescript-config": "workspace:*",
     "dotenv": "^17.4.2",
     "eslint": "^10.5.0",
+    "msw": "^2.15.0",
     "openapi-typescript": "^7.13.0",
     "playwright": "^1.61.1",
     "typescript": "^6.0.3",

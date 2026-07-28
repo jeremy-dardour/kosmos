@@ -1,5 +1,7 @@
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, vi } from 'vitest';
+
+import { server } from '@/testing/mock-api';
 
 vi.mock('@/config/env', () => ({
   env: {
@@ -8,3 +10,15 @@ vi.mock('@/config/env', () => ({
     fakeAuth: true,
   },
 }));
+
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'error' });
+});
+
+afterEach(() => {
+  server.resetHandlers();
+});
+
+afterAll(() => {
+  server.close();
+});

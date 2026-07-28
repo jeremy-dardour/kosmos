@@ -55,10 +55,7 @@ export class WorkstreamDto {
   updatedAt!: Date;
 }
 
-export function toWorkstreamDto(
-  workstream: Workstream,
-  noteCounts: Map<string, number>,
-): WorkstreamDto {
+export function toWorkstreamDto(workstream: Workstream): WorkstreamDto {
   return {
     id: workstream.id,
     name: workstream.name,
@@ -70,7 +67,7 @@ export function toWorkstreamDto(
     startedAt: workstream.startedAt ?? null,
     completedAt: workstream.completedAt ?? null,
     steps: sortSteps(workstream.getSteps()).map((step) =>
-      toStepDto(step, workstream, noteCounts.get(step.id) ?? 0),
+      toStepDto(step, workstream),
     ),
     createdAt: workstream.createdAt,
     updatedAt: workstream.updatedAt,

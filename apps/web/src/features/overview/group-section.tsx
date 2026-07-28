@@ -2,17 +2,21 @@ import { useTranslation } from 'react-i18next';
 
 import { WorkstreamCard } from '@/features/overview/workstream-card';
 
+import type { UserSummary } from '@/api/hooks/use-overview';
 import type { WorkstreamGroup } from '@/features/overview/group-workstreams';
-import type { dtos } from '@/types/openapi';
 
 interface GroupSectionProperties extends WorkstreamGroup {
-  usersById: ReadonlyMap<string, dtos['UserSummaryDto']>;
+  usersById: ReadonlyMap<string, UserSummary>;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
 }
 
 export const GroupSection = ({
   group,
   workstreams,
   usersById,
+  selectedId,
+  onSelect,
 }: GroupSectionProperties) => {
   const { t } = useTranslation();
 
@@ -51,6 +55,8 @@ export const GroupSection = ({
                 ? (usersById.get(workstream.ownerId) ?? null)
                 : null
             }
+            isSelected={workstream.id === selectedId}
+            onSelect={() => onSelect(workstream.id)}
           />
         ))}
       </div>

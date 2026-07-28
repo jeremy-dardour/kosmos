@@ -66,9 +66,6 @@ export class StepDto {
   @ApiProperty({ type: [ChecklistItemDto] })
   checklistItems!: ChecklistItemDto[];
 
-  @ApiProperty({ description: 'Notes themselves are loaded on demand' })
-  noteCount!: number;
-
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
 
@@ -76,11 +73,7 @@ export class StepDto {
   updatedAt!: Date;
 }
 
-export function toStepDto(
-  step: Step,
-  workstream: StepParent,
-  noteCount: number,
-): StepDto {
+export function toStepDto(step: Step, workstream: StepParent): StepDto {
   const owner = resolveOwner(step, workstream);
 
   return {
@@ -96,7 +89,6 @@ export function toStepDto(
     checklistItems: sortChecklistItems(step.getChecklistItems()).map((item) =>
       toChecklistItemDto(item),
     ),
-    noteCount,
     createdAt: step.createdAt,
     updatedAt: step.updatedAt,
   };

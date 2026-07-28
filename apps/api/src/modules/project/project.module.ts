@@ -9,11 +9,14 @@ import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 import { GroupController } from '@/modules/project/group.controller';
 import { GroupService } from '@/modules/project/group.service';
+import { NoteController } from '@/modules/project/note.controller';
+import { NoteService } from '@/modules/project/note.service';
 import { OverviewController } from '@/modules/project/overview.controller';
 import { OverviewService } from '@/modules/project/overview.service';
 import { ProjectController } from '@/modules/project/project.controller';
 import { ProjectService } from '@/modules/project/project.service';
 import { GroupRepository } from '@/modules/project/repositories/group.repository';
+import { NoteRepository } from '@/modules/project/repositories/note.repository';
 import { OverviewRepository } from '@/modules/project/repositories/overview.repository';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
@@ -39,16 +42,19 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
     OverviewController,
     GroupController,
     WorkstreamController,
+    NoteController,
   ],
   providers: [
     ProjectService,
     OverviewService,
     GroupService,
     WorkstreamService,
+    NoteService,
     ProjectRepository,
     OverviewRepository,
     GroupRepository,
     WorkstreamRepository,
+    NoteRepository,
   ],
 })
 export class ProjectModule {}

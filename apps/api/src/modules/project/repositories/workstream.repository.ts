@@ -1,7 +1,6 @@
 import { SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
-import { Note } from '@/database/entities/note.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 
 const WORKSTREAM_POPULATE = [
@@ -44,26 +43,5 @@ export class WorkstreamRepository {
 
       em.remove(workstream);
     });
-  }
-
-  async countNotesByStep(stepIds: string[]): Promise<Map<string, number>> {
-    const counts = new Map<string, number>();
-
-    if (stepIds.length === 0) {
-      return counts;
-    }
-
-    const notes = await this.em.find(
-      Note,
-      { step: { $in: stepIds } },
-      { fields: ['step'] },
-    );
-
-    for (const note of notes) {
-      const stepId = note.step.id;
-      counts.set(stepId, (counts.get(stepId) ?? 0) + 1);
-    }
-
-    return counts;
   }
 }

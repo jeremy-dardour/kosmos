@@ -3,15 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { cn } from '@/lib/utils';
 
-import type { dtos } from '@/types/openapi';
+import type { Step, StepStatus } from '@/api/hooks/use-overview';
 
-type StepVisual = dtos['StepStatus'] | 'blocked';
+type StepVisual = StepStatus | 'blocked';
 
 interface PipelineDotsProperties {
-  steps: dtos['OverviewStepDto'][];
+  steps: Step[];
 }
 
-function stepVisual(step: dtos['OverviewStepDto']): StepVisual {
+function stepVisual(step: Step): StepVisual {
   return isBlockedNow(step) ? 'blocked' : step.status;
 }
 

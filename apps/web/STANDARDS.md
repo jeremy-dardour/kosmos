@@ -29,6 +29,15 @@ src/
 - Access generated schemas with indexed types such as
   `components['schemas']['WorkstreamDto']`. Do not use dotted access through a
   type alias; it can silently resolve to `any`.
+- **API types stay in the API layer.** Feature components never import from
+  `@/types/openapi` directly. Each hook file re-exports named type aliases
+  (e.g. `Workstream`, `Step`, `UserSummary`) from the generated DTOs.
+  Components and tests import those aliases. If the API contract changes, only
+  the hook file adjusts the mapping.
+- **One derived lookup, passed down.** When a query returns a flat list that
+  multiple children look up by ID (e.g. `usersById`), compute the `Map` once
+  in the nearest common parent and pass it as a prop — do not recompute in
+  each child.
 - Store selected entity IDs, then derive the selected entity from query data;
   do not keep a copied response object that can become stale.
 - Mutations invalidate only queries whose response can change. Workstream,
@@ -56,6 +65,12 @@ src/
 
 ## Testing
 
-- Unit: `@testing-library/react` + vitest, colocated `*.spec.tsx`
-- E2E: Playwright in `e2e/`, custom fixtures with `ApiMock` for deterministic API interception
-- Mocks for `@/components` or design-system components go in `@/testing/mocks/components.tsx` so they can be reused across specs
+- **Unit** (`*.spec.tsx`, colocated): pure functions and components with
+  branching logic. Skip structural components — integration tests cover them.
+- **Integration** (main layer): `renderWithApp` with real providers, mock
+  HTTP via MSW (`server.use(http.get(...))`). Do not mock hooks, query
+  layer, or internal components. See `src/testing/render-with-app.tsx`,
+  `src/testing/mock-api.ts`.
+- **E2E** (Playwright, `e2e/`): critical journeys only (auth, advance, destructive
+  actions). Do not duplicate integration tests in the browser.
+- Shared component mocks go in `@/testing/mocks/components.tsx`.

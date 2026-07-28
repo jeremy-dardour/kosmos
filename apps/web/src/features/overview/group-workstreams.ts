@@ -1,9 +1,9 @@
-import type { dtos } from '@/types/openapi';
+import type { Group, Workstream } from '@/api/hooks/use-overview';
 
 export interface WorkstreamGroup {
   /** null for the ungrouped bucket. */
-  group: dtos['GroupDto'] | null;
-  workstreams: dtos['OverviewWorkstreamDto'][];
+  group: Group | null;
+  workstreams: Workstream[];
 }
 
 /**
@@ -11,8 +11,8 @@ export interface WorkstreamGroup {
  * groups dropped and ungrouped workstreams last.
  */
 export function groupWorkstreams(
-  groups: dtos['GroupDto'][],
-  workstreams: dtos['OverviewWorkstreamDto'][],
+  groups: Group[],
+  workstreams: Workstream[],
 ): WorkstreamGroup[] {
   const buckets = groups.map((group) => ({
     group,

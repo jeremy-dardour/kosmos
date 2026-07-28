@@ -38,6 +38,7 @@
   "overview.header.eventYesterday": "Ayer",
   "overview.header.eventInDays": "Faltan {{count}} días",
   "overview.header.eventPassed": "Hace {{count}} días",
+  "overview.loading": "Cargando resumen",
   "overview.ungrouped": "Sin grupo",
   "overview.card.notStarted": "Sin empezar",
   "overview.card.complete": "Completado",
@@ -53,5 +54,17 @@
   "overview.noProject.title": "Aún no hay proyecto",
   "overview.noProject.description": "Crea un proyecto para empezar el seguimiento.",
   "overview.detail.title": "Selecciona un área de trabajo",
-  "overview.detail.description": "Sus pasos, checklist y notas aparecerán aquí."
+  "overview.detail.description": "Sus pasos, checklist y notas aparecerán aquí.",
+  "overview.detail.close": "Cerrar",
+  "overview.detail.current": "Actual",
+  "overview.detail.checklist": "Checklist",
+  "overview.detail.checklistProgress": "{{done}}/{{total}}",
+  "overview.detail.notes": "Notas",
+  "overview.detail.notesEmpty": "Sin notas aún",
+  "overview.detail.notesError": "No se pudieron cargar las notas.",
+  "overview.detail.unknownAuthor": "Desconocido",
+  "overview.detail.deadline.in": "en {{count}}d",
+  "overview.detail.deadline.today": "hoy",
+  "overview.detail.deadline.tomorrow": "mañana",
+  "overview.detail.deadline.overdue": "{{count}}d de retraso"
 }

@@ -78,11 +78,7 @@ export class WorkstreamService {
   private async buildDto(id: string): Promise<WorkstreamDto> {
     const workstream = await this.workstreamRepository.findDetails(id);
 
-    const noteCounts = await this.workstreamRepository.countNotesByStep(
-      workstream.getSteps().map((step) => step.id),
-    );
-
-    return toWorkstreamDto(workstream, noteCounts);
+    return toWorkstreamDto(workstream);
   }
 
   /** Same-project guard, enforced here rather than as a composite FK (ADR 0006). */

@@ -5,12 +5,12 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-27 (session 22)_
+_Last updated: 2026-07-28 (session 24)_
 
 ## Phase
 
-**Building.** Foundations and auth refinement are merged. The first overview
-slice is open as PR #31; seven build-slice/deployment issues remain.
+**Building.** Slices 1 and 2 are open as PRs #31 and #36; six
+build-slice/deployment issues remain (#20–#24, #26).
 
 ## Done
 
@@ -76,10 +76,24 @@ slice is open as PR #31; seven build-slice/deployment issues remain.
   pipeline dots, `eventYesterday`
   ([session 15](./sessions/session-15-2026-07-25-slice-1-overview.md)).
 
+- **#19 — Slice 2: detail slide-over (read-only)** — complete on
+  `feat/slice-2` (PR #36). `OverviewStepDto` replaced with canonical `StepDto`;
+  `noteCount` dropped. New `GET /workstreams/:workstreamId/notes` endpoint with
+  DB-level ordering. Detail panel shows vertical pipeline, inline checklist,
+  on-demand notes with URL linkification. Selection state derives from overview
+  query data. Mobile detail panel deferred to #35
+  ([sessions 23–24](./sessions/session-23-24-2026-07-27-slice-2-detail-panel-integration.md)).
+- **DTO type decoupling + integration tests + MSW** — API hooks re-export
+  named type aliases; feature code never imports `@/types/openapi` directly.
+  11 integration tests cover the overview + detail panel. Hand-rolled fetch
+  mock replaced with MSW. The test harness composes the real required providers
+  ([sessions 23–24](./sessions/session-23-24-2026-07-27-slice-2-detail-panel-integration.md)).
+
 ## In flight
 
 - **PR #31 (`feat/slice-1-overview`)** — Slice 1: overview aggregate read +
   Pipeline Stack UI (#18).
+- **PR #36 (`feat/slice-2`)** — Slice 2: detail slide-over (read-only) (#19).
 
 ## Open questions
 
@@ -88,9 +102,8 @@ slice is open as PR #31; seven build-slice/deployment issues remain.
 
 ## Next steps
 
-1. Land PR #31.
-2. Build slices #19–#24, then deployment (#26). Reorder repositories use
+1. Land PRs #31 and #36.
+2. Build slices #20–#24, then deployment (#26). Reorder repositories use
    two-phase temporary positions because the generated constraints are not
    deferrable.
-3. Web e2e coverage is currently a single placeholder — real specs belong with
-   the overview slices, and `ApiMock` still targets the deleted `/api/items`.
+3. Mobile responsiveness deferred to #35.

@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { groupWorkstreams } from '@/features/overview/group-workstreams';
 
-import type { dtos } from '@/types/openapi';
+import type { Group, Workstream } from '@/api/hooks/use-overview';
 
-function group(id: string, name: string): dtos['GroupDto'] {
+function group(id: string, name: string): Group {
   return {
     id,
     name,
@@ -14,10 +14,7 @@ function group(id: string, name: string): dtos['GroupDto'] {
   };
 }
 
-function workstream(
-  id: string,
-  groupId: string | null,
-): dtos['OverviewWorkstreamDto'] {
+function workstream(id: string, groupId: string | null): Workstream {
   return {
     id,
     name: id,

@@ -3,18 +3,22 @@ import { useTranslation } from 'react-i18next';
 import { GroupSection } from '@/features/overview/group-section';
 import { groupWorkstreams } from '@/features/overview/group-workstreams';
 
-import type { dtos } from '@/types/openapi';
+import type { Group, UserSummary, Workstream } from '@/api/hooks/use-overview';
 
 interface WorkstreamCardListProperties {
-  groups: dtos['GroupDto'][];
-  workstreams: dtos['OverviewWorkstreamDto'][];
-  users: dtos['UserSummaryDto'][];
+  groups: Group[];
+  workstreams: Workstream[];
+  usersById: ReadonlyMap<string, UserSummary>;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
 }
 
 export const WorkstreamCardList = ({
   groups,
   workstreams,
-  users,
+  usersById,
+  selectedId,
+  onSelect,
 }: WorkstreamCardListProperties) => {
   const { t } = useTranslation();
 
@@ -29,8 +33,6 @@ export const WorkstreamCardList = ({
     );
   }
 
-  const usersById = new Map(users.map((user) => [user.id, user]));
-
   return (
     <div className="flex flex-col gap-5">
       {groupWorkstreams(groups, workstreams).map((bucket) => (
@@ -39,6 +41,8 @@ export const WorkstreamCardList = ({
           group={bucket.group}
           workstreams={bucket.workstreams}
           usersById={usersById}
+          selectedId={selectedId}
+          onSelect={onSelect}
         />
       ))}
     </div>

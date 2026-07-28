@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useOverview } from '@/api/hooks/use-overview';
@@ -6,6 +7,8 @@ import { DetailPanel } from '@/features/overview/detail-panel';
 import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
 import { WorkstreamCardList } from '@/features/overview/workstream-card-list';
+
+import type { UserSummary } from '@/api/hooks/use-overview';
 
 /**
  * The Pipeline Stack overview — the only screen in V1. Request failures surface
@@ -17,6 +20,22 @@ export const OverviewPage = () => {
   const projects = useProjects();
   const projectId = projects.data?.[0]?.id;
   const overview = useOverview(projectId);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const usersById = useMemo(() => {
+    if (!overview.data) return new Map<string, UserSummary>();
+    return new Map(overview.data.users.map((u) => [u.id, u]));
+  }, [overview.data]);
+
+  const selectedWorkstream =
+    overview.data?.workstreams.find((w) => w.id === selectedId) ?? null;
+
+  // Sync derived state during render — React 19 supports this without looping
+  // when the condition is stable. See https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  if (selectedId && overview.data && !selectedWorkstream) {
+    setSelectedId(null);
+  }
 
   const isLoading =
     projects.isPending || (Boolean(projectId) && overview.isPending);
@@ -44,13 +63,19 @@ export const OverviewPage = () => {
             <WorkstreamCardList
               groups={overview.data.groups}
               workstreams={overview.data.workstreams}
-              users={overview.data.users}
+              usersById={usersById}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
             />
           )}
         </div>
       </div>
 
-      <DetailPanel />
+      <DetailPanel
+        workstream={selectedWorkstream}
+        usersById={usersById}
+        onClose={() => setSelectedId(null)}
+      />
     </div>
   );
 };

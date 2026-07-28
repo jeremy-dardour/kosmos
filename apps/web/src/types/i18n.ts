@@ -38,6 +38,7 @@ export interface Translations {
   'overview.header.eventYesterday': string;
   'overview.header.eventInDays': string;
   'overview.header.eventPassed': string;
+  'overview.loading': string;
   'overview.ungrouped': string;
   'overview.card.notStarted': string;
   'overview.card.complete': string;
@@ -54,6 +55,18 @@ export interface Translations {
   'overview.noProject.description': string;
   'overview.detail.title': string;
   'overview.detail.description': string;
+  'overview.detail.close': string;
+  'overview.detail.current': string;
+  'overview.detail.checklist': string;
+  'overview.detail.checklistProgress': string;
+  'overview.detail.notes': string;
+  'overview.detail.notesEmpty': string;
+  'overview.detail.notesError': string;
+  'overview.detail.unknownAuthor': string;
+  'overview.detail.deadline.in': string;
+  'overview.detail.deadline.today': string;
+  'overview.detail.deadline.tomorrow': string;
+  'overview.detail.deadline.overdue': string;
 }
 
 export interface Resources {
