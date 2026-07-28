@@ -3,13 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { daysUntil } from '@/features/overview/days-until';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
+import { StepChecklist } from '@/features/overview/step-checklist';
 import { cn } from '@/lib/utils';
 
-import type { Step, StepStatus, UserSummary } from '@/api/hooks/use-overview';
+import type {
+  ChecklistItem,
+  Step,
+  StepStatus,
+  UserSummary,
+} from '@/api/hooks/use-overview';
 
 interface VerticalPipelineProperties {
   steps: Step[];
   usersById: ReadonlyMap<string, UserSummary>;
+  pendingChecklistItemId?: string | null;
+  onToggleChecklist?: (item: ChecklistItem, isDone: boolean) => void;
 }
 
 type StepVisual = StepStatus | 'blocked';
@@ -55,6 +63,8 @@ const URGENCY_CLASSES = {
 export const VerticalPipeline = ({
   steps,
   usersById,
+  pendingChecklistItemId,
+  onToggleChecklist,
 }: VerticalPipelineProperties) => {
   const { t } = useTranslation();
 
@@ -129,6 +139,12 @@ export const VerticalPipeline = ({
               {!isDone && step.deadline && (
                 <DeadlineLabel deadline={step.deadline} />
               )}
+
+              <StepChecklist
+                step={step}
+                pendingItemId={pendingChecklistItemId}
+                onToggle={onToggleChecklist}
+              />
             </div>
           </li>
         );

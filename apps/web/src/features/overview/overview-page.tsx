@@ -88,6 +88,8 @@ export const OverviewPage = () => {
 
       <DetailPanel
         workstream={selectedWorkstream}
+        projectId={projectId}
+        users={overview.data?.users ?? []}
         usersById={usersById}
         onClose={() => setSelectedId(null)}
       />

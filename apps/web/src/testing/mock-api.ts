@@ -26,6 +26,9 @@ export function setupOverviewApi(initialOverview: Overview) {
     http.get(`${API_BASE}/api/projects/:id/overview`, () =>
       HttpResponse.json(overview),
     ),
+    http.get(`${API_BASE}/api/workstreams/:id/notes`, () =>
+      HttpResponse.json([]),
+    ),
     http.put(
       `${API_BASE}/api/workstreams/:id/pipeline`,
       async ({ params, request }) => {
@@ -39,7 +42,7 @@ export function setupOverviewApi(initialOverview: Overview) {
         }
 
         const pastSteps = workstream.steps.filter(
-          (step) => step.outcome !== null,
+          (step) => step.status === 'done' || step.status === 'skipped',
         );
         const existingById = new Map(
           workstream.steps.map((step) => [step.id, step]),
@@ -103,23 +106,26 @@ export function setupOverviewApi(initialOverview: Overview) {
       `${API_BASE}/api/checklist-items/:id`,
       async ({ params, request }) => {
         const input = (await request.json()) as { done: boolean };
+        const updatedAt = new Date().toISOString();
         let responseItem:
           | Workstream['steps'][number]['checklistItems'][number]
           | null = null;
 
         overview = {
           ...overview,
-          workstreams: overview.workstreams.map((workstream) => ({
-            ...workstream,
-            steps: workstream.steps.map((step) => ({
+          workstreams: overview.workstreams.map((workstream) => {
+            let didChange = false;
+            const steps = workstream.steps.map((step) => ({
               ...step,
               checklistItems: step.checklistItems.map((item) => {
                 if (item.id !== params.id) return item;
-                responseItem = { ...item, done: input.done };
+                didChange = true;
+                responseItem = { ...item, done: input.done, updatedAt };
                 return responseItem;
               }),
-            })),
-          })),
+            }));
+            return didChange ? { ...workstream, steps, updatedAt } : workstream;
+          }),
         };
 
         return responseItem
