@@ -96,6 +96,8 @@ kind as the next numbered ADR.
 ## Workflow
 
 - Before declaring work done: `pnpm check-types && pnpm lint && pnpm test`
+- After changing API routes, authentication, persistence, transactions, or
+  concurrency behavior, also run `pnpm --filter api test:e2e`.
 - After changing entities: regenerate and verify migrations (see
   [apps/api/README.md](./apps/api/README.md)).
 - After adding, removing, renaming, or changing API controllers, routes, DTOs,

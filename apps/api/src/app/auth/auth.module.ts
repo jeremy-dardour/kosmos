@@ -22,6 +22,6 @@ import { User } from '@/database/entities/user.entity';
     AuthUserProvisionerService,
     AuthGuard,
   ],
-  exports: [AuthInitializerService, AuthGuard],
+  exports: [AuthInitializerService, AuthUserProvisionerService, AuthGuard],
 })
 export class AuthModule {}

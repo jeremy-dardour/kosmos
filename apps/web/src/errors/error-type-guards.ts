@@ -2,7 +2,8 @@ import { ApiError } from '@/api/errors';
 
 interface ApiLikeError {
   status: number;
-  statusText: string;
+  statusText?: string;
+  title?: string;
   data?: unknown;
 }
 
@@ -39,7 +40,7 @@ export function isApiLikeError(error: unknown): error is ApiLikeError {
   return (
     typeof error.status === 'number' &&
     Number.isFinite(error.status) &&
-    typeof error.statusText === 'string'
+    (typeof error.statusText === 'string' || typeof error.title === 'string')
   );
 }
 export function isNonNullObject(
@@ -49,6 +50,12 @@ export function isNonNullObject(
 }
 
 export function toApiErrorFromApiLike(error: ApiLikeError): ApiError {
-  const statusText = error.statusText?.trim() ?? 'API Error';
-  return new ApiError(statusText, error.status, statusText, error.data);
+  const statusText =
+    error.statusText?.trim() ?? error.title?.trim() ?? 'API Error';
+  return new ApiError(
+    statusText,
+    error.status,
+    statusText,
+    error.data ?? error,
+  );
 }

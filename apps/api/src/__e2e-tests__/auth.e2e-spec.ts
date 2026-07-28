@@ -3,10 +3,17 @@ import request from 'supertest';
 
 import { createTestApp } from '@/__e2e-tests__/helpers/create-app.helper';
 import { MockTokenFactory } from '@/__e2e-tests__/helpers/mock-token.factory';
+import {
+  resetDatabase,
+  testEntityManager,
+} from '@/__e2e-tests__/helpers/reset-database.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
 import { OidcServiceUnavailableException } from '@/app/auth/exceptions/oidc-service-unavailable.exception';
+import { User } from '@/database/entities/user.entity';
 
 import type { OidcDiscoveryService } from '@/app/auth/strategies/jwt/oidc-discovery.service';
+import type { CurrentUserDto } from '@/modules/user/dtos/output/current-user.dto';
+import type { SqlEntityManager } from '@mikro-orm/postgresql';
 import type { INestApplication } from '@nestjs/common';
 import type { Test as SuperTestType } from 'supertest';
 import type TestAgent from 'supertest/lib/agent';
@@ -32,9 +39,12 @@ describe('Auth E2E Tests', () => {
 
   describe('with valid OIDC configuration', () => {
     let app: INestApplication;
+    let em: SqlEntityManager;
 
     beforeEach(async () => {
       app = await createTestApp({ oidcOverride: mockOidc });
+      em = testEntityManager(app);
+      await resetDatabase(em);
     });
 
     afterEach(async () => {
@@ -48,6 +58,8 @@ describe('Auth E2E Tests', () => {
         .get(PROTECTED_ENDPOINT)
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
+
+      expect(await em.count(User, {})).toBe(0);
     });
 
     it('should return current user for valid token and allowed email', async () => {
@@ -66,6 +78,23 @@ describe('Auth E2E Tests', () => {
         name: 'E2E Test User',
         avatarUrl: 'https://example.com/avatar.jpg',
       });
+    });
+
+    it('should atomically provision one user for concurrent first-login requests', async () => {
+      const token = await tokenFactory.validToken();
+      const currentUser = () =>
+        createRequest(app)
+          .get(CURRENT_USER_ENDPOINT)
+          .set('Authorization', `Bearer ${token}`);
+
+      const responses = await Promise.all([currentUser(), currentUser()]);
+      const users = responses.map(
+        (response) => response.body as CurrentUserDto,
+      );
+
+      expect(responses.map((response) => response.status)).toEqual([200, 200]);
+      expect(users[0]?.id).toBe(users[1]?.id);
+      expect(await em.count(User, {})).toBe(1);
     });
 
     it('should return 401 when no authorization header is provided', async () => {

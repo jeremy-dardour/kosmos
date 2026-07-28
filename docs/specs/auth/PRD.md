@@ -134,21 +134,21 @@ The mapping from JWT payload to `AuthenticatedUser` happens in `JwtAuthStrategy`
 
 ### 6. User upsert on login
 
-After the auth guard validates the token + allow-list, the first API call from a
-new user should create their `User` entity. Two approaches (pick whichever is
-simpler to wire):
+`GET /users/me` is the session-establishment boundary. After the global auth
+guard validates the token and allow-list, this endpoint atomically upserts the
+User by normalized email and returns the server-trusted profile. Concurrent
+first-login requests must resolve to the same User row.
 
-**Option A — Guard-level upsert:** after `JwtVerificationService.verify()`
-succeeds, call `UserService.upsertByEmail(email, name, avatarUrl)` inside the
-auth guard/strategy before setting `request.user`. Every authenticated request
-refreshes name/avatar (cheap upsert, matches "name and avatar refreshed on
-every login" from entity-schema-design.md).
+The global auth guard is read-only: it verifies credentials and attaches the
+trusted token identity to the request, but performs no database writes. Other
+authenticated endpoints therefore cannot provision or refresh a User as a side
+effect.
 
-**Option B — Middleware/interceptor:** a global interceptor that runs after auth
-and calls the upsert. Same effect, slightly more separation.
-
-Either way, `request.user` should carry the DB `User` entity (or at least its
-`id`) after auth, so controllers can use it without a second lookup.
+Name and avatar are refreshed by `/users/me`, matching the web flow that
+validates every new or restored credential through that endpoint before exposing
+an authenticated session. A future endpoint that needs a persisted actor should
+use an explicit persisted-user resolution seam rather than reintroducing
+provisioning into the global guard.
 
 ### 7. Cleanup
 

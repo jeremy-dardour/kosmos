@@ -1,3 +1,4 @@
+import { LockMode } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
@@ -31,6 +32,25 @@ export class WorkstreamRepository {
   async save(workstream: Workstream): Promise<void> {
     this.em.persist(workstream);
     await this.em.flush();
+  }
+
+  async updateLockedDetails(
+    id: string,
+    apply: (workstream: Workstream) => void,
+  ): Promise<Workstream> {
+    return this.em.transactional(async (em) => {
+      const workstream = await em.findOneOrFail(
+        Workstream,
+        { id },
+        { lockMode: LockMode.PESSIMISTIC_WRITE },
+      );
+      await em.populate(workstream, [...WORKSTREAM_POPULATE]);
+
+      apply(workstream);
+      await em.flush();
+
+      return workstream;
+    });
   }
 
   async remove(id: string): Promise<void> {

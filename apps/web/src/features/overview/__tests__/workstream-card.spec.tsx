@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { WorkstreamCard } from '@/features/overview/workstream-card';
@@ -143,11 +144,14 @@ describe('workstreamCard', () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it('calls onSelect on Enter key', () => {
+  it('calls onSelect on Enter key', async () => {
     const onSelect = vi.fn();
+    const agent = userEvent.setup();
     render(<WorkstreamCard workstream={workstream()} onSelect={onSelect} />);
 
-    fireEvent.keyDown(screen.getByRole('button'), { key: 'Enter' });
+    screen.getByRole('button').focus();
+    await agent.keyboard('{Enter}');
+
     expect(onSelect).toHaveBeenCalledOnce();
   });
 });

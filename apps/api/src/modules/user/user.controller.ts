@@ -7,6 +7,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { AuthUserProvisionerService } from '@/app/auth/auth-user-provisioner.service';
 import { CurrentUserDto } from '@/modules/user/dtos/output/current-user.dto';
 
 import type { AuthenticatedRequest } from '@/app/auth/types/token.types';
@@ -15,6 +16,10 @@ import type { AuthenticatedRequest } from '@/app/auth/types/token.types';
 @ApiTags('Users')
 @ApiBearerAuth()
 export class UserController {
+  constructor(
+    private readonly authUserProvisioner: AuthUserProvisionerService,
+  ) {}
+
   @Get('me')
   @ApiOperation({
     summary: 'Get the current authenticated user',
@@ -30,12 +35,14 @@ export class UserController {
     status: 403,
     description: 'The bearer token is valid but the account is not allowed.',
   })
-  me(@Req() request: AuthenticatedRequest): CurrentUserDto {
+  async me(@Req() request: AuthenticatedRequest): Promise<CurrentUserDto> {
+    const user = await this.authUserProvisioner.provision(request.user);
+
     return {
-      id: request.user.id!,
-      email: request.user.email,
-      name: request.user.name ?? request.user.email,
-      avatarUrl: request.user.avatarUrl,
+      id: user.id!,
+      email: user.email,
+      name: user.name ?? user.email,
+      avatarUrl: user.avatarUrl,
     };
   }
 }

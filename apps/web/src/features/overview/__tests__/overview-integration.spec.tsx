@@ -3,61 +3,19 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { defaultOverview } from '@/features/overview/__tests__/overview-integration.fixtures';
 import { OverviewPage } from '@/features/overview/overview-page';
 import { server } from '@/testing/mock-api';
 import {
   checklistItem,
-  group,
   note,
   project,
   step,
-  user,
   workstream,
 } from '@/testing/mock-overview-data';
 import { renderWithApp } from '@/testing/render-with-app';
 
-import type { Overview } from '@/api/hooks/use-overview';
-
 const BASE = 'http://localhost:3000';
-
-const defaultOverview = {
-  project: project(),
-  groups: [group()],
-  workstreams: [
-    workstream({
-      id: 'w-catering',
-      name: 'Catering',
-      icon: '🍽️',
-      groupId: 'g1',
-      ownerId: 'u1',
-      steps: [
-        step('Research options', 'done', { id: 's1', position: 1 }),
-        step('Request quotes', 'in_progress', { id: 's2', position: 2 }),
-        step('Book caterer', 'not_started', { id: 's3', position: 3 }),
-      ],
-    }),
-    workstream({
-      id: 'w-flowers',
-      name: 'Flowers',
-      icon: '💐',
-      groupId: 'g1',
-      lifecycle: 'not_started',
-      steps: [step('Find florist', 'not_started', { id: 's4', position: 1 })],
-    }),
-    workstream({
-      id: 'w-venue',
-      name: 'Venue',
-      icon: '🏰',
-      groupId: null,
-      lifecycle: 'complete',
-      steps: [
-        step('Visit venues', 'done', { id: 's5', position: 1 }),
-        step('Sign contract', 'done', { id: 's6', position: 2 }),
-      ],
-    }),
-  ],
-  users: [user()],
-} satisfies Overview;
 
 function setupDefaultMocks(onOverviewRequest?: (request: Request) => void) {
   server.use(
@@ -84,7 +42,7 @@ describe('overview page — golden path', () => {
       name: 'Venue & Catering',
     });
     const cateringCard = within(groupedSection).getByRole('button', {
-      name: /catering/i,
+      name: 'View Catering',
     });
     expect(cateringCard).toBeVisible();
     expect(within(cateringCard).getByLabelText('Alice Doe')).toBeVisible();
@@ -191,7 +149,7 @@ describe('detail panel', () => {
     renderWithApp(<OverviewPage />);
 
     const cateringCard = await screen.findByRole('button', {
-      name: /catering/i,
+      name: 'View Catering',
     });
     await agent.click(cateringCard);
 
@@ -238,7 +196,9 @@ describe('detail panel', () => {
     const agent = userEvent.setup();
     renderWithApp(<OverviewPage />);
 
-    const card = await screen.findByRole('button', { name: /tasting/i });
+    const card = await screen.findByRole('button', {
+      name: 'View Tasting',
+    });
     await agent.click(card);
 
     expect(screen.getByText('Checklist')).toBeVisible();
@@ -268,7 +228,7 @@ describe('detail panel', () => {
     await screen.findByText('Catering');
     expect(noteFetchCount).toBe(0);
 
-    const card = screen.getByRole('button', { name: /catering/i });
+    const card = screen.getByRole('button', { name: 'View Catering' });
     await agent.click(card);
 
     expect(
@@ -289,7 +249,9 @@ describe('detail panel', () => {
     const agent = userEvent.setup();
     renderWithApp(<OverviewPage />);
 
-    const card = await screen.findByRole('button', { name: /catering/i });
+    const card = await screen.findByRole('button', {
+      name: 'View Catering',
+    });
     await agent.click(card);
 
     expect(
@@ -320,7 +282,7 @@ describe('detail panel', () => {
     renderWithApp(<OverviewPage />);
 
     const cateringCard = await screen.findByRole('button', {
-      name: /catering/i,
+      name: 'View Catering',
     });
     await agent.click(cateringCard);
 
@@ -329,7 +291,7 @@ describe('detail panel', () => {
     ).toBeInTheDocument();
     expect(cateringCard).toHaveAttribute('aria-pressed', 'true');
 
-    const venueCard = screen.getByRole('button', { name: /venue/i });
+    const venueCard = screen.getByRole('button', { name: 'View Venue' });
     await agent.click(venueCard);
 
     expect(

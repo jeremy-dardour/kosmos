@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { WorkstreamCard } from '@/features/overview/workstream-card';
 
+import type { AdvanceOutcome } from '@/api/hooks/use-advance-workstream';
 import type { UserSummary } from '@/api/hooks/use-overview';
 import type { WorkstreamGroup } from '@/features/overview/group-workstreams';
 
@@ -9,6 +10,8 @@ interface GroupSectionProperties extends WorkstreamGroup {
   usersById: ReadonlyMap<string, UserSummary>;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  advancingId: string | null;
+  onAdvance: (id: string, outcome?: AdvanceOutcome) => void;
 }
 
 export const GroupSection = ({
@@ -17,6 +20,8 @@ export const GroupSection = ({
   usersById,
   selectedId,
   onSelect,
+  advancingId,
+  onAdvance,
 }: GroupSectionProperties) => {
   const { t } = useTranslation();
 
@@ -57,6 +62,8 @@ export const GroupSection = ({
             }
             isSelected={workstream.id === selectedId}
             onSelect={() => onSelect(workstream.id)}
+            isAdvancing={workstream.id === advancingId}
+            onAdvance={(outcome) => onAdvance(workstream.id, outcome)}
           />
         ))}
       </div>
