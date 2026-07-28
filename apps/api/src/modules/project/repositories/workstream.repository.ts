@@ -34,7 +34,7 @@ export class WorkstreamRepository {
     await this.em.flush();
   }
 
-  async transition(
+  async updateLockedDetails(
     id: string,
     apply: (workstream: Workstream) => void,
   ): Promise<Workstream> {

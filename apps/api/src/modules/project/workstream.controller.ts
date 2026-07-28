@@ -77,7 +77,7 @@ export class WorkstreamController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AdvanceWorkstreamDto,
   ): Promise<WorkstreamDto> {
-    return this.workstreamService.advance(id, dto);
+    return this.workstreamService.progress(id, dto);
   }
 
   @Delete('workstreams/:id')

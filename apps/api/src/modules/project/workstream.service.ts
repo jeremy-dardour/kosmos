@@ -87,8 +87,11 @@ export class WorkstreamService {
     await this.workstreamRepository.remove(id);
   }
 
-  async advance(id: string, dto: AdvanceWorkstreamDto): Promise<WorkstreamDto> {
-    const workstream = await this.workstreamRepository.transition(
+  async progress(
+    id: string,
+    dto: AdvanceWorkstreamDto,
+  ): Promise<WorkstreamDto> {
+    const workstream = await this.workstreamRepository.updateLockedDetails(
       id,
       (lockedWorkstream) => {
         const lifecycle = lockedWorkstream.getLifecycle();
@@ -103,7 +106,7 @@ export class WorkstreamService {
           return;
         }
         if (lifecycle === WorkstreamLifecycle.Active) {
-          this.advanceActive(lockedWorkstream, dto.outcome ?? StepOutcome.Done);
+          this.advance(lockedWorkstream, dto.outcome ?? StepOutcome.Done);
           return;
         }
 
@@ -135,7 +138,7 @@ export class WorkstreamService {
     workstream.currentStep = firstStep;
   }
 
-  private advanceActive(workstream: Workstream, outcome: StepOutcome): void {
+  private advance(workstream: Workstream, outcome: StepOutcome): void {
     const currentStep = workstream.currentStep;
     if (!currentStep) {
       throw new InternalServerErrorException(

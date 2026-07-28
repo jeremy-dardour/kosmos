@@ -376,6 +376,9 @@ describe('pipeline actions', () => {
     expect(
       await screen.findByRole('button', { name: 'Advance Flowers' }),
     ).toBeVisible();
+    expect(await screen.findByTitle('Find florist — In progress')).toHaveClass(
+      'bg-step-in-progress',
+    );
     expect(submittedBody).toEqual({});
     expect(
       screen.getByRole('complementary', {
@@ -453,7 +456,10 @@ describe('pipeline actions', () => {
       await screen.findByRole('menuitem', { name: 'Mark skipped' }),
     );
 
-    expect(await screen.findByTitle('Request quotes — Skipped')).toBeVisible();
+    expect(await screen.findByTitle('Request quotes — Skipped')).toHaveClass(
+      'border-dashed',
+      'border-step-skipped',
+    );
     expect(submittedBody).toEqual({ outcome: 'skipped' });
   });
 
@@ -513,7 +519,6 @@ describe('pipeline actions', () => {
       type: 'https://wedding-planner.dev/problems/workstream-not-advanceable',
       title: 'Workstream cannot be advanced',
       status: 409,
-      statusText: 'Conflict',
       detail: 'This workstream is already complete.',
     });
     const agent = userEvent.setup();
@@ -544,7 +549,6 @@ describe('pipeline actions', () => {
       type: 'https://wedding-planner.dev/problems/workstream-empty',
       title: 'Workstream has no steps',
       status: 409,
-      statusText: 'Conflict',
       detail: 'Add a step before starting this workstream.',
     });
     const agent = userEvent.setup();

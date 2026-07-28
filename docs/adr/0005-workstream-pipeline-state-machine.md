@@ -67,6 +67,11 @@ future step) unrepresentable rather than merely discouraged.
   `outcome` is a **parameter** (data), defaulting to `Done`; there is no separate
   persistent "skipped" flag and no separate `skip` action.
 
+The transport exposes both transitions through `POST /workstreams/:id/advance`
+for a compact card interaction. The application service dispatches by lifecycle,
+but the domain operations remain distinct: NotStarted invokes `start`, while
+Active invokes `advance`. Supplying an outcome while starting is rejected.
+
 The pointer only ever moves **forward**. There is no backward move and no undo
 in V1 (see Consequences). An empty Workstream (zero steps) **cannot be started**
 — `advance` is rejected with 409. Completing with no work done would mask a

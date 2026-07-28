@@ -45,7 +45,7 @@ describe('formatToApiError', () => {
   it('preserves problem details returned as the top-level API error', () => {
     const formatted = formatToApiError({
       status: 409,
-      statusText: 'Conflict',
+      title: 'Conflict',
       detail: 'This workstream is already complete.',
     });
 
