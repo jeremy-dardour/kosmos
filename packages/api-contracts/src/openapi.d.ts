@@ -220,6 +220,23 @@ export interface paths {
     patch: operations['WorkstreamController_update'];
     trace?: never;
   };
+  '/api/workstreams/{id}/advance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Advance a workstream pipeline */
+    post: operations['WorkstreamController_advance'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/workstreams/{workstreamId}/notes': {
     parameters: {
       query?: never;
@@ -485,6 +502,10 @@ export interface components {
        * @description null to unassign
        */
       ownerId?: string | null;
+    };
+    AdvanceWorkstreamDto: {
+      /** @description Defaults to done for an active workstream */
+      outcome?: components['schemas']['StepOutcome'];
     };
     NoteDto: {
       /** Format: uuid */
@@ -1915,6 +1936,103 @@ export interface operations {
       };
       /** @description Resource not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  WorkstreamController_advance: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AdvanceWorkstreamDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkstreamDto'];
+        };
+      };
+      /** @description An outcome cannot be provided when starting a workstream */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The workstream cannot advance from its current state */
+      409: {
         headers: {
           [name: string]: unknown;
         };

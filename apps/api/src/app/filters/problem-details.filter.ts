@@ -1,6 +1,8 @@
 import { Catch, HttpException, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 
+import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
+
 import type {
   ProblemDetailsDto,
   FieldError,
@@ -38,7 +40,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
 
     const exceptionResponse = exception.getResponse();
     const problemDetails: ProblemDetailsDto = {
-      type: this.getTypeUri(status),
+      type: this.getTypeUri(status, exception),
       title: this.getTitle(status, exception),
       status,
       detail: this.getDetail(
@@ -78,9 +80,12 @@ export class ProblemDetailsFilter implements ExceptionFilter {
   /**
    * Generate problem type URI (RFC 9457 §3.1.1)
    */
-  private getTypeUri(status: number): string {
+  private getTypeUri(status: number, exception: HttpException): string {
     const baseUrl = process.env.API_BASE_URL ?? 'https://api.example.com';
-    const errorType = this.getErrorType(status);
+    const errorType =
+      exception instanceof ProblemDetailsException
+        ? exception.typeSlug
+        : this.getErrorType(status);
     return `${baseUrl}/errors/${errorType}`;
   }
 

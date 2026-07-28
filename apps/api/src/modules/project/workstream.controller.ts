@@ -19,10 +19,13 @@ import {
 } from '@nestjs/swagger';
 
 import {
+  ApiBadRequestResponse,
   ApiCommonErrorResponses,
+  ApiConflictResponse,
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
 } from '@/app/decorators/api-problem-responses.decorator';
+import { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
 import { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
@@ -60,6 +63,21 @@ export class WorkstreamController {
     @Body() dto: UpdateWorkstreamDto,
   ): Promise<WorkstreamDto> {
     return this.workstreamService.update(id, dto);
+  }
+
+  @Post('workstreams/:id/advance')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Advance a workstream pipeline' })
+  @ApiOkResponse({ type: WorkstreamDto })
+  @ApiBadRequestResponse(
+    'An outcome cannot be provided when starting a workstream',
+  )
+  @ApiConflictResponse('The workstream cannot advance from its current state')
+  async advance(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AdvanceWorkstreamDto,
+  ): Promise<WorkstreamDto> {
+    return this.workstreamService.advance(id, dto);
   }
 
   @Delete('workstreams/:id')

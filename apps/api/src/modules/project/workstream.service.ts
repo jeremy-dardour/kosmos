@@ -1,8 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { Group } from '@/database/entities/group.entity';
+import { StepOutcome } from '@/database/entities/step.entity';
 import { User } from '@/database/entities/user.entity';
-import { Workstream } from '@/database/entities/workstream.entity';
+import {
+  Workstream,
+  WorkstreamLifecycle,
+} from '@/database/entities/workstream.entity';
 import { UserRepository } from '@/database/repositories/user.repository';
 import {
   toWorkstreamDto,
@@ -11,7 +21,9 @@ import {
 import { GroupRepository } from '@/modules/project/repositories/group.repository';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
+import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
 
+import type { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import type { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
 import type { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
 
@@ -73,6 +85,79 @@ export class WorkstreamService {
 
   async remove(id: string): Promise<void> {
     await this.workstreamRepository.remove(id);
+  }
+
+  async advance(id: string, dto: AdvanceWorkstreamDto): Promise<WorkstreamDto> {
+    const workstream = await this.workstreamRepository.transition(
+      id,
+      (lockedWorkstream) => {
+        const lifecycle = lockedWorkstream.getLifecycle();
+
+        if (lifecycle === WorkstreamLifecycle.NotStarted) {
+          if (dto.outcome !== undefined) {
+            throw new BadRequestException(
+              'An outcome cannot be provided when starting a workstream',
+            );
+          }
+          this.start(lockedWorkstream);
+          return;
+        }
+        if (lifecycle === WorkstreamLifecycle.Active) {
+          this.advanceActive(lockedWorkstream, dto.outcome ?? StepOutcome.Done);
+          return;
+        }
+
+        throw new ProblemDetailsException(
+          HttpStatus.CONFLICT,
+          'workstream-not-advanceable',
+          'This workstream is already complete',
+        );
+      },
+    );
+
+    return toWorkstreamDto(workstream);
+  }
+
+  private start(workstream: Workstream): void {
+    const firstStep = [...workstream.getSteps()].sort(
+      (a, b) => a.position - b.position,
+    )[0];
+
+    if (!firstStep) {
+      throw new ProblemDetailsException(
+        HttpStatus.CONFLICT,
+        'workstream-empty',
+        'Add at least one step before starting this workstream',
+      );
+    }
+
+    workstream.startedAt = new Date();
+    workstream.currentStep = firstStep;
+  }
+
+  private advanceActive(workstream: Workstream, outcome: StepOutcome): void {
+    const currentStep = workstream.currentStep;
+    if (!currentStep) {
+      throw new InternalServerErrorException(
+        'Active workstream has no current step',
+      );
+    }
+
+    const nextStep = [...workstream.getSteps()]
+      .sort((a, b) => a.position - b.position)
+      .find((step) => step.position > currentStep.position);
+
+    const now = new Date();
+    currentStep.outcome = outcome;
+    currentStep.outcomeAt = now;
+
+    if (nextStep) {
+      workstream.currentStep = nextStep;
+      return;
+    }
+
+    workstream.currentStep = null;
+    workstream.completedAt = now;
   }
 
   private async buildDto(id: string): Promise<WorkstreamDto> {
