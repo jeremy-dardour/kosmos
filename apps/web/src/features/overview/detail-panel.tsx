@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToggleChecklistItem } from '@/api/hooks/use-toggle-checklist-item';
 import { useUpdatePipeline } from '@/api/hooks/use-update-pipeline';
+import { useWorkstreamNotes } from '@/api/hooks/use-workstream-notes';
 import { Button } from '@/components/ui/button';
 import { formatToApiError } from '@/errors/format-error';
-import { NotesSection } from '@/features/overview/notes-section';
 import { PipelineEditor } from '@/features/overview/pipeline-editor';
 import { VerticalPipeline } from '@/features/overview/vertical-pipeline';
 
@@ -14,6 +14,7 @@ import type {
   UserSummary,
   Workstream,
 } from '@/api/hooks/use-overview';
+import type { NoteEntry } from '@/api/hooks/use-workstream-notes';
 
 interface DetailPanelProperties {
   workstream: Workstream | null;
@@ -36,6 +37,17 @@ export const DetailPanel = ({
   );
   const updatePipeline = useUpdatePipeline(projectId);
   const toggleChecklist = useToggleChecklistItem(projectId);
+  const notes = useWorkstreamNotes(workstream?.id);
+  const notesByStepId = useMemo(() => {
+    const grouped = new Map<string, NoteEntry[]>();
+    const entries = notes.data ?? [];
+    for (const note of entries) {
+      const stepNotes = grouped.get(note.stepId) ?? [];
+      stepNotes.push(note);
+      grouped.set(note.stepId, stepNotes);
+    }
+    return grouped;
+  }, [notes.data]);
 
   if (!workstream) {
     return (
@@ -99,6 +111,9 @@ export const DetailPanel = ({
           key={`${workstream.id}-${workstream.updatedAt}`}
           workstream={workstream}
           users={users}
+          notesByStepId={notesByStepId}
+          notesPending={notes.isPending}
+          notesError={notes.isError}
           isSaving={updatePipeline.isPending}
           onCancel={() => setEditingWorkstreamId(null)}
           onSave={(body) =>
@@ -123,7 +138,11 @@ export const DetailPanel = ({
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-4">
           <VerticalPipeline
             steps={workstream.steps}
+            workstreamId={workstream.id}
             usersById={usersById}
+            notesByStepId={notesByStepId}
+            notesPending={notes.isPending}
+            notesError={notes.isError}
             pendingChecklistItemId={
               toggleChecklist.isPending
                 ? toggleChecklist.variables.params.path.id
@@ -131,8 +150,6 @@ export const DetailPanel = ({
             }
             onToggleChecklist={toggleItem}
           />
-
-          <NotesSection workstreamId={workstream.id} />
         </div>
       )}
     </aside>

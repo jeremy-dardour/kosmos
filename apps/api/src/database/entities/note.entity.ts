@@ -32,7 +32,8 @@ export class Note {
   @Property({
     type: 'timestamptz',
     defaultRaw: 'now()',
-    onUpdate: () => new Date(),
+    onUpdate: (note: Note) =>
+      new Date(Math.max(Date.now(), note.updatedAt.getTime() + 1)),
   })
   updatedAt!: Opt<Date>;
 }
