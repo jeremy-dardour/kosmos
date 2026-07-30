@@ -38,6 +38,12 @@ interface StepNotesProperties {
   isError?: boolean;
 }
 
+type NoteAction =
+  | { type: 'idle' }
+  | { type: 'creating'; draft: string }
+  | { type: 'editing'; noteId: string; draft: string }
+  | { type: 'deleting'; note: NoteEntry };
+
 function authorInitials(name: string): string {
   return name
     .split(/\s+/)
@@ -107,13 +113,7 @@ export const StepNotes = ({
   const updateNote = useUpdateNote(workstreamId);
   const deleteNote = useDeleteNote(workstreamId);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isWriting, setIsWriting] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState('');
-  const [deleteCandidate, setDeleteCandidate] = useState<NoteEntry | null>(
-    null,
-  );
+  const [action, setAction] = useState<NoteAction>({ type: 'idle' });
 
   const mutationError =
     createNote.error ?? updateNote.error ?? deleteNote.error;
@@ -128,37 +128,31 @@ export const StepNotes = ({
     if (!stepId) return;
     resetMutations();
     setIsExpanded(true);
-    setIsWriting(true);
+    setAction({ type: 'creating', draft: '' });
   };
 
   const saveNewNote = () => {
-    if (!stepId || !draft.trim()) return;
+    if (!stepId || action.type !== 'creating' || !action.draft.trim()) return;
     createNote.mutate(
       {
         params: { path: { stepId } },
-        body: { content: draft },
+        body: { content: action.draft },
       },
       {
-        onSuccess: () => {
-          setDraft('');
-          setIsWriting(false);
-        },
+        onSuccess: () => setAction({ type: 'idle' }),
       },
     );
   };
 
   const saveEdit = () => {
-    if (!editingId || !editDraft.trim()) return;
+    if (action.type !== 'editing' || !action.draft.trim()) return;
     updateNote.mutate(
       {
-        params: { path: { id: editingId } },
-        body: { content: editDraft },
+        params: { path: { id: action.noteId } },
+        body: { content: action.draft },
       },
       {
-        onSuccess: () => {
-          setEditingId(null);
-          setEditDraft('');
-        },
+        onSuccess: () => setAction({ type: 'idle' }),
       },
     );
   };
@@ -217,15 +211,19 @@ export const StepNotes = ({
               {t('overview.notes.loading')}
             </p>
           )}
-          {!isPending && !isError && notes.length === 0 && !isWriting && (
-            <p className="text-xs text-muted-foreground">
-              {t('overview.notes.emptyForStep')}
-            </p>
-          )}
+          {!isPending &&
+            !isError &&
+            notes.length === 0 &&
+            action.type !== 'creating' && (
+              <p className="text-xs text-muted-foreground">
+                {t('overview.notes.emptyForStep')}
+              </p>
+            )}
 
           {notes.map((note) => {
             const isOwn = note.author?.id === currentUserId;
-            const isEditing = editingId === note.id;
+            const isEditing =
+              action.type === 'editing' && action.noteId === note.id;
             const wasEdited =
               new Date(note.updatedAt).getTime() >
               new Date(note.createdAt).getTime();
@@ -264,8 +262,11 @@ export const StepNotes = ({
                         })}
                         onClick={() => {
                           resetMutations();
-                          setEditingId(note.id);
-                          setEditDraft(note.content);
+                          setAction({
+                            type: 'editing',
+                            noteId: note.id,
+                            draft: note.content,
+                          });
                         }}
                       >
                         <PencilIcon />
@@ -279,7 +280,7 @@ export const StepNotes = ({
                         })}
                         onClick={() => {
                           resetMutations();
-                          setDeleteCandidate(note);
+                          setAction({ type: 'deleting', note });
                         }}
                       >
                         <Trash2Icon />
@@ -291,12 +292,18 @@ export const StepNotes = ({
                 {isEditing ? (
                   <div className="mt-1 space-y-1.5">
                     <Textarea
-                      value={editDraft}
+                      value={action.type === 'editing' ? action.draft : ''}
                       maxLength={5000}
                       aria-label={t('overview.notes.editInput', {
                         name: stepName,
                       })}
-                      onChange={(event) => setEditDraft(event.target.value)}
+                      onChange={(event) =>
+                        setAction({
+                          type: 'editing',
+                          noteId: note.id,
+                          draft: event.target.value,
+                        })
+                      }
                     />
                     <div className="flex justify-end gap-1">
                       <Button
@@ -305,8 +312,7 @@ export const StepNotes = ({
                         size="xs"
                         disabled={updateNote.isPending}
                         onClick={() => {
-                          setEditingId(null);
-                          setEditDraft('');
+                          setAction({ type: 'idle' });
                           updateNote.reset();
                         }}
                       >
@@ -315,7 +321,11 @@ export const StepNotes = ({
                       <Button
                         type="button"
                         size="xs"
-                        disabled={!editDraft.trim() || updateNote.isPending}
+                        disabled={
+                          action.type !== 'editing' ||
+                          !action.draft.trim() ||
+                          updateNote.isPending
+                        }
                         onClick={saveEdit}
                       >
                         {t(
@@ -335,16 +345,18 @@ export const StepNotes = ({
             );
           })}
 
-          {isWriting && (
+          {action.type === 'creating' && (
             <div className="rounded-md border bg-muted/15 p-2">
               <Textarea
-                value={draft}
+                value={action.draft}
                 maxLength={5000}
                 aria-label={t('overview.notes.newInput', { name: stepName })}
                 placeholder={t('overview.notes.placeholder', {
                   name: stepName,
                 })}
-                onChange={(event) => setDraft(event.target.value)}
+                onChange={(event) =>
+                  setAction({ type: 'creating', draft: event.target.value })
+                }
               />
               <div className="mt-1 flex justify-end gap-1">
                 <Button
@@ -353,8 +365,7 @@ export const StepNotes = ({
                   size="xs"
                   disabled={createNote.isPending}
                   onClick={() => {
-                    setDraft('');
-                    setIsWriting(false);
+                    setAction({ type: 'idle' });
                     createNote.reset();
                   }}
                 >
@@ -363,7 +374,7 @@ export const StepNotes = ({
                 <Button
                   type="button"
                   size="xs"
-                  disabled={!draft.trim() || createNote.isPending}
+                  disabled={!action.draft.trim() || createNote.isPending}
                   onClick={saveNewNote}
                 >
                   {t(
@@ -385,9 +396,9 @@ export const StepNotes = ({
       )}
 
       <Dialog
-        open={deleteCandidate != null}
+        open={action.type === 'deleting'}
         onOpenChange={(open) => {
-          if (!open && !deleteNote.isPending) setDeleteCandidate(null);
+          if (!open && !deleteNote.isPending) setAction({ type: 'idle' });
         }}
       >
         <DialogContent>
@@ -402,7 +413,7 @@ export const StepNotes = ({
               type="button"
               variant="outline"
               disabled={deleteNote.isPending}
-              onClick={() => setDeleteCandidate(null)}
+              onClick={() => setAction({ type: 'idle' })}
             >
               {t('overview.notes.cancel')}
             </Button>
@@ -411,10 +422,10 @@ export const StepNotes = ({
               variant="destructive"
               disabled={deleteNote.isPending}
               onClick={() => {
-                if (!deleteCandidate) return;
+                if (action.type !== 'deleting') return;
                 deleteNote.mutate(
-                  { params: { path: { id: deleteCandidate.id } } },
-                  { onSuccess: () => setDeleteCandidate(null) },
+                  { params: { path: { id: action.note.id } } },
+                  { onSuccess: () => setAction({ type: 'idle' }) },
                 );
               }}
             >

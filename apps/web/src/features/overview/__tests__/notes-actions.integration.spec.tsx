@@ -135,9 +135,24 @@ describe('per-step note actions', () => {
     );
     await agent.click(
       screen.getByRole('button', {
+        name: 'Add note to Draft invitations',
+      }),
+    );
+    expect(
+      screen.getByRole('textbox', {
+        name: 'New note for Draft invitations',
+      }),
+    ).toBeVisible();
+    await agent.click(
+      screen.getByRole('button', {
         name: 'Edit your note on Draft invitations',
       }),
     );
+    expect(
+      screen.queryByRole('textbox', {
+        name: 'New note for Draft invitations',
+      }),
+    ).not.toBeInTheDocument();
     const editInput = screen.getByRole('textbox', {
       name: 'Edit note on Draft invitations',
     });
