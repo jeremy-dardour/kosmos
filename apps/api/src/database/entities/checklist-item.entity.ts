@@ -14,7 +14,7 @@ import type { Opt } from '@mikro-orm/core';
 @Entity()
 @Unique({
   properties: ['step', 'position'],
-  options: { deferMode: 'deferred' },
+  deferMode: 'deferred',
 })
 @Index({ properties: ['step'] })
 export class ChecklistItem {

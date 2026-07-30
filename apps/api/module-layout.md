@@ -28,11 +28,9 @@ src/modules/project/
     group.repository.ts           ← Group entity persistence
     workstream.repository.ts      ← Workstream aggregate persistence
     overview.repository.ts        ← Consistent overview entity graph
-  step.controller.ts              ← Step CRUD (scoped to workstream)
-  step.service.ts                 ← future-only mutation, position management
   note.controller.ts              ← Note CRUD (scoped to step)
   note.service.ts
-  checklist-item.controller.ts    ← ChecklistItem CRUD (scoped to step)
+  checklist-item.controller.ts    ← immediate done/undone toggle
   checklist-item.service.ts
   utils/                          ← cross-entity domain functions
   dtos/
@@ -52,8 +50,8 @@ project, 20–50 workstreams).
 **Boundary rules inside the module:**
 
 - `workstream.service` is the single authority for pipeline transitions
-  (ADR 0005). Nothing else writes `startedAt`, `completedAt`, `currentStepId`,
-  or a Step's `outcome` / `outcomeAt`.
+  and atomic pipeline replacement (ADR 0005). Nothing else writes `startedAt`,
+  `completedAt`, `currentStepId`, or a Step's `outcome` / `outcomeAt`.
 - Repositories are the only classes that use the EntityManager or other
   MikroORM persistence APIs. They accept and return entities, not DTOs.
 - Services instantiate and mutate entities from input DTOs. Services or

@@ -272,7 +272,7 @@ describe('Project CRUD E2E Tests', () => {
         icon: '🍽️',
         lifecycle: 'not_started',
         groupId: null,
-        owner: null,
+        ownerId: null,
         currentStepId: null,
         startedAt: null,
         completedAt: null,
@@ -296,7 +296,7 @@ describe('Project CRUD E2E Tests', () => {
       });
 
       expect(workstream.groupId).toBe(group.id);
-      expect(workstream.owner).toMatchObject({ name: 'Owner One' });
+      expect(workstream.ownerId).toBe(owner.id);
     });
 
     it('refuses a group belonging to another project', async () => {
@@ -350,7 +350,7 @@ describe('Project CRUD E2E Tests', () => {
         .send({ groupId: null, ownerId: null })
         .expect(200);
 
-      expect(response.body).toMatchObject({ groupId: null, owner: null });
+      expect(response.body).toMatchObject({ groupId: null, ownerId: null });
     });
 
     it('rejects null on a required field', async () => {
@@ -390,7 +390,7 @@ describe('Project CRUD E2E Tests', () => {
       expect(await em.count(Step, { id: step.id })).toBe(0);
     });
 
-    it('returns a resolved step owner and note count on the mutation response', async () => {
+    it('returns explicit and effective step owner IDs on the mutation response', async () => {
       const project = await createProject();
       const owner = em.create(User, {
         email: 'owner@example.com',
@@ -423,7 +423,10 @@ describe('Project CRUD E2E Tests', () => {
       expect(body.steps[0]).toMatchObject({
         status: 'not_started',
       });
-      expect(body.steps[0]?.owner).toMatchObject({ name: 'Owner One' });
+      expect(body.steps[0]).toMatchObject({
+        explicitOwnerId: null,
+        effectiveOwnerId: owner.id,
+      });
     });
 
     it('returns 401 without a token', async () => {

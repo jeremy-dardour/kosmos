@@ -6,10 +6,6 @@ import {
   StepDto,
   toStepDto,
 } from '@/modules/project/dtos/output/step.dto';
-import {
-  UserSummaryDto,
-  toUserSummaryDto,
-} from '@/modules/project/dtos/output/user-summary.dto';
 
 import type { Workstream } from '@/database/entities/workstream.entity';
 
@@ -33,8 +29,8 @@ export class WorkstreamDto {
   })
   lifecycle!: WorkstreamLifecycle;
 
-  @ApiPropertyOptional({ type: UserSummaryDto, nullable: true })
-  owner?: UserSummaryDto | null;
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  ownerId?: string | null;
 
   @ApiPropertyOptional({ format: 'uuid', nullable: true })
   currentStepId?: string | null;
@@ -44,6 +40,13 @@ export class WorkstreamDto {
 
   @ApiPropertyOptional({ format: 'date-time', nullable: true })
   completedAt?: Date | null;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    nullable: true,
+    description: 'The earliest unpassed step with a deadline',
+  })
+  nearestDeadlineStepId?: string | null;
 
   @ApiProperty({ type: [StepDto] })
   steps!: StepDto[];
@@ -62,10 +65,11 @@ export function toWorkstreamDto(workstream: Workstream): WorkstreamDto {
     icon: workstream.icon,
     groupId: workstream.group?.id ?? null,
     lifecycle: workstream.getLifecycle(),
-    owner: workstream.owner ? toUserSummaryDto(workstream.owner) : null,
+    ownerId: workstream.owner?.id ?? null,
     currentStepId: workstream.currentStep?.id ?? null,
     startedAt: workstream.startedAt ?? null,
     completedAt: workstream.completedAt ?? null,
+    nearestDeadlineStepId: workstream.nearestDeadlineStep()?.id ?? null,
     steps: sortSteps(workstream.getSteps()).map((step) =>
       toStepDto(step, workstream),
     ),

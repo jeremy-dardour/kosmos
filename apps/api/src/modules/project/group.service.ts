@@ -15,13 +15,13 @@ export class GroupService {
   ) {}
 
   async findAllByProject(projectId: string): Promise<Group[]> {
-    const project = await this.projectRepository.findOne(projectId);
+    const project = await this.projectRepository.findOneOrFail(projectId);
 
     return this.groupRepository.findAllByProject(project);
   }
 
   async create(projectId: string, dto: CreateGroupDto): Promise<Group> {
-    const project = await this.projectRepository.findOne(projectId);
+    const project = await this.projectRepository.findOneOrFail(projectId);
 
     const group = new Group();
     group.project = project;
@@ -34,7 +34,7 @@ export class GroupService {
   }
 
   async update(id: string, dto: UpdateGroupDto): Promise<Group> {
-    const group = await this.groupRepository.findOne(id);
+    const group = await this.groupRepository.findOneOrFail(id);
 
     if (dto.name !== undefined) {
       group.name = dto.name;
@@ -50,6 +50,8 @@ export class GroupService {
 
   /** Ungroups the group's workstreams — the FK is ON DELETE SET NULL. */
   async remove(id: string): Promise<void> {
-    await this.groupRepository.remove(await this.groupRepository.findOne(id));
+    await this.groupRepository.remove(
+      await this.groupRepository.findOneOrFail(id),
+    );
   }
 }

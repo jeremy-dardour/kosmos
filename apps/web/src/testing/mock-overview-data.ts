@@ -55,7 +55,8 @@ export function step(
     deadline: null,
     outcome: null,
     outcomeAt: null,
-    owner: null,
+    explicitOwnerId: null,
+    effectiveOwnerId: null,
     checklistItems: [],
     createdAt: TS,
     updatedAt: TS,
@@ -87,8 +88,13 @@ export function workstream(overrides: Partial<Workstream> = {}): Workstream {
     groupId: null,
     lifecycle: 'active',
     ownerId: null,
+    currentStepId: null,
+    startedAt: null,
+    completedAt: null,
     steps: [step('Request quotes', 'in_progress')],
     nearestDeadlineStepId: null,
+    createdAt: TS,
+    updatedAt: TS,
     ...overrides,
   };
 }

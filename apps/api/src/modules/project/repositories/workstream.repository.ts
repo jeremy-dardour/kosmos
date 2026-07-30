@@ -1,8 +1,15 @@
-import { LockMode } from '@mikro-orm/core';
+import { EntityRepository, LockMode } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
+import { ChecklistItem } from '@/database/entities/checklist-item.entity';
+import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
+
+export interface LockedWorkstreamChanges {
+  removedSteps?: Step[];
+  removedChecklistItems?: ChecklistItem[];
+}
 
 const WORKSTREAM_POPULATE = [
   'owner',
@@ -14,16 +21,13 @@ const WORKSTREAM_POPULATE = [
 ] as const;
 
 @Injectable()
-export class WorkstreamRepository {
-  constructor(private readonly em: SqlEntityManager) {}
-
-  async findOne(id: string): Promise<Workstream> {
-    return this.em.findOneOrFail(Workstream, { id });
+export class WorkstreamRepository extends EntityRepository<Workstream> {
+  constructor(em: SqlEntityManager) {
+    super(em, Workstream);
   }
 
   async findDetails(id: string): Promise<Workstream> {
-    return this.em.findOneOrFail(
-      Workstream,
+    return this.findOneOrFail(
       { id },
       { populate: [...WORKSTREAM_POPULATE], refresh: true },
     );
@@ -36,7 +40,9 @@ export class WorkstreamRepository {
 
   async updateLockedDetails(
     id: string,
-    apply: (workstream: Workstream) => void,
+    apply: (
+      workstream: Workstream,
+    ) => LockedWorkstreamChanges | undefined | void,
   ): Promise<Workstream> {
     return this.em.transactional(async (em) => {
       const workstream = await em.findOneOrFail(
@@ -46,7 +52,13 @@ export class WorkstreamRepository {
       );
       await em.populate(workstream, [...WORKSTREAM_POPULATE]);
 
-      apply(workstream);
+      const changes = apply(workstream);
+      if (changes?.removedChecklistItems) {
+        em.remove(changes.removedChecklistItems);
+      }
+      if (changes?.removedSteps) {
+        em.remove(changes.removedSteps);
+      }
       await em.flush();
 
       return workstream;

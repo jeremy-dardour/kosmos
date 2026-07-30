@@ -16,7 +16,7 @@ An individual action within a Workstream's pipeline. Steps are strictly ordered.
 
 ### Checklist Step
 
-Not a separate type — any Step that has one or more sub-items (e.g., "Visit venues" → { Chateau A, Chateau B, Chateau C }). Sub-item progress is **informational**: it is shown at a glance but does **not** gate advancing. Sub-items are lightweight: name + done/skipped toggle only (no owner, deadline, or attachments).
+Not a separate type — any Step that has one or more sub-items (e.g., "Visit venues" → { Chateau A, Chateau B, Chateau C }). Sub-item progress is **informational**: it is shown at a glance but does **not** gate advancing. Sub-items are lightweight: name + done/undone toggle only (no owner, deadline, or attachments).
 
 ### Group
 
@@ -56,10 +56,11 @@ A Step's status is derived from its position relative to the current pointer (it
 - **No hard gates**: `advance` is always permitted once a Workstream is Active. Neither a `blocked` flag nor unresolved checklist sub-items prevent it — the tool informs, it does not obstruct.
 - **Advancing from Blocked**: Blocked is informational; the user simply chooses the outcome (Done or Skipped) when advancing.
 - **Dependencies (V1)**: No structured dependencies. A wait on another Workstream's step is recorded informally — flag the Step `blocked` and add a note naming the blocker.
-- **Pipeline mutability**: Only the **future** part of a pipeline is freely mutable (add / delete / reorder steps). The current step can be edited but not moved or deleted; past steps are frozen except that notes may still be appended.
+- **Pipeline mutability**: Only the **future** part of a pipeline is freely mutable (add / delete / reorder steps). The current step can be edited but not moved or deleted; past steps are frozen except that notes may still be appended. Pipeline editing is saved atomically at the Workstream level so a multi-step replan never persists partially.
+- **Step insertion zone**: In a NotStarted Workstream, every pipeline position is future and may be inserted into. In an Active Workstream, new Steps may be inserted only after the current Step. A Complete Workstream has no future insertion zone, so no Steps may be added.
 - **Deadlines = milestones**: No separate milestone flag. Any step with a deadline is implicitly a milestone. Deadlines surface as a per-card countdown badge plus date-ticks under the relevant step dots, not on a shared time axis. The last step _should_ carry a deadline so the Workstream has a target, but this is a **soft convention** surfaced as a nudge, not enforced.
 - **Completion dates**: Automatically recorded when a step is marked Done or Skipped.
-- **Ownership inheritance**: Owners are optional (a Workstream or Step may be unassigned). Steps inherit the Workstream's owner unless explicitly overridden.
+- **Ownership inheritance**: Owners are optional (a Workstream or Step may be unassigned). A Step's explicit owner is its override; when absent, the effective owner is inherited from the Workstream. Clearing the explicit owner restores inheritance.
 - **Parallelism**: Handled at the Workstream level (separate workstreams run independently), not within a pipeline — except via Checklist Steps for unordered sub-items within a single step.
 - **Access control (V1)**: Gated outside the app — no in-app whitelist. Google OAuth for identity; access is limited to the OAuth app's allowed users, with a static `.env` allow-list as a fallback.
 - **Notifications (V1)**: Pull-only — no email/push. Deadlines surface via the per-card countdown badge.

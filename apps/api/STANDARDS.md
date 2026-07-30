@@ -59,6 +59,11 @@ Controller → Service → Repository → EntityManager
 - Services instantiate and mutate entities from input DTOs; services or
   controllers map entities to output DTOs. Entity methods expose neutral
   collection accessors so DTO mapping never calls MikroORM `Collection` APIs.
+- Extend `EntityRepository<T>` for entity-scoped repositories to inherit
+  standard CRUD methods (`findOne`, `findOneOrFail`, `find`, `findAll`,
+  etc.). Only add domain-specific methods on top. Query-focused repositories
+  that span multiple entities (e.g. overview aggregates) inject
+  `SqlEntityManager` directly instead.
 - Use one concrete `<concern>.repository.ts` class while MikroORM is the only
   persistence adapter. Do not add a parallel abstract repository plus a
   `MikroOrm*Repository` implementation or generic base repository until a

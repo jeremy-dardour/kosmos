@@ -6,10 +6,6 @@ import {
   sortChecklistItems,
   toChecklistItemDto,
 } from '@/modules/project/dtos/output/checklist-item.dto';
-import {
-  UserSummaryDto,
-  toUserSummaryDto,
-} from '@/modules/project/dtos/output/user-summary.dto';
 import { resolveOwner } from '@/modules/project/utils/resolve-owner.util';
 
 import type { Step } from '@/database/entities/step.entity';
@@ -57,11 +53,18 @@ export class StepDto {
   outcomeAt?: Date | null;
 
   @ApiPropertyOptional({
-    type: UserSummaryDto,
+    format: 'uuid',
     nullable: true,
-    description: 'Effective owner, inherited from the workstream when unset',
+    description: 'Step-level override; null means inherit from the workstream',
   })
-  owner?: UserSummaryDto | null;
+  explicitOwnerId?: string | null;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    nullable: true,
+    description: 'Resolved from the explicit owner or workstream default',
+  })
+  effectiveOwnerId?: string | null;
 
   @ApiProperty({ type: [ChecklistItemDto] })
   checklistItems!: ChecklistItemDto[];
@@ -85,7 +88,8 @@ export function toStepDto(step: Step, workstream: StepParent): StepDto {
     deadline: step.deadline ?? null,
     outcome: step.outcome ?? null,
     outcomeAt: step.outcomeAt ?? null,
-    owner: owner ? toUserSummaryDto(owner) : null,
+    explicitOwnerId: step.owner?.id ?? null,
+    effectiveOwnerId: owner?.id ?? null,
     checklistItems: sortChecklistItems(step.getChecklistItems()).map((item) =>
       toChecklistItemDto(item),
     ),

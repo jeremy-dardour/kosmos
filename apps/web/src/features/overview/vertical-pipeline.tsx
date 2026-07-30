@@ -3,13 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { daysUntil } from '@/features/overview/days-until';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
+import { StepChecklist } from '@/features/overview/step-checklist';
 import { cn } from '@/lib/utils';
 
-import type { Step, StepStatus, UserSummary } from '@/api/hooks/use-overview';
+import type {
+  ChecklistItem,
+  Step,
+  StepStatus,
+  UserSummary,
+} from '@/api/hooks/use-overview';
 
 interface VerticalPipelineProperties {
   steps: Step[];
   usersById: ReadonlyMap<string, UserSummary>;
+  pendingChecklistItemId?: string | null;
+  onToggleChecklist?: (item: ChecklistItem, isDone: boolean) => void;
 }
 
 type StepVisual = StepStatus | 'blocked';
@@ -55,6 +63,8 @@ const URGENCY_CLASSES = {
 export const VerticalPipeline = ({
   steps,
   usersById,
+  pendingChecklistItemId,
+  onToggleChecklist,
 }: VerticalPipelineProperties) => {
   const { t } = useTranslation();
 
@@ -64,7 +74,9 @@ export const VerticalPipeline = ({
         const visual = stepVisual(step);
         const badgeClass = BADGE_CLASSES[visual];
         const isDone = visual === 'done' || visual === 'skipped';
-        const owner = step.owner;
+        const owner = step.effectiveOwnerId
+          ? usersById.get(step.effectiveOwnerId)
+          : null;
 
         return (
           <li key={step.id} className="relative flex gap-3">
@@ -110,7 +122,7 @@ export const VerticalPipeline = ({
 
                 {owner && (
                   <OwnerAvatar
-                    owner={usersById.get(owner.id) ?? owner}
+                    owner={owner}
                     className="ml-auto size-5 text-[9px]"
                   />
                 )}
@@ -127,6 +139,13 @@ export const VerticalPipeline = ({
               {!isDone && step.deadline && (
                 <DeadlineLabel deadline={step.deadline} />
               )}
+
+              <StepChecklist
+                key={`${step.id}-${step.status}`}
+                step={step}
+                pendingItemId={pendingChecklistItemId}
+                onToggle={onToggleChecklist}
+              />
             </div>
           </li>
         );

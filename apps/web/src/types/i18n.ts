@@ -72,6 +72,8 @@ export interface Translations {
   'overview.detail.current': string;
   'overview.detail.checklist': string;
   'overview.detail.checklistProgress': string;
+  'overview.detail.showChecklist': string;
+  'overview.detail.hideChecklist': string;
   'overview.detail.notes': string;
   'overview.detail.notesEmpty': string;
   'overview.detail.notesError': string;
@@ -80,6 +82,34 @@ export interface Translations {
   'overview.detail.deadline.today': string;
   'overview.detail.deadline.tomorrow': string;
   'overview.detail.deadline.overdue': string;
+  'overview.editor.edit': string;
+  'overview.editor.formLabel': string;
+  'overview.editor.pastHint': string;
+  'overview.editor.stepNameLabel': string;
+  'overview.editor.stepSectionLabel': string;
+  'overview.editor.stepNumber': string;
+  'overview.editor.newStepName': string;
+  'overview.editor.stepNamePlaceholder': string;
+  'overview.editor.moveStepUp': string;
+  'overview.editor.moveStepDown': string;
+  'overview.editor.removeStep': string;
+  'overview.editor.deadlineLabel': string;
+  'overview.editor.ownerLabel': string;
+  'overview.editor.inheritOwner': string;
+  'overview.editor.blockedLabel': string;
+  'overview.editor.itemDoneLabel': string;
+  'overview.editor.checklistItemLabel': string;
+  'overview.editor.newChecklistItemLabel': string;
+  'overview.editor.checklistItemPlaceholder': string;
+  'overview.editor.moveItemUp': string;
+  'overview.editor.moveItemDown': string;
+  'overview.editor.removeItem': string;
+  'overview.editor.addItemTo': string;
+  'overview.editor.addChecklistItem': string;
+  'overview.editor.addStep': string;
+  'overview.editor.cancel': string;
+  'overview.editor.save': string;
+  'overview.editor.saving': string;
 }
 
 export interface Resources {

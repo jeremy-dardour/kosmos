@@ -1,14 +1,13 @@
+import { EntityRepository } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
 import { User } from '@/database/entities/user.entity';
 
 @Injectable()
-export class UserRepository {
-  constructor(private readonly em: SqlEntityManager) {}
-
-  async findOne(id: string): Promise<User> {
-    return this.em.findOneOrFail(User, { id });
+export class UserRepository extends EntityRepository<User> {
+  constructor(em: SqlEntityManager) {
+    super(em, User);
   }
 
   async upsertProfile(profile: {

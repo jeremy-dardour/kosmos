@@ -113,7 +113,7 @@ workstream mode" — one pipeline model with a checklist escape hatch is simpler
 
 Sub-items are lightweight:
 
-- **Name** + **done/skipped toggle.** That's it — no owner, no deadline, no
+- **Name** + **done/undone toggle.** That's it — no owner, no deadline, no
   attachments. Full step machinery would be unnecessary for sub-items.
 - Sub-item progress is **informational**: it is shown at a glance but does
   **not** gate advancing. Consistent with the no-hard-gates stance — the tool
@@ -260,6 +260,9 @@ by a structural edit.
 - **Future steps are fully mutable** — add, delete, reorder, edit freely.
 - A step you decide never to do is **deleted** (it's a future step), not
   pre-skipped.
+- Editing happens in one Workstream-level draft. Saving atomically replaces the
+  current/future editable tail, so a multi-step replan either commits in full or
+  leaves the pipeline unchanged.
 
 ### Manage notes
 
@@ -269,9 +272,9 @@ by a structural edit.
 
 ### Manage checklist sub-items
 
-- Add, remove, or toggle (done/skipped) sub-items on the **current or future**
+- Add, rename, remove, reorder, or toggle (done/undone) sub-items on the **current or future**
   steps only.
-- Sub-items on past steps are frozen.
+- Sub-items on past steps remain visible as history but are greyed and frozen.
 
 ---
 
@@ -366,27 +369,32 @@ Contains:
   lines. Done steps show strike-through + completion date. Current step is
   highlighted with a "CURRENT" badge. Steps with deadlines show the date and
   relative countdown.
-- **Checklist card** (if the current step has sub-items): inline display of
-  sub-items with checkboxes and completion count ("2/4").
+- **Checklists by step**: the current checklist is expanded with interactive
+  checkboxes; future checklists are compact and expandable; past checklists
+  remain visible but greyed and read-only. Each shows a completion count
+  ("2/4").
+- **Edit pipeline mode**: a compact normal view expands into one Workstream-level
+  editor for the current and future Steps. One Save applies Step attributes,
+  structure, ordering, and checklist management atomically.
 - **Note log**: reverse-chronological thread of timestamped entries. "+ Add
   note" action.
 - Close button dismisses the panel; clicking another card swaps.
 
 ### Interactions summary
 
-| Action                       | Where                   | Behavior                                                 |
-| ---------------------------- | ----------------------- | -------------------------------------------------------- |
-| Advance a workstream         | Card (Advance button)   | Records outcome, moves pointer. One click for Done       |
-| Resolve a blocked workstream | Card (Resolve dropdown) | Choose Done or Skipped, then advances                    |
-| Start a workstream           | Card or detail panel    | Transitions from NotStarted to Active                    |
-| View workstream detail       | Click card body         | Opens slide-over panel on the right                      |
-| Add a note                   | Detail panel            | Appends to the step's note thread                        |
-| Edit/delete own note         | Detail panel            | Inline on the author's entries                           |
-| Toggle checklist sub-item    | Detail panel            | Marks sub-item done/skipped (informational)              |
-| Filter by owner              | Header dropdown         | Filters card list to matching workstreams                |
-| Filter by group              | Header dropdown         | Shows/hides groups                                       |
-| Edit step attributes         | Detail panel            | Name, deadline, owner, blocked — current and future only |
-| Add/delete/reorder steps     | Detail panel            | Future steps only                                        |
+| Action                       | Where                   | Behavior                                                      |
+| ---------------------------- | ----------------------- | ------------------------------------------------------------- |
+| Advance a workstream         | Card (Advance button)   | Records outcome, moves pointer. One click for Done            |
+| Resolve a blocked workstream | Card (Resolve dropdown) | Choose Done or Skipped, then advances                         |
+| Start a workstream           | Card or detail panel    | Transitions from NotStarted to Active                         |
+| View workstream detail       | Click card body         | Opens slide-over panel on the right                           |
+| Add a note                   | Detail panel            | Appends to the step's note thread                             |
+| Edit/delete own note         | Detail panel            | Inline on the author's entries                                |
+| Toggle checklist sub-item    | Detail panel            | Marks sub-item done/undone (informational)                    |
+| Filter by owner              | Header dropdown         | Filters card list to matching workstreams                     |
+| Filter by group              | Header dropdown         | Shows/hides groups                                            |
+| Edit pipeline                | Detail panel            | One atomic Save for current attributes and the future tail    |
+| Manage checklist sub-items   | Pipeline editor         | Add, rename, delete, reorder, and toggle current/future items |
 
 ---
 

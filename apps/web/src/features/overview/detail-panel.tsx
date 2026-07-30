@@ -1,23 +1,41 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ChecklistCard } from '@/features/overview/checklist-card';
+import { useToggleChecklistItem } from '@/api/hooks/use-toggle-checklist-item';
+import { useUpdatePipeline } from '@/api/hooks/use-update-pipeline';
+import { Button } from '@/components/ui/button';
+import { formatToApiError } from '@/errors/format-error';
 import { NotesSection } from '@/features/overview/notes-section';
+import { PipelineEditor } from '@/features/overview/pipeline-editor';
 import { VerticalPipeline } from '@/features/overview/vertical-pipeline';
 
-import type { UserSummary, Workstream } from '@/api/hooks/use-overview';
+import type {
+  ChecklistItem,
+  UserSummary,
+  Workstream,
+} from '@/api/hooks/use-overview';
 
 interface DetailPanelProperties {
   workstream: Workstream | null;
+  projectId?: string;
+  users: UserSummary[];
   usersById: ReadonlyMap<string, UserSummary>;
   onClose: () => void;
 }
 
 export const DetailPanel = ({
   workstream,
+  projectId,
+  users,
   usersById,
   onClose,
 }: DetailPanelProperties) => {
   const { t } = useTranslation();
+  const [editingWorkstreamId, setEditingWorkstreamId] = useState<string | null>(
+    null,
+  );
+  const updatePipeline = useUpdatePipeline(projectId);
+  const toggleChecklist = useToggleChecklistItem(projectId);
 
   if (!workstream) {
     return (
@@ -35,7 +53,13 @@ export const DetailPanel = ({
     );
   }
 
-  const currentStep = workstream.steps.find((s) => s.status === 'in_progress');
+  const isEditing = editingWorkstreamId === workstream.id;
+  const toggleItem = (item: ChecklistItem, isDone: boolean) => {
+    toggleChecklist.mutate({
+      params: { path: { id: item.id } },
+      body: { done: isDone },
+    });
+  };
 
   return (
     <aside
@@ -50,6 +74,16 @@ export const DetailPanel = ({
         <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">
           {workstream.name}
         </h2>
+        {!isEditing && workstream.lifecycle !== 'complete' && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            onClick={() => setEditingWorkstreamId(workstream.id)}
+          >
+            {t('overview.editor.edit')}
+          </Button>
+        )}
         <button
           type="button"
           onClick={onClose}
@@ -60,16 +94,47 @@ export const DetailPanel = ({
         </button>
       </div>
 
-      {/* Scrollable body */}
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-4">
-        <VerticalPipeline steps={workstream.steps} usersById={usersById} />
+      {isEditing ? (
+        <PipelineEditor
+          key={`${workstream.id}-${workstream.updatedAt}`}
+          workstream={workstream}
+          users={users}
+          isSaving={updatePipeline.isPending}
+          onCancel={() => setEditingWorkstreamId(null)}
+          onSave={(body) =>
+            updatePipeline.mutate(
+              { params: { path: { id: workstream.id } }, body },
+              {
+                onSuccess: () => setEditingWorkstreamId(null),
+                onError: (error) => {
+                  if (
+                    formatToApiError(error)?.problemType?.endsWith(
+                      '/pipeline-stale',
+                    )
+                  ) {
+                    setEditingWorkstreamId(null);
+                  }
+                },
+              },
+            )
+          }
+        />
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-4">
+          <VerticalPipeline
+            steps={workstream.steps}
+            usersById={usersById}
+            pendingChecklistItemId={
+              toggleChecklist.isPending
+                ? toggleChecklist.variables.params.path.id
+                : null
+            }
+            onToggleChecklist={toggleItem}
+          />
 
-        {currentStep && currentStep.checklistItems.length > 0 && (
-          <ChecklistCard items={currentStep.checklistItems} />
-        )}
-
-        <NotesSection workstreamId={workstream.id} />
-      </div>
+          <NotesSection workstreamId={workstream.id} />
+        </div>
+      )}
     </aside>
   );
 };

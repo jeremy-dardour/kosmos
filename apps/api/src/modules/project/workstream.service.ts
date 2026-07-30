@@ -6,8 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { Group } from '@/database/entities/group.entity';
-import { StepOutcome } from '@/database/entities/step.entity';
+import { Step, StepOutcome } from '@/database/entities/step.entity';
 import { User } from '@/database/entities/user.entity';
 import {
   Workstream,
@@ -25,7 +26,12 @@ import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exc
 
 import type { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import type { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
+import type {
+  EditableChecklistItemDto,
+  UpdatePipelineDto,
+} from '@/modules/project/dtos/input/update-pipeline.dto';
 import type { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
+import type { LockedWorkstreamChanges } from '@/modules/project/repositories/workstream.repository';
 
 /**
  * Owns the Workstream aggregate — the only place allowed to write `startedAt`,
@@ -44,7 +50,7 @@ export class WorkstreamService {
     projectId: string,
     dto: CreateWorkstreamDto,
   ): Promise<WorkstreamDto> {
-    const project = await this.projectRepository.findOne(projectId);
+    const project = await this.projectRepository.findOneOrFail(projectId);
 
     const workstream = new Workstream();
     workstream.project = project;
@@ -61,7 +67,7 @@ export class WorkstreamService {
   }
 
   async update(id: string, dto: UpdateWorkstreamDto): Promise<WorkstreamDto> {
-    const workstream = await this.workstreamRepository.findOne(id);
+    const workstream = await this.workstreamRepository.findOneOrFail(id);
 
     if (dto.name !== undefined) {
       workstream.name = dto.name;
@@ -119,6 +125,196 @@ export class WorkstreamService {
     );
 
     return toWorkstreamDto(workstream);
+  }
+
+  async updatePipeline(
+    id: string,
+    dto: UpdatePipelineDto,
+  ): Promise<WorkstreamDto> {
+    const ownersById = await this.resolvePipelineOwners(dto);
+    await this.workstreamRepository.updateLockedDetails(id, (workstream) =>
+      this.replacePipeline(workstream, dto, ownersById),
+    );
+
+    return this.buildDto(id);
+  }
+
+  private replacePipeline(
+    workstream: Workstream,
+    dto: UpdatePipelineDto,
+    ownersById: ReadonlyMap<string, User>,
+  ): LockedWorkstreamChanges {
+    const { pastSteps, editableSteps, editableById } =
+      this.validatePipelineEdit(workstream, dto);
+
+    const submittedIds = new Set(
+      dto.steps.flatMap((step) => (step.id ? [step.id] : [])),
+    );
+    const removedSteps = editableSteps.filter(
+      (step) => !submittedIds.has(step.id),
+    );
+    workstream.steps.remove(removedSteps);
+
+    const removedChecklistItems: ChecklistItem[] = [];
+    const firstEditablePosition = pastSteps.length + 1;
+    for (const [stepIndex, submittedStep] of dto.steps.entries()) {
+      const step = submittedStep.id
+        ? editableById.get(submittedStep.id)!
+        : new Step();
+      step.workstream = workstream;
+      step.position = firstEditablePosition + stepIndex;
+      step.name = submittedStep.name;
+      step.deadline = submittedStep.deadline;
+      step.owner = submittedStep.ownerId
+        ? ownersById.get(submittedStep.ownerId)!
+        : null;
+      step.blocked = submittedStep.blocked;
+
+      if (!submittedStep.id) {
+        workstream.steps.add(step);
+      }
+
+      removedChecklistItems.push(
+        ...this.replaceChecklist(step, submittedStep.checklistItems),
+      );
+    }
+
+    workstream.updatedAt = this.timestampAfter(workstream.updatedAt);
+
+    return { removedSteps, removedChecklistItems };
+  }
+
+  private replaceChecklist(
+    step: Step,
+    submittedItems: EditableChecklistItemDto[],
+  ): ChecklistItem[] {
+    const existingItems = step.getChecklistItems();
+    const existingById = new Map(existingItems.map((item) => [item.id, item]));
+    const submittedIds = submittedItems.flatMap((item) =>
+      item.id ? [item.id] : [],
+    );
+
+    if (
+      new Set(submittedIds).size !== submittedIds.length ||
+      submittedIds.some((id) => !existingById.has(id))
+    ) {
+      this.pipelineMismatch();
+    }
+
+    const retainedIds = new Set(submittedIds);
+    const removedItems = existingItems.filter(
+      (item) => !retainedIds.has(item.id),
+    );
+    step.checklistItems.remove(removedItems);
+
+    for (const [itemIndex, submittedItem] of submittedItems.entries()) {
+      const item = submittedItem.id
+        ? existingById.get(submittedItem.id)!
+        : new ChecklistItem();
+      item.step = step;
+      item.position = itemIndex + 1;
+      item.name = submittedItem.name;
+      item.done = submittedItem.done;
+
+      if (!submittedItem.id) {
+        step.checklistItems.add(item);
+      }
+    }
+
+    return removedItems;
+  }
+
+  private validatePipelineEdit(
+    workstream: Workstream,
+    dto: UpdatePipelineDto,
+  ): {
+    pastSteps: Step[];
+    editableSteps: Step[];
+    editableById: Map<string, Step>;
+  } {
+    if (
+      workstream.updatedAt.getTime() !==
+      new Date(dto.expectedUpdatedAt).getTime()
+    ) {
+      this.conflict(
+        'pipeline-stale',
+        'This pipeline changed after editing began',
+      );
+    }
+
+    const lifecycle = workstream.getLifecycle();
+    if (lifecycle === WorkstreamLifecycle.Complete) {
+      this.conflict(
+        'step-frozen',
+        'Completed workstream pipelines cannot be edited',
+      );
+    }
+
+    const orderedSteps = [...workstream.getSteps()].sort(
+      (left, right) => left.position - right.position,
+    );
+    const pastSteps = orderedSteps.filter((step) => step.outcome != null);
+    const editableSteps = orderedSteps.filter((step) => step.outcome == null);
+    const editableById = new Map(editableSteps.map((step) => [step.id, step]));
+    const pastIds = new Set(pastSteps.map((step) => step.id));
+    const submittedIds = dto.steps.flatMap((step) =>
+      step.id ? [step.id] : [],
+    );
+
+    if (new Set(submittedIds).size !== submittedIds.length) {
+      this.pipelineMismatch();
+    }
+    for (const submittedId of submittedIds) {
+      if (pastIds.has(submittedId)) {
+        this.conflict('step-frozen', 'Past steps cannot be edited');
+      }
+      if (!editableById.has(submittedId)) {
+        this.pipelineMismatch();
+      }
+    }
+
+    if (
+      lifecycle === WorkstreamLifecycle.Active &&
+      (!workstream.currentStep ||
+        dto.steps[0]?.id !== workstream.currentStep.id)
+    ) {
+      this.conflict(
+        'step-not-deletable',
+        'The current step must remain first in the editable pipeline',
+      );
+    }
+
+    return { pastSteps, editableSteps, editableById };
+  }
+
+  private async resolvePipelineOwners(
+    dto: UpdatePipelineDto,
+  ): Promise<ReadonlyMap<string, User>> {
+    const ownerIds = [
+      ...new Set(
+        dto.steps.flatMap((step) => (step.ownerId ? [step.ownerId] : [])),
+      ),
+    ];
+    const owners = await Promise.all(
+      ownerIds.map(async (ownerId) => this.findUser(ownerId)),
+    );
+
+    return new Map(owners.map((owner) => [owner.id, owner]));
+  }
+
+  private pipelineMismatch(): never {
+    return this.conflict(
+      'pipeline-mismatch',
+      'The submitted pipeline does not match the editable workstream tail',
+    );
+  }
+
+  private conflict(typeSlug: string, detail: string): never {
+    throw new ProblemDetailsException(HttpStatus.CONFLICT, typeSlug, detail);
+  }
+
+  private timestampAfter(previous: Date): Date {
+    return new Date(Math.max(Date.now(), previous.getTime() + 1));
   }
 
   private start(workstream: Workstream): void {
@@ -189,6 +385,6 @@ export class WorkstreamService {
   }
 
   private async findUser(userId: string): Promise<User> {
-    return this.userRepository.findOne(userId);
+    return this.userRepository.findOneOrFail(userId);
   }
 }
