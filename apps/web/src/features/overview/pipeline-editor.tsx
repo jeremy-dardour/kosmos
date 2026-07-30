@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { StepNotes } from '@/features/overview/step-notes';
 
 import type { Step, UserSummary, Workstream } from '@/api/hooks/use-overview';
 import type { UpdatePipelineInput } from '@/api/hooks/use-update-pipeline';
+import type { NoteEntry } from '@/api/hooks/use-workstream-notes';
 
 interface DraftChecklistItem {
   key: string;
@@ -28,6 +30,9 @@ interface DraftStep {
 interface PipelineEditorProperties {
   workstream: Workstream;
   users: UserSummary[];
+  notesByStepId?: ReadonlyMap<string, NoteEntry[]>;
+  notesPending?: boolean;
+  notesError?: boolean;
   isSaving: boolean;
   onCancel: () => void;
   onSave: (input: UpdatePipelineInput) => void;
@@ -61,6 +66,9 @@ function toDraftStep(step: Step): DraftStep {
 export const PipelineEditor = ({
   workstream,
   users,
+  notesByStepId,
+  notesPending,
+  notesError,
   isSaving,
   onCancel,
   onSave,
@@ -163,6 +171,16 @@ export const PipelineEditor = ({
               value={step.name}
               disabled
             />
+            {notesByStepId && (
+              <StepNotes
+                workstreamId={workstream.id}
+                stepId={step.id}
+                stepName={step.name}
+                notes={notesByStepId.get(step.id) ?? []}
+                isPending={notesPending}
+                isError={notesError}
+              />
+            )}
           </div>
         ))}
 
@@ -401,6 +419,17 @@ export const PipelineEditor = ({
                   {t('overview.editor.addChecklistItem')}
                 </Button>
               </div>
+
+              {notesByStepId && (
+                <StepNotes
+                  workstreamId={workstream.id}
+                  stepId={step.id}
+                  stepName={displayName}
+                  notes={step.id ? (notesByStepId.get(step.id) ?? []) : []}
+                  isPending={notesPending}
+                  isError={notesError}
+                />
+              )}
             </section>
           );
         })}

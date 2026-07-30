@@ -219,6 +219,7 @@ describe('detail panel', () => {
         return HttpResponse.json([
           note({
             id: 'n-1',
+            stepId: 's2',
             content: 'Called the caterer, they can do June.',
             author: { id: 'u1', name: 'Alice Doe', avatarUrl: null },
           }),
@@ -233,6 +234,11 @@ describe('detail panel', () => {
 
     const card = screen.getByRole('button', { name: 'View Catering' });
     await agent.click(card);
+    await agent.click(
+      await screen.findByRole('button', {
+        name: 'Show notes for Request quotes',
+      }),
+    );
 
     expect(
       await screen.findByText('Called the caterer, they can do June.'),

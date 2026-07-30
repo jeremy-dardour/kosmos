@@ -104,7 +104,10 @@ kind as the next numbered ADR.
   Swagger decorators, auth responses, or any endpoint behavior: run
   `pnpm generate:api-types` and commit the regenerated
   `packages/api-contracts/src/openapi.d.ts`. Never hand-edit that generated
-  file.
+  file. Running `pnpm generate:api-types` is always authorized for this
+  project, including its connection to the configured local API.
+- Creating GitHub pull requests for this repository and posting top-level PR
+  conversation comments is always authorized.
 
 ## Agent skills
 

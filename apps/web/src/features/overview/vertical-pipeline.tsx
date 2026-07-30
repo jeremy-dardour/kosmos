@@ -4,6 +4,7 @@ import { daysUntil } from '@/features/overview/days-until';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
 import { StepChecklist } from '@/features/overview/step-checklist';
+import { StepNotes } from '@/features/overview/step-notes';
 import { cn } from '@/lib/utils';
 
 import type {
@@ -12,10 +13,15 @@ import type {
   StepStatus,
   UserSummary,
 } from '@/api/hooks/use-overview';
+import type { NoteEntry } from '@/api/hooks/use-workstream-notes';
 
 interface VerticalPipelineProperties {
   steps: Step[];
+  workstreamId?: string;
   usersById: ReadonlyMap<string, UserSummary>;
+  notesByStepId?: ReadonlyMap<string, NoteEntry[]>;
+  notesPending?: boolean;
+  notesError?: boolean;
   pendingChecklistItemId?: string | null;
   onToggleChecklist?: (item: ChecklistItem, isDone: boolean) => void;
 }
@@ -62,7 +68,11 @@ const URGENCY_CLASSES = {
 
 export const VerticalPipeline = ({
   steps,
+  workstreamId,
   usersById,
+  notesByStepId,
+  notesPending,
+  notesError,
   pendingChecklistItemId,
   onToggleChecklist,
 }: VerticalPipelineProperties) => {
@@ -146,6 +156,16 @@ export const VerticalPipeline = ({
                 pendingItemId={pendingChecklistItemId}
                 onToggle={onToggleChecklist}
               />
+              {workstreamId && notesByStepId && (
+                <StepNotes
+                  workstreamId={workstreamId}
+                  stepId={step.id}
+                  stepName={step.name}
+                  notes={notesByStepId.get(step.id) ?? []}
+                  isPending={notesPending}
+                  isError={notesError}
+                />
+              )}
             </div>
           </li>
         );

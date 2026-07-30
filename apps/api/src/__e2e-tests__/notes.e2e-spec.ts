@@ -35,6 +35,9 @@ describe('Notes E2E Tests', () => {
   let emptyWorkstreamId: string;
   let step1Id: string;
   let step2Id: string;
+  let step3Id: string;
+  let otherAuthorNoteId: string;
+  let authorlessNoteId: string;
 
   beforeAll(async () => {
     await mockOidc.setup();
@@ -86,6 +89,11 @@ describe('Notes E2E Tests', () => {
       position: 2,
       name: 'Visit venues',
     });
+    const step3 = em.create(Step, {
+      workstream,
+      position: 3,
+      name: 'Sign contract',
+    });
 
     const emptyWorkstream = em.create(Workstream, {
       project,
@@ -104,13 +112,13 @@ describe('Notes E2E Tests', () => {
       content: 'Oldest note on step 1',
       createdAt: instantAt(-10),
     });
-    em.create(Note, {
+    const authorlessNote = em.create(Note, {
       step: step1,
       author: null,
       content: 'Note with no author',
       createdAt: instantAt(-8),
     });
-    em.create(Note, {
+    const otherAuthorNote = em.create(Note, {
       step: step2,
       author: author2,
       content: 'Note on step 2',
@@ -132,12 +140,51 @@ describe('Notes E2E Tests', () => {
     emptyWorkstreamId = emptyWorkstream.id;
     step1Id = step1.id;
     step2Id = step2.id;
+    step3Id = step3.id;
+    otherAuthorNoteId = otherAuthorNote.id;
+    authorlessNoteId = authorlessNote.id;
   }
 
   function fetchNotes(id: string): request.Test {
     return createRequest(app)
       .get(`/workstreams/${id}/notes`)
       .set('Authorization', `Bearer ${token}`);
+  }
+
+  function createNote(
+    stepId: string,
+    body: Record<string, unknown>,
+  ): request.Test {
+    return createRequest(app)
+      .post(`/steps/${stepId}/notes`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(body);
+  }
+
+  function updateNote(
+    noteId: string,
+    body: Record<string, unknown>,
+  ): request.Test {
+    return createRequest(app)
+      .patch(`/notes/${noteId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(body);
+  }
+
+  function deleteNote(noteId: string): request.Test {
+    return createRequest(app)
+      .delete(`/notes/${noteId}`)
+      .set('Authorization', `Bearer ${token}`);
+  }
+
+  async function workstreamUpdatedAt(): Promise<number> {
+    const workstream = await em.findOneOrFail(
+      Workstream,
+      { id: workstreamId },
+      { refresh: true },
+    );
+
+    return workstream.updatedAt.getTime();
   }
 
   describe('GET /workstreams/:workstreamId/notes', () => {
@@ -193,6 +240,122 @@ describe('Notes E2E Tests', () => {
       await createRequest(app)
         .get(`/workstreams/${workstreamId}/notes`)
         .expect(401);
+    });
+  });
+
+  describe('POST /steps/:stepId/notes', () => {
+    it('adds notes to past, current and future steps without touching the workstream', async () => {
+      const before = await workstreamUpdatedAt();
+
+      for (const [stepId, content] of [
+        [step1Id, 'Past step update'],
+        [step2Id, 'Current step update'],
+        [step3Id, 'Future step update'],
+      ] as const) {
+        const response = await createNote(stepId, { content }).expect(201);
+        const note = response.body as NoteDto;
+
+        expect(note).toMatchObject({
+          stepId,
+          content,
+          author: {
+            name: 'E2E Test User',
+          },
+        });
+      }
+
+      expect(await workstreamUpdatedAt()).toBe(before);
+    });
+
+    it.each([
+      ['', 'empty'],
+      ['   \n', 'whitespace-only'],
+      ['x'.repeat(5001), 'overlong'],
+    ])('rejects %s content with 422', async (content) => {
+      await createNote(step2Id, { content }).expect(422);
+    });
+
+    it('rejects client-supplied authors', async () => {
+      await createNote(step2Id, {
+        content: 'Spoofed',
+        authorId: '00000000-0000-0000-0000-000000000000',
+      }).expect(422);
+    });
+
+    it('returns 404 for an unknown step and 400 for a malformed ID', async () => {
+      await createNote('00000000-0000-0000-0000-000000000000', {
+        content: 'Missing',
+      }).expect(404);
+      await createNote('not-a-uuid', { content: 'Malformed' }).expect(400);
+    });
+  });
+
+  describe('PATCH /notes/:id', () => {
+    it('edits an own note, advances its timestamp and leaves the workstream unchanged', async () => {
+      const createdResponse = await createNote(step2Id, {
+        content: 'Initial content',
+      }).expect(201);
+      const created = createdResponse.body as NoteDto;
+      const before = await workstreamUpdatedAt();
+
+      const response = await updateNote(created.id, {
+        content: 'Edited content',
+      }).expect(200);
+      const edited = response.body as NoteDto;
+
+      expect(edited.content).toBe('Edited content');
+      expect(new Date(edited.updatedAt).getTime()).toBeGreaterThan(
+        new Date(created.updatedAt).getTime(),
+      );
+      expect(await workstreamUpdatedAt()).toBe(before);
+    });
+
+    it.each([
+      ['another user', () => otherAuthorNoteId],
+      ['no author', () => authorlessNoteId],
+    ])('rejects editing a note with %s', async (_label, getId) => {
+      const response = await updateNote(getId(), {
+        content: 'Forbidden edit',
+      }).expect(403);
+
+      expect((response.body as { type: string }).type).toMatch(
+        /\/errors\/not-note-author$/,
+      );
+    });
+
+    it('returns 404 for an unknown note and 400 for a malformed ID', async () => {
+      await updateNote('00000000-0000-0000-0000-000000000000', {
+        content: 'Missing',
+      }).expect(404);
+      await updateNote('not-a-uuid', { content: 'Malformed' }).expect(400);
+    });
+  });
+
+  describe('DELETE /notes/:id', () => {
+    it('hard-deletes an own note without touching the workstream', async () => {
+      const createdResponse = await createNote(step2Id, {
+        content: 'Remove me',
+      }).expect(201);
+      const created = createdResponse.body as NoteDto;
+      const before = await workstreamUpdatedAt();
+
+      await deleteNote(created.id).expect(204);
+
+      expect(
+        await em.findOne(Note, { id: created.id }, { refresh: true }),
+      ).toBe(null);
+      expect(await workstreamUpdatedAt()).toBe(before);
+    });
+
+    it.each([
+      ['another user', () => otherAuthorNoteId],
+      ['no author', () => authorlessNoteId],
+    ])('rejects deleting a note with %s', async (_label, getId) => {
+      const response = await deleteNote(getId()).expect(403);
+
+      expect((response.body as { type: string }).type).toMatch(
+        /\/errors\/not-note-author$/,
+      );
     });
   });
 });

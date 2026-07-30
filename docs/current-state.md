@@ -5,13 +5,13 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-30 (session 28)_
+_Last updated: 2026-07-30 (session 29)_
 
 ## Phase
 
 **Building.** Slices 1 and 2 are merged; Slices 3 and 6 are in draft PRs #37
-and #38. Slice 4 is complete on `feat/next-feature`. Three build-slice/deployment
-issues remain (#22, #24, #26).
+and #38. Slices 4 and 5 are complete on feature branches. Two
+build-slice/deployment issues remain (#24, #26).
 
 ## Done
 
@@ -130,6 +130,13 @@ issues remain (#22, #24, #26).
   component, `useCurrentDate` hook extracted. 7 integration tests added. No
   API changes
   ([session 28](./sessions/session-28-2026-07-30-slice-4-deadline-badges-filters.md)).
+- **#22 — Slice 5: notes actions** — complete on `feat/slice-5`. Notes are
+  independently collapsible per persisted Step in normal and pipeline-editing
+  views. Authors can add, edit, and delete their own notes; both the frontend
+  and API reject mutations by other users. Unsaved Steps cannot accept notes,
+  and note mutations preserve pipeline drafts. The OpenAPI contract, stateful
+  MSW adapter, integration coverage, and API E2E coverage are updated
+  ([session 29](./sessions/session-29-2026-07-30-slice-5-notes-actions.md)).
 
 ## In flight
 
@@ -137,6 +144,8 @@ issues remain (#22, #24, #26).
   (#20).
 - **Draft PR #38 (`feat/slice-6`)** — Slice 6: pipeline and checklist editing
   (#23).
+- **`feat/slice-5`** — Slice 5 notes actions (#22), verified and ready for a
+  draft PR.
 
 ## Open questions
 
@@ -146,8 +155,9 @@ issues remain (#22, #24, #26).
 ## Next steps
 
 1. Review and land PRs #37 and #38.
-2. Review and refine the step-editing UI/design in #39.
-3. Build slices #22 and #24, then deployment (#26). Reorder repositories use
+2. Review and land Slice 5 (#22), then refine the step-editing UI/design in
+   #39.
+3. Build slice #24, then deployment (#26). Reorder repositories use
    two-phase temporary positions because the generated constraints are not
    deferrable.
 4. Mobile responsiveness deferred to #35.

@@ -3,6 +3,11 @@ import { setupServer } from 'msw/node';
 
 import type { Overview, Workstream } from '@/api/hooks/use-overview';
 import type { UpdatePipelineInput } from '@/api/hooks/use-update-pipeline';
+import type {
+  CreateNoteInput,
+  NoteEntry,
+  UpdateNoteInput,
+} from '@/api/hooks/use-workstream-notes';
 
 const API_BASE = 'http://localhost:3000';
 
@@ -208,6 +213,79 @@ export function setupOverviewApi(initialOverview: Overview) {
           problemResponse(status, problemDetails(status, problem)),
         ),
       );
+    },
+  };
+}
+
+export function setupNotesApi(
+  initialNotes: NoteEntry[],
+  actor: NonNullable<NoteEntry['author']>,
+) {
+  let notes = initialNotes;
+  let generatedId = 0;
+  let shouldRejectNextUpdate = false;
+
+  server.use(
+    http.get(`${API_BASE}/api/workstreams/:id/notes`, () =>
+      HttpResponse.json(notes),
+    ),
+    http.post(
+      `${API_BASE}/api/steps/:stepId/notes`,
+      async ({ params, request }) => {
+        const input = (await request.json()) as CreateNoteInput;
+        const timestamp = new Date(
+          Date.UTC(2026, 6, 30, 12, 0, ++generatedId),
+        ).toISOString();
+        const created: NoteEntry = {
+          id: `note-${generatedId}`,
+          stepId: String(params.stepId),
+          content: input.content,
+          author: actor,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        };
+        notes = [created, ...notes];
+        return HttpResponse.json(created, { status: 201 });
+      },
+    ),
+    http.patch(`${API_BASE}/api/notes/:id`, async ({ params, request }) => {
+      if (shouldRejectNextUpdate) {
+        shouldRejectNextUpdate = false;
+        return problemResponse(
+          403,
+          problemDetails(403, {
+            type: 'https://wedding-planner.dev/errors/not-note-author',
+            title: 'Forbidden',
+            detail: 'Only the note author can change this note',
+          }),
+        );
+      }
+
+      const input = (await request.json()) as UpdateNoteInput;
+      const existing = notes.find((note) => note.id === params.id);
+      if (!existing) return problemResponse(404, problemDetails(404));
+      const updated: NoteEntry = {
+        ...existing,
+        content: input.content,
+        updatedAt: new Date(
+          new Date(existing.updatedAt).getTime() + 1000,
+        ).toISOString(),
+      };
+      notes = notes.map((note) => (note.id === updated.id ? updated : note));
+      return HttpResponse.json(updated);
+    }),
+    http.delete(`${API_BASE}/api/notes/:id`, ({ params }) => {
+      const hasNote = notes.some((note) => note.id === params.id);
+      if (!hasNote) return problemResponse(404, problemDetails(404));
+      notes = notes.filter((note) => note.id !== params.id);
+      return new HttpResponse(null, { status: 204 });
+    }),
+  );
+
+  return {
+    getNotes: () => notes,
+    rejectNextUpdate: () => {
+      shouldRejectNextUpdate = true;
     },
   };
 }
