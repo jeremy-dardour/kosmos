@@ -401,7 +401,7 @@ describe('deadline badges and date ticks', () => {
     renderWithApp(<OverviewPage />);
 
     const card = await screen.findByRole('button', { name: 'View Catering' });
-    expect(card).toHaveClass('border-urgency-late/40');
+    expect(card).toHaveClass('border-step-blocked/40');
     expect(screen.getByText('Book caterer 4d overdue')).toBeVisible();
   });
 

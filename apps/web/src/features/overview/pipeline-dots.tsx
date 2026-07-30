@@ -1,14 +1,12 @@
 import { useTranslation } from 'react-i18next';
 
-import { daysUntil } from '@/features/overview/days-until';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
+import { urgencyBand } from '@/features/overview/urgency';
 import { cn } from '@/lib/utils';
 
 import type { Step, StepStatus } from '@/api/hooks/use-overview';
 
 type StepVisual = StepStatus | 'blocked';
-
-const URGENCY_THRESHOLD_DAYS = 7;
 
 interface PipelineDotsProperties {
   steps: Step[];
@@ -55,9 +53,11 @@ export const PipelineDots = ({ steps, today }: PipelineDotsProperties) => {
     <ol className="flex items-start">
       {steps.map((step, index) => {
         const visual = stepVisual(step);
-        const days =
-          step.deadline && today ? daysUntil(step.deadline, today) : null;
-        const isUrgent = days !== null && days < URGENCY_THRESHOLD_DAYS;
+        const band =
+          step.deadline && today
+            ? urgencyBand(step.deadline, today)
+            : undefined;
+        const isUrgent = band === 'soon' || band === 'late';
 
         return (
           <li
@@ -99,7 +99,7 @@ export const PipelineDots = ({ steps, today }: PipelineDotsProperties) => {
                 className={cn(
                   'text-[9px] tabular-nums leading-none',
                   isUrgent
-                    ? 'font-medium text-urgency-soon-foreground'
+                    ? 'font-medium text-urgency-late-foreground'
                     : 'text-muted-foreground',
                 )}
               >

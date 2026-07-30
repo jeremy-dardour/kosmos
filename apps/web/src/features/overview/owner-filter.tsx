@@ -1,4 +1,3 @@
-import { ChevronDownIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -6,12 +5,11 @@ import {
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
+import { FilterTrigger } from '@/features/overview/filter-trigger';
 
 import type { UserSummary } from '@/api/hooks/use-overview';
-
-const ALL = 'all';
 
 interface OwnerFilterProperties {
   users: UserSummary[];
@@ -30,7 +28,7 @@ export const OwnerFilter = ({
 
   const selectedUser = users.find((u) => u.id === value);
   const label =
-    value === ALL
+    value === OWNER_FILTER_ALL
       ? t('overview.filter.allOwners')
       : value === currentUserId
         ? t('overview.filter.myTasks')
@@ -38,16 +36,12 @@ export const OwnerFilter = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground shadow-xs transition-colors hover:bg-muted"
-        aria-label={t('overview.filter.ownerLabel')}
-      >
+      <FilterTrigger aria-label={t('overview.filter.ownerLabel')}>
         {label}
-        <ChevronDownIcon className="size-3 opacity-50" />
-      </DropdownMenuTrigger>
+      </FilterTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
-          <DropdownMenuRadioItem value={ALL}>
+          <DropdownMenuRadioItem value={OWNER_FILTER_ALL}>
             {t('overview.filter.allOwners')}
           </DropdownMenuRadioItem>
           {users.map((user) => (

@@ -1,12 +1,11 @@
-import { ChevronDownIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { FilterTrigger } from '@/features/overview/filter-trigger';
 
 import type { Group } from '@/api/hooks/use-overview';
 
@@ -34,13 +33,9 @@ export const GroupFilter = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground shadow-xs transition-colors hover:bg-muted"
-        aria-label={t('overview.filter.groupLabel')}
-      >
+      <FilterTrigger aria-label={t('overview.filter.groupLabel')}>
         {label}
-        <ChevronDownIcon className="size-3 opacity-50" />
-      </DropdownMenuTrigger>
+      </FilterTrigger>
       <DropdownMenuContent align="end">
         {groups.map((group) => (
           <DropdownMenuCheckboxItem

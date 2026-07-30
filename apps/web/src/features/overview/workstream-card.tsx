@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { daysUntil } from '@/features/overview/days-until';
 import { DeadlineBadge } from '@/features/overview/deadline-badge';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
@@ -31,14 +32,7 @@ function findDeadlineStep(workstream: Workstream) {
 function isOverdueWorkstream(workstream: Workstream, today: Date): boolean {
   const step = findDeadlineStep(workstream);
   if (!step?.deadline) return false;
-  const [year, month, day] = step.deadline.split('-');
-  const target = Date.UTC(Number(year), Number(month) - 1, Number(day));
-  const todayUtc = Date.UTC(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
-  return target < todayUtc;
+  return daysUntil(step.deadline, today) < 0;
 }
 
 export const WorkstreamCard = ({
@@ -71,10 +65,7 @@ export const WorkstreamCard = ({
             ? 'border-step-in-progress bg-step-in-progress/8'
             : 'hover:border-muted-foreground/30',
           !isSelected && isBlocked && 'border-step-blocked/40',
-          !isSelected &&
-            !isBlocked &&
-            isOverdue &&
-            'border-urgency-late/40 bg-urgency-soon/20',
+          !isSelected && !isBlocked && isOverdue && 'border-step-blocked/40',
           isComplete && 'opacity-65',
         )}
       >

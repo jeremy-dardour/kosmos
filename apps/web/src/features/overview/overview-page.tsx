@@ -6,6 +6,7 @@ import { useOverview } from '@/api/hooks/use-overview';
 import { useProjects } from '@/api/hooks/use-projects';
 import { useAuthState } from '@/auth/auth-context';
 import { DetailPanel } from '@/features/overview/detail-panel';
+import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
 import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
 import { useCurrentDate } from '@/features/overview/use-current-date';
@@ -14,13 +15,11 @@ import { WorkstreamCardList } from '@/features/overview/workstream-card-list';
 import type { AdvanceOutcome } from '@/api/hooks/use-advance-workstream';
 import type { UserSummary, Workstream } from '@/api/hooks/use-overview';
 
-const OWNER_ALL = 'all';
-
 function applyOwnerFilter(
   workstreams: Workstream[],
   ownerId: string,
 ): Workstream[] {
-  if (ownerId === OWNER_ALL) return workstreams;
+  if (ownerId === OWNER_FILTER_ALL) return workstreams;
 
   return workstreams.filter((w) => {
     if (w.lifecycle === 'not_started' || w.lifecycle === 'complete') {
@@ -53,7 +52,7 @@ export const OverviewPage = () => {
   const authState = useAuthState();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [ownerFilter, setOwnerFilter] = useState(OWNER_ALL);
+  const [ownerFilter, setOwnerFilter] = useState(OWNER_FILTER_ALL);
   const [hiddenGroupIds, setHiddenGroupIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
