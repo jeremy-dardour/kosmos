@@ -123,67 +123,71 @@ export const GroupManagerDialog = ({
     updateGroup.mutate({ params: { path: { id } }, body: { name, color } });
   };
 
+  // The delete confirmation is a sibling of the manager dialog, not nested
+  // inside it — two dialogs at the same level, each owning its own overlay.
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{t('overview.manage.groups.title')}</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('overview.manage.groups.title')}</DialogTitle>
+          </DialogHeader>
 
-        <div className="flex flex-col gap-2">
-          {groups.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              {t('overview.manage.groups.empty')}
-            </p>
-          )}
-          {groups.map((group) => (
-            <GroupRow
-              key={group.id}
-              group={group}
-              onSave={saveGroup}
-              onDelete={setDeleteTarget}
-              isSaving={updateGroup.isPending}
-            />
-          ))}
-        </div>
+          <div className="flex flex-col gap-2">
+            {groups.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                {t('overview.manage.groups.empty')}
+              </p>
+            )}
+            {groups.map((group) => (
+              <GroupRow
+                key={group.id}
+                group={group}
+                onSave={saveGroup}
+                onDelete={setDeleteTarget}
+                isSaving={updateGroup.isPending}
+              />
+            ))}
+          </div>
 
-        <form
-          className="flex items-center gap-2 border-t pt-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            addGroup();
-          }}
-        >
-          <input
-            type="color"
-            aria-label={t('overview.manage.groups.newColorLabel')}
-            value={newColor}
-            className="size-8 shrink-0 cursor-pointer rounded-md border border-input bg-transparent"
-            onChange={(event) => setNewColor(event.target.value)}
-          />
-          <Input
-            aria-label={t('overview.manage.groups.newNameLabel')}
-            value={newName}
-            maxLength={255}
-            placeholder={t('overview.manage.groups.newNamePlaceholder')}
-            onChange={(event) => setNewName(event.target.value)}
-          />
-          <Button
-            type="submit"
-            size="sm"
-            disabled={!newName.trim() || createGroup.isPending}
+          <form
+            className="flex items-center gap-2 border-t pt-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              addGroup();
+            }}
           >
-            <PlusIcon />
-            {t('overview.manage.groups.add')}
-          </Button>
-        </form>
+            <input
+              type="color"
+              aria-label={t('overview.manage.groups.newColorLabel')}
+              value={newColor}
+              className="size-8 shrink-0 cursor-pointer rounded-md border border-input bg-transparent"
+              onChange={(event) => setNewColor(event.target.value)}
+            />
+            <Input
+              aria-label={t('overview.manage.groups.newNameLabel')}
+              value={newName}
+              maxLength={255}
+              placeholder={t('overview.manage.groups.newNamePlaceholder')}
+              onChange={(event) => setNewName(event.target.value)}
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!newName.trim() || createGroup.isPending}
+            >
+              <PlusIcon />
+              {t('overview.manage.groups.add')}
+            </Button>
+          </form>
 
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" size="sm" />}>
-            {t('overview.manage.groups.done')}
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" size="sm" />}>
+              {t('overview.manage.groups.done')}
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         isOpen={deleteTarget !== null}
@@ -203,6 +207,6 @@ export const GroupManagerDialog = ({
           );
         }}
       />
-    </Dialog>
+    </>
   );
 };
