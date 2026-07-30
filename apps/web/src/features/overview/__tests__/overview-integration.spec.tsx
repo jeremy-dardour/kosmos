@@ -1,18 +1,21 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { defaultOverview } from '@/features/overview/__tests__/overview-integration.fixtures';
 import { OverviewPage } from '@/features/overview/overview-page';
 import { server } from '@/testing/mock-api';
 import {
   checklistItem,
+  group,
   note,
   project,
   step,
+  user,
   workstream,
 } from '@/testing/mock-overview-data';
+import { STUB_USER } from '@/testing/stub-auth';
 import { renderWithApp } from '@/testing/render-with-app';
 
 const BASE = 'http://localhost:3000';
@@ -302,5 +305,342 @@ describe('detail panel', () => {
     ).not.toBeInTheDocument();
     expect(cateringCard).toHaveAttribute('aria-pressed', 'false');
     expect(venueCard).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+describe('deadline badges and date ticks', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-08-01'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('shows countdown badge on cards with deadlines', async () => {
+    server.use(
+      http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
+      http.get(`${BASE}/api/projects/:id/overview`, () =>
+        HttpResponse.json({
+          ...defaultOverview,
+          workstreams: [
+            workstream({
+              id: 'w1',
+              name: 'Catering',
+              icon: '🍽️',
+              nearestDeadlineStepId: 's2',
+              steps: [
+                step('Research', 'done', { id: 's1', position: 1 }),
+                step('Book caterer', 'in_progress', {
+                  id: 's2',
+                  position: 2,
+                  deadline: '2026-08-10',
+                }),
+              ],
+            }),
+          ],
+        }),
+      ),
+    );
+    renderWithApp(<OverviewPage />);
+
+    expect(await screen.findByText('Book caterer in 9d')).toBeVisible();
+  });
+
+  it('hides badge when no deadlines', async () => {
+    server.use(
+      http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
+      http.get(`${BASE}/api/projects/:id/overview`, () =>
+        HttpResponse.json({
+          ...defaultOverview,
+          workstreams: [
+            workstream({
+              id: 'w1',
+              name: 'Catering',
+              icon: '🍽️',
+              nearestDeadlineStepId: null,
+              steps: [
+                step('Research', 'in_progress', { id: 's1', position: 1 }),
+              ],
+            }),
+          ],
+        }),
+      ),
+    );
+    renderWithApp(<OverviewPage />);
+
+    await screen.findByText('Catering');
+    expect(screen.queryByText(/\dd$/)).not.toBeInTheDocument();
+  });
+
+  it('applies overdue card treatment', async () => {
+    server.use(
+      http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
+      http.get(`${BASE}/api/projects/:id/overview`, () =>
+        HttpResponse.json({
+          ...defaultOverview,
+          workstreams: [
+            workstream({
+              id: 'w1',
+              name: 'Catering',
+              icon: '🍽️',
+              nearestDeadlineStepId: 's2',
+              steps: [
+                step('Book caterer', 'in_progress', {
+                  id: 's2',
+                  position: 1,
+                  deadline: '2026-07-28',
+                }),
+              ],
+            }),
+          ],
+        }),
+      ),
+    );
+    renderWithApp(<OverviewPage />);
+
+    const card = await screen.findByRole('button', { name: 'View Catering' });
+    expect(card).toHaveClass('border-urgency-late/40');
+    expect(screen.getByText('Book caterer 4d overdue')).toBeVisible();
+  });
+
+  it('shows date ticks under pipeline dots with deadlines', async () => {
+    server.use(
+      http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
+      http.get(`${BASE}/api/projects/:id/overview`, () =>
+        HttpResponse.json({
+          ...defaultOverview,
+          workstreams: [
+            workstream({
+              id: 'w1',
+              name: 'Catering',
+              icon: '🍽️',
+              steps: [
+                step('Research', 'done', {
+                  id: 's1',
+                  position: 1,
+                  deadline: '2026-07-15',
+                }),
+                step('Book', 'in_progress', {
+                  id: 's2',
+                  position: 2,
+                  deadline: '2026-08-20',
+                }),
+                step('Finalize', 'not_started', {
+                  id: 's3',
+                  position: 3,
+                }),
+              ],
+            }),
+          ],
+        }),
+      ),
+    );
+    renderWithApp(<OverviewPage />);
+
+    await screen.findByText('Catering');
+    expect(screen.getByText('7/15')).toBeVisible();
+    expect(screen.getByText('8/20')).toBeVisible();
+  });
+});
+
+describe('owner filter', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-08-01'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('shows current user option and filters by owner', async () => {
+    const me = user({ id: STUB_USER.id, name: STUB_USER.name });
+    const other = user({ id: 'u-other', name: 'Bob Smith' });
+    server.use(
+      http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
+      http.get(`${BASE}/api/projects/:id/overview`, () =>
+        HttpResponse.json({
+          ...defaultOverview,
+          users: [me, other],
+          workstreams: [
+            workstream({
+              id: 'w-mine',
+              name: 'Catering',
+              icon: '🍽️',
+              steps: [
+                step('Book', 'in_progress', {
+                  id: 's1',
+                  position: 1,
+                  effectiveOwnerId: STUB_USER.id,
+                }),
+              ],
+            }),
+            workstream({
+              id: 'w-other',
+              name: 'Flowers',
+              icon: '💐',
+              steps: [
+                step('Find florist', 'in_progress', {
+                  id: 's2',
+                  position: 1,
+                  effectiveOwnerId: 'u-other',
+                }),
+              ],
+            }),
+          ],
+        }),
+      ),
+    );
+    const agent = userEvent.setup();
+    renderWithApp(<OverviewPage />);
+
+    await screen.findByText('Catering');
+    expect(screen.getByText('Flowers')).toBeVisible();
+
+    await agent.click(screen.getByRole('button', { name: 'Filter by owner' }));
+    await agent.click(
+      await screen.findByRole('menuitemradio', { name: 'My tasks' }),
+    );
+
+    expect(screen.getByText('Catering')).toBeVisible();
+    expect(screen.queryByText('Flowers')).not.toBeInTheDocument();
+  });
+
+  it('excludes not-started and complete workstreams from owner filter', async () => {
+    const me = user({ id: STUB_USER.id, name: STUB_USER.name });
+    server.use(
+      http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
+      http.get(`${BASE}/api/projects/:id/overview`, () =>
+        HttpResponse.json({
+          ...defaultOverview,
+          groups: [],
+          users: [me],
+          workstreams: [
+            workstream({
+              id: 'w-active',
+              name: 'Catering',
+              icon: '🍽️',
+              lifecycle: 'active',
+              steps: [
+                step('Book', 'in_progress', {
+                  id: 's1',
+                  position: 1,
+                  effectiveOwnerId: STUB_USER.id,
+                }),
+              ],
+            }),
+            workstream({
+              id: 'w-ns',
+              name: 'Flowers',
+              icon: '💐',
+              lifecycle: 'not_started',
+              steps: [
+                step('Find florist', 'not_started', {
+                  id: 's2',
+                  position: 1,
+                }),
+              ],
+            }),
+            workstream({
+              id: 'w-done',
+              name: 'Venue',
+              icon: '🏰',
+              lifecycle: 'complete',
+              steps: [step('Sign', 'done', { id: 's3', position: 1 })],
+            }),
+          ],
+        }),
+      ),
+    );
+    const agent = userEvent.setup();
+    renderWithApp(<OverviewPage />);
+
+    await screen.findByText('Catering');
+    expect(screen.getByText('Flowers')).toBeVisible();
+    expect(screen.getByText('Venue')).toBeVisible();
+
+    await agent.click(screen.getByRole('button', { name: 'Filter by owner' }));
+    await agent.click(
+      await screen.findByRole('menuitemradio', { name: 'My tasks' }),
+    );
+
+    expect(screen.getByText('Catering')).toBeVisible();
+    expect(screen.queryByText('Flowers')).not.toBeInTheDocument();
+    expect(screen.queryByText('Venue')).not.toBeInTheDocument();
+  });
+});
+
+describe('group filter', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-08-01'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('toggles group visibility', async () => {
+    const g1 = group({ id: 'g1', name: 'Venue & Catering' });
+    const g2 = group({ id: 'g2', name: 'Decor' });
+    server.use(
+      http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
+      http.get(`${BASE}/api/projects/:id/overview`, () =>
+        HttpResponse.json({
+          ...defaultOverview,
+          groups: [g1, g2],
+          workstreams: [
+            workstream({
+              id: 'w1',
+              name: 'Catering',
+              icon: '🍽️',
+              groupId: 'g1',
+              steps: [step('Book', 'in_progress', { id: 's1', position: 1 })],
+            }),
+            workstream({
+              id: 'w2',
+              name: 'Flowers',
+              icon: '💐',
+              groupId: 'g2',
+              steps: [
+                step('Find florist', 'in_progress', {
+                  id: 's2',
+                  position: 1,
+                }),
+              ],
+            }),
+            workstream({
+              id: 'w3',
+              name: 'Music',
+              icon: '🎵',
+              groupId: null,
+              steps: [
+                step('Book band', 'in_progress', {
+                  id: 's3',
+                  position: 1,
+                }),
+              ],
+            }),
+          ],
+        }),
+      ),
+    );
+    const agent = userEvent.setup();
+    renderWithApp(<OverviewPage />);
+
+    await screen.findByText('Catering');
+    expect(screen.getByText('Flowers')).toBeVisible();
+    expect(screen.getByText('Music')).toBeVisible();
+
+    await agent.click(screen.getByRole('button', { name: 'Filter by group' }));
+    await agent.click(
+      await screen.findByRole('menuitemcheckbox', { name: 'Venue & Catering' }),
+    );
+
+    expect(screen.queryByText('Catering')).not.toBeInTheDocument();
+    expect(screen.getByText('Flowers')).toBeVisible();
+    expect(screen.getByText('Music')).toBeVisible();
   });
 });
