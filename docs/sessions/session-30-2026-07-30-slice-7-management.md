@@ -1,4 +1,4 @@
-# Session 29 — Slice 7: Workstream + Group management (2026-07-30)
+# Session 30 — Slice 7: Workstream + Group management (2026-07-30)
 
 ## What was done
 

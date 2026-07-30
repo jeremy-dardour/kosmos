@@ -8,9 +8,6 @@ import type { dtos } from '@/types/openapi';
 
 export type UpdateWorkstreamPipelineInput = dtos['UpdatePipelineDto'];
 
-// Replaces a workstream's ordered step list atomically (PUT), with optimistic
-// concurrency — distinct from `useUpdateWorkstream`, which PATCHes the
-// workstream's own fields (name, icon, group, owner).
 export function useUpdateWorkstreamPipeline(projectId: string | undefined) {
   const queryClient = useQueryClient();
   const invalidateOverview = useInvalidateOverview(projectId);

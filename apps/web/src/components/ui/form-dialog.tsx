@@ -14,7 +14,6 @@ interface FormDialogProperties {
   title: string;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  /** Fired on form submit (default already prevented). */
   onSubmit: () => void;
   isValid: boolean;
   isPending: boolean;

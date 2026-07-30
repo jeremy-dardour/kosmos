@@ -123,8 +123,6 @@ export const GroupManagerDialog = ({
     updateGroup.mutate({ params: { path: { id } }, body: { name, color } });
   };
 
-  // The delete confirmation is a sibling of the manager dialog, not nested
-  // inside it — two dialogs at the same level, each owning its own overlay.
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
