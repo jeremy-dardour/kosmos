@@ -75,11 +75,34 @@ Addressed the 9 inline review comments on PR #44 (five follow-up commits,
 Reply posted on the PR mapping each comment to its commit. `pnpm check-types`,
 `pnpm lint`, and the full web suite (172 tests) still pass.
 
+## PR #44 review — round 2 + rebase
+
+- A second review round pushed back on the comments added in round 1: removed
+  the redundant comments on `useUpdateWorkstreamPipeline`, the `FormDialog`
+  `onSubmit` prop, and the group-manager sibling dialogs (the change is
+  self-evident). Recorded the general preference in the user-level CLAUDE.md
+  ("don't add a comment just because feedback was given").
+- Moved `FormDialog` from `features/overview/` to `components/ui/` (it is a
+  reusable shell) and added a colocated `form-dialog.spec.tsx` (5 tests).
+- Rebased `feat/slice-7` onto latest `main`, which had advanced to include the
+  merges of Slices 3, 4, 6 and **Slice 5 (#45, per-step note actions)**.
+  Conflicts resolved in `current-state.md` (kept both slices' facts) and in the
+  pipeline-rename import hunks of `detail-panel`, `pipeline-editor`, and
+  `mock-api` (kept the Slice 5 notes imports alongside the rename). The
+  byte-identical `use-update-pipeline.ts` in main meant the rename replayed
+  cleanly otherwise.
+- Renumbered this log 29 → 30, since main already used session 29 for the Slice
+  5 log.
+
+Post-rebase, post-round-2: `pnpm check-types`, `pnpm lint`, and the full web
+suite (182 tests) pass.
+
 ## Status at end of session
 
-Slice 7 is complete on `feat/slice-7` and pushed as PR #44, with review comments
-addressed: `pnpm check-types`, `pnpm lint`, and the full web suite (172 tests)
-pass. No API changes, so no e2e / `generate:api-types`. Next: land PR #44 (mind
-the `useUpdateWorkstreamPipeline` rename also touching draft PR #38). Remaining
-build work: #22 (Slice 5 notes writes), plus deployment (#26); UI polish tracked
-in #39 and #43. See [current-state.md](../current-state.md).
+Slice 7 is complete on `feat/slice-7`, rebased on latest main, and pushed as
+PR #44 with two review rounds addressed: `pnpm check-types`, `pnpm lint`, and
+the full web suite (182 tests) pass. No API changes, so no e2e /
+`generate:api-types`. Next: land PR #44 (mind the `useUpdateWorkstreamPipeline`
+rename also touching draft PR #38). All feature slices are now built; deployment
+(#26) is the last remaining issue; UI polish tracked in #39 and #43. See
+[current-state.md](../current-state.md).

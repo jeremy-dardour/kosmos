@@ -5,15 +5,15 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-30 (session 29)_
+_Last updated: 2026-07-30 (session 30)_
 
 ## Phase
 
 **Building.** Slices 1 and 2 are merged; Slices 3 and 6 are in draft PRs #37
-and #38. Slice 4 is complete on `feat/next-feature`. Slice 7 is complete on
-`feat/slice-7` and open as PR #44 with review comments addressed. The last
-remaining feature slice is #22 (Slice 5, notes writes); deployment (#26)
-follows.
+and #38. Slices 4 and 5 are complete on feature branches. Slice 7 is complete
+on `feat/slice-7`, rebased on latest main, and open as PR #44 with two rounds
+of review comments addressed. All feature slices are now built; deployment
+(#26) is the last remaining issue.
 
 ## Done
 
@@ -147,11 +147,12 @@ follows.
   points. Group deletion relies on backend `SET NULL`. Fixed a real test-harness
   i18n bug (`escapeValue` divergence double-escaped `&` in interpolated names).
   `/code-review` run; one spec gap (event-date/countdown coverage) resolved.
-  PR #44 review comments addressed: renamed `useUpdatePipeline` →
-  `useUpdateWorkstreamPipeline`, extracted a shared `FormDialog` shell,
-  un-nested the group delete confirm, clarified comments, removed the planning
-  doc. Deferred edit-UX polish tracked in #43
-  ([session 29](./sessions/session-29-2026-07-30-slice-7-management.md)).
+  Two review rounds addressed on PR #44: renamed `useUpdatePipeline` →
+  `useUpdateWorkstreamPipeline`, extracted a shared `FormDialog` (now in
+  `components/ui/` with its own spec), un-nested the group delete confirm,
+  removed redundant comments, and deleted the planning doc. Rebased on latest
+  main (Slices 4/5 merged upstream). Deferred edit-UX polish tracked in #43
+  ([session 30](./sessions/session-30-2026-07-30-slice-7-management.md)).
 
 ## In flight
 
@@ -172,8 +173,10 @@ follows.
 1. Land Slice 7 PR #44 (review comments addressed — mind the
    `useUpdateWorkstreamPipeline` rename also touching #38); review and land PRs
    #37 and #38.
-2. Review and refine the management/step-editing UI in #39 and #43.
-3. Build the last feature slice #22 (notes writes), then deployment (#26).
-   Reorder repositories use two-phase temporary positions because the generated
-   constraints are not deferrable.
-4. Mobile responsiveness deferred to #35.
+2. Review and land PRs #37 and #38, and open the Slice 5 (#22) draft PR from
+   `feat/slice-5`.
+3. Review and refine the management/step-editing UI in #39 and #43.
+4. All feature slices built — next is deployment (#26). Reorder repositories
+   use two-phase temporary positions because the generated constraints are not
+   deferrable.
+5. Mobile responsiveness deferred to #35.
