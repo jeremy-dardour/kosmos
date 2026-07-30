@@ -15,8 +15,8 @@ import {
   user,
   workstream,
 } from '@/testing/mock-overview-data';
-import { STUB_USER } from '@/testing/stub-auth';
 import { renderWithApp } from '@/testing/render-with-app';
+import { STUB_USER } from '@/testing/stub-auth';
 
 const BASE = 'http://localhost:3000';
 

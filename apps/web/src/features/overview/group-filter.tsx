@@ -25,8 +25,8 @@ export const GroupFilter = ({
 
   if (groups.length === 0) return null;
 
-  const allVisible = hiddenGroupIds.size === 0;
-  const label = allVisible
+  const isAllVisible = hiddenGroupIds.size === 0;
+  const label = isAllVisible
     ? t('overview.filter.allGroups')
     : t('overview.filter.groupCount', {
         count: groups.length - hiddenGroupIds.size,
