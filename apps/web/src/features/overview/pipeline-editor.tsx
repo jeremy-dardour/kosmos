@@ -166,6 +166,7 @@ export const PipelineEditor = ({
           </div>
         ))}
 
+        {/* TODO: extract step and checklist editing into sub-components (#39) */}
         {draftSteps.map((step, index) => {
           const position = pastSteps.length + index + 1;
           const isCurrent = step.id === currentStepId;

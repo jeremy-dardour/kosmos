@@ -5,7 +5,7 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-28 (session 26)_
+_Last updated: 2026-07-30 (session 27)_
 
 ## Phase
 
@@ -114,6 +114,12 @@ and #38. Four build-slice/deployment issues remain (#21, #22, #24, #26).
   [#39](https://github.com/jeremy-dardour/wedding-planner/issues/39), covering
   editor density, hierarchy, control discoverability, constrained widths, and
   accessibility without reopening settled domain behavior.
+- **PR #38 review follow-up** — addressed all 13 review comments. Migrated four
+  repositories to extend `EntityRepository<T>`, extracted `validatePipelineEdit`
+  from `replacePipeline`, added 14 service unit tests and 13 component tests,
+  simplified `mock-api.ts`, documented the repository extension pattern in API
+  standards
+  ([session 27](./sessions/session-27-2026-07-30-pr38-review-followup.md)).
 
 ## In flight
 

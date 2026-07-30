@@ -1,4 +1,4 @@
-import { LockMode } from '@mikro-orm/core';
+import { EntityRepository, LockMode } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
@@ -21,16 +21,13 @@ const WORKSTREAM_POPULATE = [
 ] as const;
 
 @Injectable()
-export class WorkstreamRepository {
-  constructor(private readonly em: SqlEntityManager) {}
-
-  async findOne(id: string): Promise<Workstream> {
-    return this.em.findOneOrFail(Workstream, { id });
+export class WorkstreamRepository extends EntityRepository<Workstream> {
+  constructor(em: SqlEntityManager) {
+    super(em, Workstream);
   }
 
   async findDetails(id: string): Promise<Workstream> {
-    return this.em.findOneOrFail(
-      Workstream,
+    return this.findOneOrFail(
       { id },
       { populate: [...WORKSTREAM_POPULATE], refresh: true },
     );

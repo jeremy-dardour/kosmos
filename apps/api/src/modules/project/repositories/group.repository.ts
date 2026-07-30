@@ -1,26 +1,26 @@
+import { EntityRepository } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
 import { Group } from '@/database/entities/group.entity';
-import { Project } from '@/database/entities/project.entity';
+
+import type { Project } from '@/database/entities/project.entity';
 
 @Injectable()
-export class GroupRepository {
-  constructor(private readonly em: SqlEntityManager) {}
-
-  async findAllByProject(project: Project): Promise<Group[]> {
-    return this.em.find(Group, { project }, { orderBy: { name: 'asc' } });
+export class GroupRepository extends EntityRepository<Group> {
+  constructor(em: SqlEntityManager) {
+    super(em, Group);
   }
 
-  async findOne(id: string): Promise<Group> {
-    return this.em.findOneOrFail(Group, { id });
+  async findAllByProject(project: Project): Promise<Group[]> {
+    return this.find({ project }, { orderBy: { name: 'asc' } });
   }
 
   async findOneInProject(
     groupId: string,
     projectId: string,
   ): Promise<Group | null> {
-    return this.em.findOne(Group, {
+    return this.findOne({
       id: groupId,
       project: projectId,
     });

@@ -67,69 +67,54 @@ export function setupOverviewApi(initialOverview: Overview) {
         const input = (await request.json()) as UpdatePipelineInput;
         lastPipelineInput = input;
         const workstreamId = String(params.id);
-        const workstream = overview.workstreams.find(
+        const ws = overview.workstreams.find(
           (item) => item.id === workstreamId,
         );
-        if (!workstream) {
+        if (!ws) {
           return problemResponse(404, problemDetails(404));
         }
 
-        const pastSteps = workstream.steps.filter(
-          (step) => step.status === 'done' || step.status === 'skipped',
-        );
-        const existingById = new Map(
-          workstream.steps.map((step) => [step.id, step]),
+        const pastSteps = ws.steps.filter(
+          (s) => s.status === 'done' || s.status === 'skipped',
         );
         const updatedAt = new Date(
-          new Date(workstream.updatedAt).getTime() + 1000,
+          new Date(ws.updatedAt).getTime() + 1000,
         ).toISOString();
-        const editableSteps = input.steps.map((submittedStep, index) => {
-          const existing = submittedStep.id
-            ? existingById.get(submittedStep.id)
-            : null;
-          const id =
-            submittedStep.id ?? `mock-step-${workstreamId}-${++generatedId}`;
-
-          return {
-            id,
-            name: submittedStep.name,
-            position: pastSteps.length + index + 1,
-            status:
-              workstream.lifecycle === 'active' && index === 0
-                ? ('in_progress' as const)
-                : ('not_started' as const),
-            blocked: submittedStep.blocked,
-            deadline: submittedStep.deadline,
-            outcome: null,
-            outcomeAt: null,
-            explicitOwnerId: submittedStep.ownerId,
-            effectiveOwnerId: submittedStep.ownerId ?? workstream.ownerId,
-            checklistItems: submittedStep.checklistItems.map(
-              (submittedItem, itemIndex) => ({
-                id:
-                  submittedItem.id ??
-                  `mock-item-${workstreamId}-${++generatedId}`,
-                name: submittedItem.name,
-                position: itemIndex + 1,
-                done: submittedItem.done,
-                createdAt: existing?.createdAt ?? updatedAt,
-                updatedAt,
-              }),
-            ),
-            createdAt: existing?.createdAt ?? updatedAt,
+        const echoedSteps = input.steps.map((submitted, index) => ({
+          id: submitted.id ?? `mock-step-${++generatedId}`,
+          name: submitted.name,
+          position: pastSteps.length + index + 1,
+          status:
+            ws.lifecycle === 'active' && index === 0
+              ? ('in_progress' as const)
+              : ('not_started' as const),
+          blocked: submitted.blocked,
+          deadline: submitted.deadline,
+          outcome: null,
+          outcomeAt: null,
+          explicitOwnerId: submitted.ownerId,
+          effectiveOwnerId: submitted.ownerId ?? ws.ownerId,
+          checklistItems: submitted.checklistItems.map((item) => ({
+            id: item.id ?? `mock-item-${++generatedId}`,
+            name: item.name,
+            position: 0,
+            done: item.done,
+            createdAt: updatedAt,
             updatedAt,
-          };
-        });
-        const updatedWorkstream = {
-          ...workstream,
+          })),
+          createdAt: updatedAt,
           updatedAt,
-          steps: [...pastSteps, ...editableSteps],
+        }));
+        const updatedWorkstream = {
+          ...ws,
+          updatedAt,
+          steps: [...pastSteps, ...echoedSteps],
         };
 
         overview = {
           ...overview,
           workstreams: overview.workstreams.map((item) =>
-            item.id === workstream.id ? updatedWorkstream : item,
+            item.id === ws.id ? updatedWorkstream : item,
           ),
         };
         return HttpResponse.json(updatedWorkstream);

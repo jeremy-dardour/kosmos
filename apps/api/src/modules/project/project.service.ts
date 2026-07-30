@@ -11,11 +11,11 @@ export class ProjectService {
   constructor(private readonly projectRepository: ProjectRepository) {}
 
   async findAll(): Promise<Project[]> {
-    return this.projectRepository.findAll();
+    return this.projectRepository.findAllOrdered();
   }
 
   async findOne(id: string): Promise<Project> {
-    return this.projectRepository.findOne(id);
+    return this.projectRepository.findOneOrFail(id);
   }
 
   async create(dto: CreateProjectDto): Promise<Project> {
