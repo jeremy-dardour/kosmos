@@ -5,12 +5,13 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-30 (session 27)_
+_Last updated: 2026-07-30 (session 28)_
 
 ## Phase
 
 **Building.** Slices 1 and 2 are merged; Slices 3 and 6 are in draft PRs #37
-and #38. Four build-slice/deployment issues remain (#21, #22, #24, #26).
+and #38. Slice 4 is complete on `feat/next-feature`. Three build-slice/deployment
+issues remain (#22, #24, #26).
 
 ## Done
 
@@ -120,6 +121,15 @@ and #38. Four build-slice/deployment issues remain (#21, #22, #24, #26).
   simplified `mock-api.ts`, documented the repository extension pattern in API
   standards
   ([session 27](./sessions/session-27-2026-07-30-pr38-review-followup.md)).
+- **#21 — Slice 4: deadline badges + filters** — complete on
+  `feat/next-feature`. Deadline countdown badges on overview cards with three
+  urgency bands, date ticks under pipeline dots, overdue card treatment
+  (matches blocked border), owner filter (single-select by current-step
+  effective owner, excludes NotStarted/Complete), and group filter
+  (multi-select show/hide). Shared `urgency.ts` module, `FilterTrigger`
+  component, `useCurrentDate` hook extracted. 7 integration tests added. No
+  API changes
+  ([session 28](./sessions/session-28-2026-07-30-slice-4-deadline-badges-filters.md)).
 
 ## In flight
 
@@ -137,7 +147,7 @@ and #38. Four build-slice/deployment issues remain (#21, #22, #24, #26).
 
 1. Review and land PRs #37 and #38.
 2. Review and refine the step-editing UI/design in #39.
-3. Build slices #21, #22, and #24, then deployment (#26). Reorder repositories use
+3. Build slices #22 and #24, then deployment (#26). Reorder repositories use
    two-phase temporary positions because the generated constraints are not
    deferrable.
 4. Mobile responsiveness deferred to #35.
