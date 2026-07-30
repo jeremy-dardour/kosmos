@@ -1,8 +1,13 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 
-import type { Overview, Workstream } from '@/api/hooks/use-overview';
-import type { UpdatePipelineInput } from '@/api/hooks/use-update-pipeline';
+import type {
+  Group,
+  Overview,
+  Project,
+  Workstream,
+} from '@/api/hooks/use-overview';
+import type { UpdateWorkstreamPipelineInput } from '@/api/hooks/use-update-workstream-pipeline';
 import type {
   CreateNoteInput,
   NoteEntry,
@@ -54,7 +59,7 @@ interface AdvanceRequest {
 export function setupOverviewApi(initialOverview: Overview) {
   let overview = initialOverview;
   let generatedId = 0;
-  let lastPipelineInput: UpdatePipelineInput | null = null;
+  let lastPipelineInput: UpdateWorkstreamPipelineInput | null = null;
 
   server.use(
     http.get(`${API_BASE}/api/projects`, () =>
@@ -69,7 +74,7 @@ export function setupOverviewApi(initialOverview: Overview) {
     http.put(
       `${API_BASE}/api/workstreams/:id/pipeline`,
       async ({ params, request }) => {
-        const input = (await request.json()) as UpdatePipelineInput;
+        const input = (await request.json()) as UpdateWorkstreamPipelineInput;
         lastPipelineInput = input;
         const workstreamId = String(params.id);
         const ws = overview.workstreams.find(
@@ -156,6 +161,127 @@ export function setupOverviewApi(initialOverview: Overview) {
           : problemResponse(404, problemDetails(404));
       },
     ),
+    http.post(
+      `${API_BASE}/api/projects/:projectId/workstreams`,
+      async ({ request }) => {
+        const input = (await request.json()) as {
+          name: string;
+          icon: string;
+          groupId?: string | null;
+          ownerId?: string | null;
+        };
+        const now = new Date().toISOString();
+        const created: Workstream = {
+          id: `mock-ws-${++generatedId}`,
+          name: input.name,
+          icon: input.icon,
+          groupId: input.groupId ?? null,
+          lifecycle: 'not_started',
+          ownerId: input.ownerId ?? null,
+          currentStepId: null,
+          startedAt: null,
+          completedAt: null,
+          nearestDeadlineStepId: null,
+          steps: [],
+          createdAt: now,
+          updatedAt: now,
+        };
+        overview = {
+          ...overview,
+          workstreams: [...overview.workstreams, created],
+        };
+        return HttpResponse.json(created, { status: 201 });
+      },
+    ),
+    http.patch(
+      `${API_BASE}/api/workstreams/:id`,
+      async ({ params, request }) => {
+        const input = (await request.json()) as Partial<Workstream>;
+        const ws = overview.workstreams.find((item) => item.id === params.id);
+        if (!ws) return problemResponse(404, problemDetails(404));
+
+        const updated = {
+          ...ws,
+          ...input,
+          updatedAt: new Date().toISOString(),
+        };
+        overview = {
+          ...overview,
+          workstreams: overview.workstreams.map((item) =>
+            item.id === ws.id ? updated : item,
+          ),
+        };
+        return HttpResponse.json(updated);
+      },
+    ),
+    http.delete(`${API_BASE}/api/workstreams/:id`, ({ params }) => {
+      overview = {
+        ...overview,
+        workstreams: overview.workstreams.filter(
+          (item) => item.id !== params.id,
+        ),
+      };
+      return new HttpResponse(null, { status: 204 });
+    }),
+    http.post(
+      `${API_BASE}/api/projects/:projectId/groups`,
+      async ({ request }) => {
+        const input = (await request.json()) as {
+          name: string;
+          color: string;
+        };
+        const now = new Date().toISOString();
+        const created: Group = {
+          id: `mock-group-${++generatedId}`,
+          name: input.name,
+          color: input.color,
+          createdAt: now,
+          updatedAt: now,
+        };
+        overview = { ...overview, groups: [...overview.groups, created] };
+        return HttpResponse.json(created, { status: 201 });
+      },
+    ),
+    http.patch(`${API_BASE}/api/groups/:id`, async ({ params, request }) => {
+      const input = (await request.json()) as Partial<Group>;
+      const existing = overview.groups.find((item) => item.id === params.id);
+      if (!existing) return problemResponse(404, problemDetails(404));
+
+      const updated = {
+        ...existing,
+        ...input,
+        updatedAt: new Date().toISOString(),
+      };
+      overview = {
+        ...overview,
+        groups: overview.groups.map((item) =>
+          item.id === existing.id ? updated : item,
+        ),
+      };
+      return HttpResponse.json(updated);
+    }),
+    http.delete(`${API_BASE}/api/groups/:id`, ({ params }) => {
+      overview = {
+        ...overview,
+        groups: overview.groups.filter((item) => item.id !== params.id),
+        workstreams: overview.workstreams.map((item) =>
+          item.groupId === params.id ? { ...item, groupId: null } : item,
+        ),
+      };
+      return new HttpResponse(null, { status: 204 });
+    }),
+    http.patch(`${API_BASE}/api/projects/:id`, async ({ request }) => {
+      const input = (await request.json()) as Partial<Project>;
+      overview = {
+        ...overview,
+        project: {
+          ...overview.project,
+          ...input,
+          updatedAt: new Date().toISOString(),
+        },
+      };
+      return HttpResponse.json(overview.project);
+    }),
   );
 
   return {

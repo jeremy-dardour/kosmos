@@ -1,24 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query';
 
 import { $api } from '@/api/api-client';
+import { useInvalidateOverview } from '@/api/hooks/use-invalidate-overview';
 import { formatToApiError } from '@/errors/format-error';
 
 import type { dtos } from '@/types/openapi';
 
-export type UpdatePipelineInput = dtos['UpdatePipelineDto'];
+export type UpdateWorkstreamPipelineInput = dtos['UpdatePipelineDto'];
 
-export function useUpdatePipeline(projectId: string | undefined) {
+export function useUpdateWorkstreamPipeline(projectId: string | undefined) {
   const queryClient = useQueryClient();
-  const invalidateOverview = async () => {
-    if (!projectId) return;
-
-    const overview = $api.queryOptions(
-      'get',
-      '/api/projects/{projectId}/overview',
-      { params: { path: { projectId } } },
-    );
-    await queryClient.invalidateQueries({ queryKey: overview.queryKey });
-  };
+  const invalidateOverview = useInvalidateOverview(projectId);
 
   return $api.useMutation(
     'put',

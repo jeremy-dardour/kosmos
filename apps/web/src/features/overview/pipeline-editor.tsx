@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { StepNotes } from '@/features/overview/step-notes';
 
 import type { Step, UserSummary, Workstream } from '@/api/hooks/use-overview';
-import type { UpdatePipelineInput } from '@/api/hooks/use-update-pipeline';
+import type { UpdateWorkstreamPipelineInput } from '@/api/hooks/use-update-workstream-pipeline';
 import type { NoteEntry } from '@/api/hooks/use-workstream-notes';
 
 interface DraftChecklistItem {
@@ -35,7 +35,7 @@ interface PipelineEditorProperties {
   notesError?: boolean;
   isSaving: boolean;
   onCancel: () => void;
-  onSave: (input: UpdatePipelineInput) => void;
+  onSave: (input: UpdateWorkstreamPipelineInput) => void;
 }
 
 function nextDraftKey(prefix: string): string {

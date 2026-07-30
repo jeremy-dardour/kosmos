@@ -143,6 +143,46 @@ export interface Translations {
   'overview.filter.allGroups': string;
   'overview.filter.groupCount': string;
   'overview.filter.groupLabel': string;
+  'overview.manage.newWorkstream': string;
+  'overview.manage.manageGroups': string;
+  'overview.manage.projectSettings': string;
+  'overview.manage.moreActions': string;
+  'overview.manage.editDetails': string;
+  'overview.manage.deleteWorkstream': string;
+  'overview.manage.deleteWorkstreamTitle': string;
+  'overview.manage.deleteWorkstreamDescription': string;
+  'overview.manage.deleteWorkstreamConfirm': string;
+  'overview.manage.form.createTitle': string;
+  'overview.manage.form.editTitle': string;
+  'overview.manage.form.nameLabel': string;
+  'overview.manage.form.namePlaceholder': string;
+  'overview.manage.form.iconLabel': string;
+  'overview.manage.form.iconPlaceholder': string;
+  'overview.manage.form.groupLabel': string;
+  'overview.manage.form.noGroup': string;
+  'overview.manage.form.ownerLabel': string;
+  'overview.manage.form.noOwner': string;
+  'overview.manage.form.create': string;
+  'overview.manage.form.save': string;
+  'overview.manage.form.saving': string;
+  'overview.manage.form.cancel': string;
+  'overview.manage.groups.title': string;
+  'overview.manage.groups.empty': string;
+  'overview.manage.groups.nameLabel': string;
+  'overview.manage.groups.colorLabel': string;
+  'overview.manage.groups.save': string;
+  'overview.manage.groups.deleteLabel': string;
+  'overview.manage.groups.newNameLabel': string;
+  'overview.manage.groups.newNamePlaceholder': string;
+  'overview.manage.groups.newColorLabel': string;
+  'overview.manage.groups.add': string;
+  'overview.manage.groups.done': string;
+  'overview.manage.groups.deleteTitle': string;
+  'overview.manage.groups.deleteDescription': string;
+  'overview.manage.groups.deleteConfirm': string;
+  'overview.manage.project.title': string;
+  'overview.manage.project.nameLabel': string;
+  'overview.manage.project.eventDateLabel': string;
 }
 
 export interface Resources {
