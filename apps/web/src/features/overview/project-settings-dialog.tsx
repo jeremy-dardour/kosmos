@@ -2,17 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useUpdateProject } from '@/api/hooks/use-update-project';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FormDialog } from '@/features/overview/form-dialog';
 
 import type { Project } from '@/api/hooks/use-overview';
 
@@ -22,7 +14,6 @@ interface ProjectSettingsDialogProperties {
   onOpenChange: (isOpen: boolean) => void;
 }
 
-/** Edits the project name and event date; an empty date clears the countdown. */
 export const ProjectSettingsDialog = ({
   project,
   isOpen,
@@ -48,61 +39,40 @@ export const ProjectSettingsDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('overview.manage.project.title')}</DialogTitle>
-        </DialogHeader>
+    <FormDialog
+      title={t('overview.manage.project.title')}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      onSubmit={submit}
+      isValid={isValid}
+      isPending={updateProject.isPending}
+      submitLabel={t('overview.manage.form.save')}
+      pendingLabel={t('overview.manage.form.saving')}
+      cancelLabel={t('overview.manage.form.cancel')}
+    >
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="project-name">
+          {t('overview.manage.project.nameLabel')}
+        </Label>
+        <Input
+          id="project-name"
+          value={name}
+          maxLength={255}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </div>
 
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            submit();
-          }}
-        >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="project-name">
-              {t('overview.manage.project.nameLabel')}
-            </Label>
-            <Input
-              id="project-name"
-              value={name}
-              maxLength={255}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="project-event-date">
-              {t('overview.manage.project.eventDateLabel')}
-            </Label>
-            <Input
-              id="project-event-date"
-              type="date"
-              value={eventDate}
-              onChange={(event) => setEventDate(event.target.value)}
-            />
-          </div>
-
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" size="sm" />}>
-              {t('overview.manage.form.cancel')}
-            </DialogClose>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!isValid || updateProject.isPending}
-            >
-              {t(
-                updateProject.isPending
-                  ? 'overview.manage.form.saving'
-                  : 'overview.manage.form.save',
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="project-event-date">
+          {t('overview.manage.project.eventDateLabel')}
+        </Label>
+        <Input
+          id="project-event-date"
+          type="date"
+          value={eventDate}
+          onChange={(event) => setEventDate(event.target.value)}
+        />
+      </div>
+    </FormDialog>
   );
 };
