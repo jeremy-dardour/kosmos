@@ -10,8 +10,9 @@ _Last updated: 2026-07-30 (session 29)_
 ## Phase
 
 **Building.** Slices 1 and 2 are merged; Slices 3 and 6 are in draft PRs #37
-and #38. Slices 4 and 5 are complete on feature branches. Two
-build-slice/deployment issues remain (#24, #26).
+and #38. Slice 4 is complete on `feat/next-feature`. Slice 7 is complete on
+`feat/slice-7` (PR pending). The last remaining feature slice is #22 (Slice 5,
+notes writes); deployment (#26) follows.
 
 ## Done
 
@@ -137,6 +138,16 @@ build-slice/deployment issues remain (#24, #26).
   and note mutations preserve pipeline drafts. The OpenAPI contract, stateful
   MSW adapter, integration coverage, and API E2E coverage are updated
   ([session 29](./sessions/session-29-2026-07-30-slice-5-notes-actions.md)).
+- **#24 — Slice 7: workstream + group management** — complete on `feat/slice-7`
+  (6 unitary commits). Frontend-only (backend CRUD existed from Slice 1). Seven
+  mutation hooks + a shared `useInvalidateOverview` seam; four dialogs
+  (`WorkstreamFormDialog` create/edit, `GroupManagerDialog`,
+  `ProjectSettingsDialog`, shared `ConfirmDialog`); header + detail-panel entry
+  points. Group deletion relies on backend `SET NULL`. Fixed a real test-harness
+  i18n bug (`escapeValue` divergence double-escaped `&` in interpolated names).
+  `/code-review` run; one spec gap (event-date/countdown coverage) resolved.
+  Deferred edit-UX polish tracked in #43
+  ([session 29](./sessions/session-29-2026-07-30-slice-7-management.md)).
 
 ## In flight
 
@@ -154,10 +165,10 @@ build-slice/deployment issues remain (#24, #26).
 
 ## Next steps
 
-1. Review and land PRs #37 and #38.
-2. Review and land Slice 5 (#22), then refine the step-editing UI/design in
-   #39.
-3. Build slice #24, then deployment (#26). Reorder repositories use
-   two-phase temporary positions because the generated constraints are not
-   deferrable.
+1. Open the PR for Slice 7 (`feat/slice-7`, #24); review and land PRs #37 and
+   #38.
+2. Review and refine the management/step-editing UI in #39 and #43.
+3. Build the last feature slice #22 (notes writes), then deployment (#26).
+   Reorder repositories use two-phase temporary positions because the generated
+   constraints are not deferrable.
 4. Mobile responsiveness deferred to #35.
