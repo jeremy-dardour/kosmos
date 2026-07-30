@@ -6,6 +6,8 @@ import { WorkstreamCard } from '@/features/overview/workstream-card';
 
 import type { Step, StepStatus, Workstream } from '@/api/hooks/use-overview';
 
+const TODAY = new Date('2026-07-30');
+
 function step(name: string, status: StepStatus, isBlocked = false): Step {
   return {
     id: name,
@@ -45,7 +47,7 @@ function workstream(overrides: Partial<Workstream> = {}): Workstream {
 
 describe('workstreamCard', () => {
   it('renders the name, icon and pipeline', () => {
-    render(<WorkstreamCard workstream={workstream()} />);
+    render(<WorkstreamCard workstream={workstream()} today={TODAY} />);
 
     expect(screen.getByText('Catering')).toBeInTheDocument();
     expect(screen.getByText('🍽️')).toBeInTheDocument();
@@ -57,6 +59,7 @@ describe('workstreamCard', () => {
       <WorkstreamCard
         workstream={workstream({ ownerId: 'u1' })}
         owner={{ id: 'u1', name: 'Alex Doe', avatarUrl: null }}
+        today={TODAY}
       />,
     );
 
@@ -64,7 +67,7 @@ describe('workstreamCard', () => {
   });
 
   it('marks an unassigned workstream', () => {
-    render(<WorkstreamCard workstream={workstream()} />);
+    render(<WorkstreamCard workstream={workstream()} today={TODAY} />);
 
     expect(
       screen.getByLabelText('overview.card.unassigned'),
@@ -78,6 +81,7 @@ describe('workstreamCard', () => {
           lifecycle: 'not_started',
           steps: [step('Decide on palette', 'not_started')],
         })}
+        today={TODAY}
       />,
     );
 
@@ -92,6 +96,7 @@ describe('workstreamCard', () => {
           lifecycle: 'complete',
           steps: [step('Sign contract', 'done')],
         })}
+        today={TODAY}
       />,
     );
 
@@ -104,6 +109,7 @@ describe('workstreamCard', () => {
         workstream={workstream({
           steps: [step('Collect addresses', 'in_progress', true)],
         })}
+        today={TODAY}
       />,
     );
 
@@ -120,6 +126,7 @@ describe('workstreamCard', () => {
         workstream={workstream({
           steps: [step('Collect addresses', 'done', true)],
         })}
+        today={TODAY}
       />,
     );
 
@@ -134,6 +141,7 @@ describe('workstreamCard', () => {
         workstream={workstream()}
         isSelected
         onSelect={vi.fn()}
+        today={TODAY}
       />,
     );
 
@@ -144,7 +152,13 @@ describe('workstreamCard', () => {
 
   it('calls onSelect when clicked', () => {
     const onSelect = vi.fn();
-    render(<WorkstreamCard workstream={workstream()} onSelect={onSelect} />);
+    render(
+      <WorkstreamCard
+        workstream={workstream()}
+        today={TODAY}
+        onSelect={onSelect}
+      />,
+    );
 
     fireEvent.click(screen.getByRole('button'));
     expect(onSelect).toHaveBeenCalledOnce();
@@ -153,7 +167,13 @@ describe('workstreamCard', () => {
   it('calls onSelect on Enter key', async () => {
     const onSelect = vi.fn();
     const agent = userEvent.setup();
-    render(<WorkstreamCard workstream={workstream()} onSelect={onSelect} />);
+    render(
+      <WorkstreamCard
+        workstream={workstream()}
+        today={TODAY}
+        onSelect={onSelect}
+      />,
+    );
 
     screen.getByRole('button').focus();
     await agent.keyboard('{Enter}');

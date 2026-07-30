@@ -109,5 +109,13 @@
   "overview.editor.addStep": "Add step",
   "overview.editor.cancel": "Cancel",
   "overview.editor.save": "Save pipeline",
-  "overview.editor.saving": "Saving…"
+  "overview.editor.saving": "Saving…",
+  "overview.badge.upcoming": "{{name}} in {{count}}d",
+  "overview.badge.overdue": "{{name}} {{count}}d overdue",
+  "overview.filter.allOwners": "All",
+  "overview.filter.myTasks": "My tasks",
+  "overview.filter.ownerLabel": "Filter by owner",
+  "overview.filter.allGroups": "All groups",
+  "overview.filter.groupCount": "{{count}} groups",
+  "overview.filter.groupLabel": "Filter by group"
 }

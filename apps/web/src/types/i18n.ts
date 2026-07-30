@@ -110,6 +110,14 @@ export interface Translations {
   'overview.editor.cancel': string;
   'overview.editor.save': string;
   'overview.editor.saving': string;
+  'overview.badge.upcoming': string;
+  'overview.badge.overdue': string;
+  'overview.filter.allOwners': string;
+  'overview.filter.myTasks': string;
+  'overview.filter.ownerLabel': string;
+  'overview.filter.allGroups': string;
+  'overview.filter.groupCount': string;
+  'overview.filter.groupLabel': string;
 }
 
 export interface Resources {

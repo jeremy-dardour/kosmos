@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { DeadlineBadge } from '@/features/overview/deadline-badge';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
 import { PipelineDots } from '@/features/overview/pipeline-dots';
@@ -16,6 +17,28 @@ interface WorkstreamCardProperties {
   onSelect?: () => void;
   isAdvancing?: boolean;
   onAdvance?: (outcome?: AdvanceOutcome) => void;
+  today: Date;
+}
+
+function findDeadlineStep(workstream: Workstream) {
+  if (!workstream.nearestDeadlineStepId) return null;
+  return (
+    workstream.steps.find((s) => s.id === workstream.nearestDeadlineStepId) ??
+    null
+  );
+}
+
+function isOverdueWorkstream(workstream: Workstream, today: Date): boolean {
+  const step = findDeadlineStep(workstream);
+  if (!step?.deadline) return false;
+  const [year, month, day] = step.deadline.split('-');
+  const target = Date.UTC(Number(year), Number(month) - 1, Number(day));
+  const todayUtc = Date.UTC(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  return target < todayUtc;
 }
 
 export const WorkstreamCard = ({
@@ -25,12 +48,15 @@ export const WorkstreamCard = ({
   onSelect,
   isAdvancing = false,
   onAdvance,
+  today,
 }: WorkstreamCardProperties) => {
   const { t } = useTranslation();
 
   const isComplete = workstream.lifecycle === 'complete';
   const isNotStarted = workstream.lifecycle === 'not_started';
   const isBlocked = workstream.steps.some((step) => isBlockedNow(step));
+  const isOverdue = isOverdueWorkstream(workstream, today);
+  const deadlineStep = findDeadlineStep(workstream);
 
   return (
     <div className="relative">
@@ -44,7 +70,11 @@ export const WorkstreamCard = ({
           isSelected
             ? 'border-step-in-progress bg-step-in-progress/8'
             : 'hover:border-muted-foreground/30',
-          isBlocked && !isSelected && 'border-step-blocked/40',
+          !isSelected && isBlocked && 'border-step-blocked/40',
+          !isSelected &&
+            !isBlocked &&
+            isOverdue &&
+            'border-urgency-late/40 bg-urgency-soon/20',
           isComplete && 'opacity-65',
         )}
       >
@@ -70,11 +100,13 @@ export const WorkstreamCard = ({
             </span>
           )}
 
+          {deadlineStep && <DeadlineBadge step={deadlineStep} today={today} />}
+
           <OwnerAvatar owner={owner} className="ml-auto" />
         </div>
 
         <div className="mt-3">
-          <PipelineDots steps={workstream.steps} />
+          <PipelineDots steps={workstream.steps} today={today} />
         </div>
       </button>
 

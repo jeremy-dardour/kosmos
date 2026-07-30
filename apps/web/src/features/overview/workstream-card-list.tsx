@@ -14,6 +14,7 @@ interface WorkstreamCardListProperties {
   onSelect: (id: string) => void;
   advancingId: string | null;
   onAdvance: (id: string, outcome?: AdvanceOutcome) => void;
+  today: Date;
 }
 
 export const WorkstreamCardList = ({
@@ -24,6 +25,7 @@ export const WorkstreamCardList = ({
   onSelect,
   advancingId,
   onAdvance,
+  today,
 }: WorkstreamCardListProperties) => {
   const { t } = useTranslation();
 
@@ -50,6 +52,7 @@ export const WorkstreamCardList = ({
           onSelect={onSelect}
           advancingId={advancingId}
           onAdvance={onAdvance}
+          today={today}
         />
       ))}
     </div>
