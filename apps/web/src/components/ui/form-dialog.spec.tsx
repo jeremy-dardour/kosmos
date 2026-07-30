@@ -27,7 +27,7 @@ function renderFormDialog(
   return props;
 }
 
-describe('FormDialog', () => {
+describe('form dialog', () => {
   it('renders the title, the fields, and the submit label', () => {
     renderFormDialog();
     expect(screen.getByRole('heading', { name: 'Edit thing' })).toBeVisible();

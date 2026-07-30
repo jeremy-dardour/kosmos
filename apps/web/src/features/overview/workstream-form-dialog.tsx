@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 import { useCreateWorkstream } from '@/api/hooks/use-create-workstream';
 import { useUpdateWorkstream } from '@/api/hooks/use-update-workstream';
+import { FormDialog } from '@/components/ui/form-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FormDialog } from '@/components/ui/form-dialog';
 
 import type { Group, UserSummary, Workstream } from '@/api/hooks/use-overview';
 

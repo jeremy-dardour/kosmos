@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useUpdateProject } from '@/api/hooks/use-update-project';
+import { FormDialog } from '@/components/ui/form-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FormDialog } from '@/components/ui/form-dialog';
 
 import type { Project } from '@/api/hooks/use-overview';
 
