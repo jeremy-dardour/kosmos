@@ -16,8 +16,10 @@ export function useUpdateProject(projectId: string | undefined) {
     '/api/projects/{id}',
     {
       onSuccess: async () => {
-        // Name/event-date live in both the overview aggregate (header) and the
-        // projects list cache used to discover the id.
+        // A project edit changes name/eventDate, which are cached in two
+        // places: the overview aggregate (what the header renders) and the
+        // projects-list query (GET /api/projects, used to look up the single
+        // project's id). Invalidate both, or one of them serves stale data.
         const projects = $api.queryOptions('get', '/api/projects');
         await Promise.all([
           invalidateOverview(),

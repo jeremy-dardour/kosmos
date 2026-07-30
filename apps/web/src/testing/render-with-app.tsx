@@ -16,8 +16,11 @@ import type { ReactElement } from 'react';
 await i18n.use(initReactI18next).init({
   lng: 'en',
   resources: { en: { translation: en } },
-  // Mirror the app's config: React escapes on render, so leaving i18next
-  // escaping on would double-escape names like "Venue & Catering" in labels.
+  // Mirror the app's i18n config (interpolation.escapeValue: false). i18next
+  // HTML-escapes interpolated values by default, but we render translated
+  // strings only as React children — and React already escapes those. With
+  // both on, a name like "Venue & Catering" becomes "Venue &amp; Catering"
+  // (double-escaped), so tests querying by role/text name fail to match.
   interpolation: { escapeValue: false },
 });
 
