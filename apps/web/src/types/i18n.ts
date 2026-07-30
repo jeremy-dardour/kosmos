@@ -114,7 +114,10 @@ export interface Translations {
   'overview.badge.overdue': string;
   'overview.filter.allOwners': string;
   'overview.filter.myTasks': string;
+  'overview.filter.ownerUser': string;
   'overview.filter.ownerLabel': string;
+  'overview.filter.ownerAll': string;
+  'overview.filter.ownerMine': string;
   'overview.filter.allGroups': string;
   'overview.filter.groupCount': string;
   'overview.filter.groupLabel': string;

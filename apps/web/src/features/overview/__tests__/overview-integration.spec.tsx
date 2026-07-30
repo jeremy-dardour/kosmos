@@ -492,7 +492,7 @@ describe('with frozen date', () => {
       expect(screen.getByText('Flowers')).toBeVisible();
 
       await agent.click(
-        screen.getByRole('button', { name: 'Filter by owner' }),
+        screen.getByRole('button', { name: 'Filter by current-step owner' }),
       );
       await agent.click(
         await screen.findByRole('menuitemradio', { name: 'My tasks' }),
@@ -556,7 +556,7 @@ describe('with frozen date', () => {
       expect(screen.getByText('Venue')).toBeVisible();
 
       await agent.click(
-        screen.getByRole('button', { name: 'Filter by owner' }),
+        screen.getByRole('button', { name: 'Filter by current-step owner' }),
       );
       await agent.click(
         await screen.findByRole('menuitemradio', { name: 'My tasks' }),
@@ -622,7 +622,7 @@ describe('with frozen date', () => {
       expect(screen.getByText('Music')).toBeVisible();
 
       await agent.click(
-        screen.getByRole('button', { name: 'Filter by group' }),
+        screen.getByRole('button', { name: 'Show or hide groups' }),
       );
       await agent.click(
         await screen.findByRole('menuitemcheckbox', {

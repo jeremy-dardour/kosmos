@@ -32,7 +32,9 @@ export const OwnerFilter = ({
       ? t('overview.filter.allOwners')
       : value === currentUserId
         ? t('overview.filter.myTasks')
-        : (selectedUser?.name ?? t('overview.filter.allOwners'));
+        : t('overview.filter.ownerUser', {
+            name: selectedUser?.name ?? '?',
+          });
 
   return (
     <DropdownMenu>
@@ -42,12 +44,12 @@ export const OwnerFilter = ({
       <DropdownMenuContent align="end">
         <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
           <DropdownMenuRadioItem value={OWNER_FILTER_ALL}>
-            {t('overview.filter.allOwners')}
+            {t('overview.filter.ownerAll')}
           </DropdownMenuRadioItem>
           {users.map((user) => (
             <DropdownMenuRadioItem key={user.id} value={user.id}>
               {user.id === currentUserId
-                ? t('overview.filter.myTasks')
+                ? t('overview.filter.ownerMine')
                 : user.name}
             </DropdownMenuRadioItem>
           ))}

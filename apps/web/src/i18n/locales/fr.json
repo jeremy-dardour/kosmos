@@ -112,10 +112,13 @@
   "overview.editor.saving": "Enregistrement…",
   "overview.badge.upcoming": "{{name}} dans {{count}}j",
   "overview.badge.overdue": "{{name}} {{count}}j en retard",
-  "overview.filter.allOwners": "Tous",
-  "overview.filter.myTasks": "Mes tâches",
-  "overview.filter.ownerLabel": "Filtrer par responsable",
-  "overview.filter.allGroups": "Tous les groupes",
-  "overview.filter.groupCount": "{{count}} groupes",
-  "overview.filter.groupLabel": "Filtrer par groupe"
+  "overview.filter.allOwners": "Responsable : Tous",
+  "overview.filter.myTasks": "Responsable : Moi",
+  "overview.filter.ownerUser": "Responsable : {{name}}",
+  "overview.filter.ownerLabel": "Filtrer par responsable de l'étape en cours",
+  "overview.filter.ownerAll": "Tous les responsables",
+  "overview.filter.ownerMine": "Mes tâches",
+  "overview.filter.allGroups": "Groupes : Tous",
+  "overview.filter.groupCount": "Groupes : {{count}}",
+  "overview.filter.groupLabel": "Afficher ou masquer des groupes"
 }
