@@ -16,6 +16,9 @@ import type { ReactElement } from 'react';
 await i18n.use(initReactI18next).init({
   lng: 'en',
   resources: { en: { translation: en } },
+  // Mirror the app's config: React escapes on render, so leaving i18next
+  // escaping on would double-escape names like "Venue & Catering" in labels.
+  interpolation: { escapeValue: false },
 });
 
 export function renderWithApp(ui: ReactElement) {
