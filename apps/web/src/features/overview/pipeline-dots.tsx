@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
+import { urgencyBand } from '@/features/overview/urgency';
 import { cn } from '@/lib/utils';
 
 import type { Step, StepStatus } from '@/api/hooks/use-overview';
@@ -31,6 +32,11 @@ const STATUS_LABELS = {
   skipped: 'overview.stepStatus.skipped',
 } as const satisfies Record<StepVisual, string>;
 
+function formatDateTick(deadline: string): string {
+  const [, month, day] = deadline.split('-');
+  return `${Number(month)}/${Number(day)}`;
+}
+
 export const PipelineDots = ({ steps }: PipelineDotsProperties) => {
   const { t } = useTranslation();
 
@@ -42,16 +48,21 @@ export const PipelineDots = ({ steps }: PipelineDotsProperties) => {
     );
   }
 
+  // eslint-disable-next-line @eslint-react/purity -- intentional clock read
+  const now = new Date();
+
   return (
     <ol className="flex items-start">
       {steps.map((step, index) => {
         const visual = stepVisual(step);
+        const band = step.deadline
+          ? urgencyBand(step.deadline, now)
+          : undefined;
+        const isUrgent = band === 'soon' || band === 'late';
 
         return (
           <li
             key={step.id}
-            // Capped so dot spacing stays comparable across cards; shrinking
-            // only kicks in for pipelines long enough to overflow.
             className="flex min-w-0 max-w-20 flex-1 flex-col items-center gap-1.5"
           >
             <div className="relative flex h-dot-current w-full items-center justify-center">
@@ -84,6 +95,18 @@ export const PipelineDots = ({ steps }: PipelineDotsProperties) => {
             >
               {step.name}
             </span>
+            {step.deadline && (
+              <span
+                className={cn(
+                  'text-[9px] tabular-nums leading-none',
+                  isUrgent
+                    ? 'font-medium text-urgency-late-foreground'
+                    : 'text-muted-foreground',
+                )}
+              >
+                {formatDateTick(step.deadline)}
+              </span>
+            )}
           </li>
         );
       })}

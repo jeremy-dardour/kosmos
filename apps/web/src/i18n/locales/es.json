@@ -109,5 +109,16 @@
   "overview.editor.addStep": "Añadir paso",
   "overview.editor.cancel": "Cancelar",
   "overview.editor.save": "Guardar pipeline",
-  "overview.editor.saving": "Guardando…"
+  "overview.editor.saving": "Guardando…",
+  "overview.badge.upcoming": "{{name}} en {{count}}d",
+  "overview.badge.overdue": "{{name}} {{count}}d vencido",
+  "overview.filter.allOwners": "Responsable: Todos",
+  "overview.filter.myTasks": "Responsable: Yo",
+  "overview.filter.ownerUser": "Responsable: {{name}}",
+  "overview.filter.ownerLabel": "Filtrar por responsable del paso actual",
+  "overview.filter.ownerAll": "Todos los responsables",
+  "overview.filter.ownerMine": "Mis tareas",
+  "overview.filter.allGroups": "Grupos: Todos",
+  "overview.filter.groupCount": "Grupos: {{count}}",
+  "overview.filter.groupLabel": "Mostrar u ocultar grupos"
 }

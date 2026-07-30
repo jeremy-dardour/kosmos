@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { daysUntil } from '@/features/overview/days-until';
@@ -7,36 +6,16 @@ interface EventCountdownProperties {
   eventDate?: string | null;
 }
 
-/** Re-renders after the local calendar day rolls over. */
-function useCurrentDate(): Date {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const nextMidnight = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + 1,
-    );
-    const timeout = globalThis.setTimeout(
-      () => setNow(new Date()),
-      nextMidnight.getTime() - now.getTime(),
-    );
-
-    return () => globalThis.clearTimeout(timeout);
-  }, [now]);
-
-  return now;
-}
-
 /** Days to the event date; renders nothing when no event date is set. */
 export const EventCountdown = ({ eventDate }: EventCountdownProperties) => {
   const { t } = useTranslation();
-  const now = useCurrentDate();
 
   if (eventDate === null || eventDate === undefined) {
     return null;
   }
 
+  // eslint-disable-next-line @eslint-react/purity -- intentional clock read
+  const now = new Date();
   const daysUntilEvent = daysUntil(eventDate, now);
   const label =
     daysUntilEvent > 1

@@ -109,5 +109,16 @@
   "overview.editor.addStep": "Ajouter une étape",
   "overview.editor.cancel": "Annuler",
   "overview.editor.save": "Enregistrer le pipeline",
-  "overview.editor.saving": "Enregistrement…"
+  "overview.editor.saving": "Enregistrement…",
+  "overview.badge.upcoming": "{{name}} dans {{count}}j",
+  "overview.badge.overdue": "{{name}} {{count}}j en retard",
+  "overview.filter.allOwners": "Responsable : Tous",
+  "overview.filter.myTasks": "Responsable : Moi",
+  "overview.filter.ownerUser": "Responsable : {{name}}",
+  "overview.filter.ownerLabel": "Filtrer par responsable de l'étape en cours",
+  "overview.filter.ownerAll": "Tous les responsables",
+  "overview.filter.ownerMine": "Mes tâches",
+  "overview.filter.allGroups": "Groupes : Tous",
+  "overview.filter.groupCount": "Groupes : {{count}}",
+  "overview.filter.groupLabel": "Afficher ou masquer des groupes"
 }

@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
+import { daysUntil } from '@/features/overview/days-until';
+import { DeadlineBadge } from '@/features/overview/deadline-badge';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
 import { PipelineDots } from '@/features/overview/pipeline-dots';
@@ -18,6 +20,14 @@ interface WorkstreamCardProperties {
   onAdvance?: (outcome?: AdvanceOutcome) => void;
 }
 
+function findDeadlineStep(workstream: Workstream) {
+  if (!workstream.nearestDeadlineStepId) return null;
+  return (
+    workstream.steps.find((s) => s.id === workstream.nearestDeadlineStepId) ??
+    null
+  );
+}
+
 export const WorkstreamCard = ({
   workstream,
   owner,
@@ -31,6 +41,9 @@ export const WorkstreamCard = ({
   const isComplete = workstream.lifecycle === 'complete';
   const isNotStarted = workstream.lifecycle === 'not_started';
   const isBlocked = workstream.steps.some((step) => isBlockedNow(step));
+  const deadlineStep = findDeadlineStep(workstream);
+  const isOverdue =
+    deadlineStep?.deadline != null && daysUntil(deadlineStep.deadline) < 0;
 
   return (
     <div className="relative">
@@ -44,7 +57,8 @@ export const WorkstreamCard = ({
           isSelected
             ? 'border-step-in-progress bg-step-in-progress/8'
             : 'hover:border-muted-foreground/30',
-          isBlocked && !isSelected && 'border-step-blocked/40',
+          !isSelected && isBlocked && 'border-step-blocked/40',
+          !isSelected && !isBlocked && isOverdue && 'border-step-blocked/40',
           isComplete && 'opacity-65',
         )}
       >
@@ -69,6 +83,8 @@ export const WorkstreamCard = ({
               {t('overview.card.complete')}
             </span>
           )}
+
+          {deadlineStep && <DeadlineBadge step={deadlineStep} />}
 
           <OwnerAvatar owner={owner} className="ml-auto" />
         </div>
