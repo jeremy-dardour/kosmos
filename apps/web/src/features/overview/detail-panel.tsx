@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToggleChecklistItem } from '@/api/hooks/use-toggle-checklist-item';
@@ -38,16 +38,13 @@ export const DetailPanel = ({
   const updatePipeline = useUpdatePipeline(projectId);
   const toggleChecklist = useToggleChecklistItem(projectId);
   const notes = useWorkstreamNotes(workstream?.id);
-  const notesByStepId = useMemo(() => {
-    const grouped = new Map<string, NoteEntry[]>();
-    const entries = notes.data ?? [];
-    for (const note of entries) {
-      const stepNotes = grouped.get(note.stepId) ?? [];
-      stepNotes.push(note);
-      grouped.set(note.stepId, stepNotes);
-    }
-    return grouped;
-  }, [notes.data]);
+  const notesByStepId = new Map<string, NoteEntry[]>();
+  const noteEntries = notes.data ?? [];
+  for (const note of noteEntries) {
+    const stepNotes = notesByStepId.get(note.stepId) ?? [];
+    stepNotes.push(note);
+    notesByStepId.set(note.stepId, stepNotes);
+  }
 
   if (!workstream) {
     return (
