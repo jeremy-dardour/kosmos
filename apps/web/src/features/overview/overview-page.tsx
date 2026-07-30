@@ -2,17 +2,26 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useAdvanceWorkstream } from '@/api/hooks/use-advance-workstream';
+import { useDeleteWorkstream } from '@/api/hooks/use-delete-workstream';
 import { useOverview } from '@/api/hooks/use-overview';
 import { useProjects } from '@/api/hooks/use-projects';
 import { useAuthState } from '@/auth/auth-context';
+import { ConfirmDialog } from '@/features/overview/confirm-dialog';
 import { DetailPanel } from '@/features/overview/detail-panel';
 import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
+import { GroupManagerDialog } from '@/features/overview/group-manager-dialog';
 import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
+import { ProjectSettingsDialog } from '@/features/overview/project-settings-dialog';
 import { WorkstreamCardList } from '@/features/overview/workstream-card-list';
+import { WorkstreamFormDialog } from '@/features/overview/workstream-form-dialog';
 
 import type { AdvanceOutcome } from '@/api/hooks/use-advance-workstream';
 import type { UserSummary, Workstream } from '@/api/hooks/use-overview';
+
+type WorkstreamForm =
+  | { mode: 'create' }
+  | { mode: 'edit'; workstream: Workstream };
 
 function applyOwnerFilter(
   workstreams: Workstream[],
@@ -47,6 +56,7 @@ export const OverviewPage = () => {
   const projectId = projects.data?.[0]?.id;
   const overview = useOverview(projectId);
   const advance = useAdvanceWorkstream(projectId);
+  const deleteWorkstream = useDeleteWorkstream(projectId);
   const authState = useAuthState();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -54,6 +64,12 @@ export const OverviewPage = () => {
   const [hiddenGroupIds, setHiddenGroupIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+  const [workstreamForm, setWorkstreamForm] = useState<WorkstreamForm | null>(
+    null,
+  );
+  const [groupManagerOpen, setGroupManagerOpen] = useState(false);
+  const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Workstream | null>(null);
 
   const currentUserId =
     authState.status === 'authenticated' ? authState.user.id : '';
@@ -114,6 +130,9 @@ export const OverviewPage = () => {
             onOwnerFilterChange={setOwnerFilter}
             hiddenGroupIds={hiddenGroupIds}
             onGroupToggle={handleGroupToggle}
+            onNewWorkstream={() => setWorkstreamForm({ mode: 'create' })}
+            onManageGroups={() => setGroupManagerOpen(true)}
+            onProjectSettings={() => setProjectSettingsOpen(true)}
           />
         )}
 
@@ -151,6 +170,65 @@ export const OverviewPage = () => {
         users={overview.data?.users ?? []}
         usersById={usersById}
         onClose={() => setSelectedId(null)}
+        onEdit={(workstream) => setWorkstreamForm({ mode: 'edit', workstream })}
+        onDelete={setDeleteTarget}
+      />
+
+      {overview.data && projectId && workstreamForm && (
+        <WorkstreamFormDialog
+          key={
+            workstreamForm.mode === 'edit'
+              ? workstreamForm.workstream.id
+              : 'create'
+          }
+          mode={workstreamForm.mode}
+          workstream={
+            workstreamForm.mode === 'edit'
+              ? workstreamForm.workstream
+              : undefined
+          }
+          projectId={projectId}
+          groups={overview.data.groups}
+          users={overview.data.users}
+          isOpen
+          onOpenChange={(next) => !next && setWorkstreamForm(null)}
+        />
+      )}
+
+      {overview.data && projectId && (
+        <GroupManagerDialog
+          projectId={projectId}
+          groups={overview.data.groups}
+          isOpen={groupManagerOpen}
+          onOpenChange={setGroupManagerOpen}
+        />
+      )}
+
+      {overview.data && projectSettingsOpen && (
+        <ProjectSettingsDialog
+          project={overview.data.project}
+          isOpen={projectSettingsOpen}
+          onOpenChange={setProjectSettingsOpen}
+        />
+      )}
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onOpenChange={(next) => !next && setDeleteTarget(null)}
+        title={t('overview.manage.deleteWorkstreamTitle', {
+          name: deleteTarget?.name ?? '',
+        })}
+        description={t('overview.manage.deleteWorkstreamDescription')}
+        confirmLabel={t('overview.manage.deleteWorkstreamConfirm')}
+        cancelLabel={t('overview.manage.form.cancel')}
+        isPending={deleteWorkstream.isPending}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteWorkstream.mutate(
+            { params: { path: { id: deleteTarget.id } } },
+            { onSuccess: () => setDeleteTarget(null) },
+          );
+        }}
       />
     </div>
   );

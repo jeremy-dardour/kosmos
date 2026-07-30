@@ -1,3 +1,4 @@
+import { MoreHorizontalIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -5,6 +6,12 @@ import { useToggleChecklistItem } from '@/api/hooks/use-toggle-checklist-item';
 import { useUpdatePipeline } from '@/api/hooks/use-update-pipeline';
 import { useWorkstreamNotes } from '@/api/hooks/use-workstream-notes';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { formatToApiError } from '@/errors/format-error';
 import { PipelineEditor } from '@/features/overview/pipeline-editor';
 import { VerticalPipeline } from '@/features/overview/vertical-pipeline';
@@ -22,6 +29,8 @@ interface DetailPanelProperties {
   users: UserSummary[];
   usersById: ReadonlyMap<string, UserSummary>;
   onClose: () => void;
+  onEdit: (workstream: Workstream) => void;
+  onDelete: (workstream: Workstream) => void;
 }
 
 export const DetailPanel = ({
@@ -30,6 +39,8 @@ export const DetailPanel = ({
   users,
   usersById,
   onClose,
+  onEdit,
+  onDelete,
 }: DetailPanelProperties) => {
   const { t } = useTranslation();
   const [editingWorkstreamId, setEditingWorkstreamId] = useState<string | null>(
@@ -92,6 +103,35 @@ export const DetailPanel = ({
           >
             {t('overview.editor.edit')}
           </Button>
+        )}
+        {!isEditing && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={t('overview.manage.moreActions', {
+                    name: workstream.name,
+                  })}
+                />
+              }
+            >
+              <MoreHorizontalIcon />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(workstream)}>
+                {t('overview.manage.editDetails')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => onDelete(workstream)}
+              >
+                {t('overview.manage.deleteWorkstream')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         <button
           type="button"
