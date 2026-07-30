@@ -7,7 +7,7 @@ import type {
   Project,
   Workstream,
 } from '@/api/hooks/use-overview';
-import type { UpdatePipelineInput } from '@/api/hooks/use-update-pipeline';
+import type { UpdateWorkstreamPipelineInput } from '@/api/hooks/use-update-workstream-pipeline';
 import type {
   CreateNoteInput,
   NoteEntry,
@@ -59,7 +59,7 @@ interface AdvanceRequest {
 export function setupOverviewApi(initialOverview: Overview) {
   let overview = initialOverview;
   let generatedId = 0;
-  let lastPipelineInput: UpdatePipelineInput | null = null;
+  let lastPipelineInput: UpdateWorkstreamPipelineInput | null = null;
 
   server.use(
     http.get(`${API_BASE}/api/projects`, () =>
@@ -74,7 +74,7 @@ export function setupOverviewApi(initialOverview: Overview) {
     http.put(
       `${API_BASE}/api/workstreams/:id/pipeline`,
       async ({ params, request }) => {
-        const input = (await request.json()) as UpdatePipelineInput;
+        const input = (await request.json()) as UpdateWorkstreamPipelineInput;
         lastPipelineInput = input;
         const workstreamId = String(params.id);
         const ws = overview.workstreams.find(

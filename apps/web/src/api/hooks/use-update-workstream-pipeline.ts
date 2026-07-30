@@ -6,9 +6,12 @@ import { formatToApiError } from '@/errors/format-error';
 
 import type { dtos } from '@/types/openapi';
 
-export type UpdatePipelineInput = dtos['UpdatePipelineDto'];
+export type UpdateWorkstreamPipelineInput = dtos['UpdatePipelineDto'];
 
-export function useUpdatePipeline(projectId: string | undefined) {
+// Replaces a workstream's ordered step list atomically (PUT), with optimistic
+// concurrency — distinct from `useUpdateWorkstream`, which PATCHes the
+// workstream's own fields (name, icon, group, owner).
+export function useUpdateWorkstreamPipeline(projectId: string | undefined) {
   const queryClient = useQueryClient();
   const invalidateOverview = useInvalidateOverview(projectId);
 

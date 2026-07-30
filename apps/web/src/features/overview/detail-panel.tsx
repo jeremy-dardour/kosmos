@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToggleChecklistItem } from '@/api/hooks/use-toggle-checklist-item';
-import { useUpdatePipeline } from '@/api/hooks/use-update-pipeline';
+import { useUpdateWorkstreamPipeline } from '@/api/hooks/use-update-workstream-pipeline';
 import { useWorkstreamNotes } from '@/api/hooks/use-workstream-notes';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,7 +46,7 @@ export const DetailPanel = ({
   const [editingWorkstreamId, setEditingWorkstreamId] = useState<string | null>(
     null,
   );
-  const updatePipeline = useUpdatePipeline(projectId);
+  const updatePipeline = useUpdateWorkstreamPipeline(projectId);
   const toggleChecklist = useToggleChecklistItem(projectId);
   const notes = useWorkstreamNotes(workstream?.id);
   const notesByStepId = new Map<string, NoteEntry[]>();

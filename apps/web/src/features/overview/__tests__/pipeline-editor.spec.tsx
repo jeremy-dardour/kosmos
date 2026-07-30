@@ -6,7 +6,7 @@ import { PipelineEditor } from '@/features/overview/pipeline-editor';
 import { step, user, workstream } from '@/testing/mock-overview-data';
 import { renderWithApp } from '@/testing/render-with-app';
 
-import type { UpdatePipelineInput } from '@/api/hooks/use-update-pipeline';
+import type { UpdateWorkstreamPipelineInput } from '@/api/hooks/use-update-workstream-pipeline';
 
 const users = [user({ id: 'u1', name: 'Alice' })];
 const noop = vi.fn();
@@ -15,7 +15,7 @@ function renderEditor(
   wsOverrides: Parameters<typeof workstream>[0] = {},
   props: {
     isSaving?: boolean;
-    onSave?: (input: UpdatePipelineInput) => void;
+    onSave?: (input: UpdateWorkstreamPipelineInput) => void;
   } = {},
 ) {
   const ws = workstream({
