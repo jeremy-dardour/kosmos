@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
 import { daysUntil } from '@/features/overview/days-until';
-import { useCurrentDate } from '@/features/overview/use-current-date';
 
 interface EventCountdownProperties {
   eventDate?: string | null;
@@ -10,12 +9,13 @@ interface EventCountdownProperties {
 /** Days to the event date; renders nothing when no event date is set. */
 export const EventCountdown = ({ eventDate }: EventCountdownProperties) => {
   const { t } = useTranslation();
-  const now = useCurrentDate();
 
   if (eventDate === null || eventDate === undefined) {
     return null;
   }
 
+  // eslint-disable-next-line @eslint-react/purity -- intentional clock read
+  const now = new Date();
   const daysUntilEvent = daysUntil(eventDate, now);
   const label =
     daysUntilEvent > 1

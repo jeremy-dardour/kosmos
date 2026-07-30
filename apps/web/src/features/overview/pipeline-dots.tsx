@@ -10,7 +10,6 @@ type StepVisual = StepStatus | 'blocked';
 
 interface PipelineDotsProperties {
   steps: Step[];
-  today?: Date;
 }
 
 function stepVisual(step: Step): StepVisual {
@@ -38,7 +37,7 @@ function formatDateTick(deadline: string): string {
   return `${Number(month)}/${Number(day)}`;
 }
 
-export const PipelineDots = ({ steps, today }: PipelineDotsProperties) => {
+export const PipelineDots = ({ steps }: PipelineDotsProperties) => {
   const { t } = useTranslation();
 
   if (steps.length === 0) {
@@ -49,14 +48,16 @@ export const PipelineDots = ({ steps, today }: PipelineDotsProperties) => {
     );
   }
 
+  // eslint-disable-next-line @eslint-react/purity -- intentional clock read
+  const now = new Date();
+
   return (
     <ol className="flex items-start">
       {steps.map((step, index) => {
         const visual = stepVisual(step);
-        const band =
-          step.deadline && today
-            ? urgencyBand(step.deadline, today)
-            : undefined;
+        const band = step.deadline
+          ? urgencyBand(step.deadline, now)
+          : undefined;
         const isUrgent = band === 'soon' || band === 'late';
 
         return (

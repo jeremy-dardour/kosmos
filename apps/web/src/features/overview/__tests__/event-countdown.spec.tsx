@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EventCountdown } from '@/features/overview/event-countdown';
@@ -51,20 +51,5 @@ describe('eventCountdown', () => {
     render(<EventCountdown eventDate="2026-07-22" />);
 
     expect(screen.getByText('overview.header.eventPassed')).toBeInTheDocument();
-  });
-
-  it('updates when the local calendar day rolls over', () => {
-    vi.setSystemTime(new Date(2026, 6, 25, 23, 59));
-    render(<EventCountdown eventDate="2026-07-26" />);
-
-    expect(
-      screen.getByText('overview.header.eventTomorrow'),
-    ).toBeInTheDocument();
-
-    act(() => {
-      vi.advanceTimersByTime(60_000);
-    });
-
-    expect(screen.getByText('overview.header.eventToday')).toBeInTheDocument();
   });
 });

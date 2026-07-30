@@ -9,7 +9,6 @@ import { DetailPanel } from '@/features/overview/detail-panel';
 import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
 import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
-import { useCurrentDate } from '@/features/overview/use-current-date';
 import { WorkstreamCardList } from '@/features/overview/workstream-card-list';
 
 import type { AdvanceOutcome } from '@/api/hooks/use-advance-workstream';
@@ -43,7 +42,6 @@ function applyGroupFilter(
 
 export const OverviewPage = () => {
   const { t } = useTranslation();
-  const today = useCurrentDate();
 
   const projects = useProjects();
   const projectId = projects.data?.[0]?.id;
@@ -142,7 +140,6 @@ export const OverviewPage = () => {
               onSelect={setSelectedId}
               advancingId={advancingId}
               onAdvance={handleAdvance}
-              today={today}
             />
           )}
         </div>

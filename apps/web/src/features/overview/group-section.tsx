@@ -12,7 +12,6 @@ interface GroupSectionProperties extends WorkstreamGroup {
   onSelect: (id: string) => void;
   advancingId: string | null;
   onAdvance: (id: string, outcome?: AdvanceOutcome) => void;
-  today: Date;
 }
 
 export const GroupSection = ({
@@ -23,7 +22,6 @@ export const GroupSection = ({
   onSelect,
   advancingId,
   onAdvance,
-  today,
 }: GroupSectionProperties) => {
   const { t } = useTranslation();
 
@@ -66,7 +64,6 @@ export const GroupSection = ({
             onSelect={() => onSelect(workstream.id)}
             isAdvancing={workstream.id === advancingId}
             onAdvance={(outcome) => onAdvance(workstream.id, outcome)}
-            today={today}
           />
         ))}
       </div>

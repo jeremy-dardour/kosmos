@@ -18,7 +18,6 @@ interface WorkstreamCardProperties {
   onSelect?: () => void;
   isAdvancing?: boolean;
   onAdvance?: (outcome?: AdvanceOutcome) => void;
-  today: Date;
 }
 
 function findDeadlineStep(workstream: Workstream) {
@@ -29,12 +28,6 @@ function findDeadlineStep(workstream: Workstream) {
   );
 }
 
-function isOverdueWorkstream(workstream: Workstream, today: Date): boolean {
-  const step = findDeadlineStep(workstream);
-  if (!step?.deadline) return false;
-  return daysUntil(step.deadline, today) < 0;
-}
-
 export const WorkstreamCard = ({
   workstream,
   owner,
@@ -42,15 +35,15 @@ export const WorkstreamCard = ({
   onSelect,
   isAdvancing = false,
   onAdvance,
-  today,
 }: WorkstreamCardProperties) => {
   const { t } = useTranslation();
 
   const isComplete = workstream.lifecycle === 'complete';
   const isNotStarted = workstream.lifecycle === 'not_started';
   const isBlocked = workstream.steps.some((step) => isBlockedNow(step));
-  const isOverdue = isOverdueWorkstream(workstream, today);
   const deadlineStep = findDeadlineStep(workstream);
+  const isOverdue =
+    deadlineStep?.deadline != null && daysUntil(deadlineStep.deadline) < 0;
 
   return (
     <div className="relative">
@@ -91,13 +84,13 @@ export const WorkstreamCard = ({
             </span>
           )}
 
-          {deadlineStep && <DeadlineBadge step={deadlineStep} today={today} />}
+          {deadlineStep && <DeadlineBadge step={deadlineStep} />}
 
           <OwnerAvatar owner={owner} className="ml-auto" />
         </div>
 
         <div className="mt-3">
-          <PipelineDots steps={workstream.steps} today={today} />
+          <PipelineDots steps={workstream.steps} />
         </div>
       </button>
 

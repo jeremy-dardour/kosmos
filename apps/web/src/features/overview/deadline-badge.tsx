@@ -8,16 +8,17 @@ import type { Step } from '@/api/hooks/use-overview';
 
 interface DeadlineBadgeProperties {
   step: Step;
-  today: Date;
 }
 
-export const DeadlineBadge = ({ step, today }: DeadlineBadgeProperties) => {
+export const DeadlineBadge = ({ step }: DeadlineBadgeProperties) => {
   const { t } = useTranslation();
 
   if (!step.deadline) return null;
 
-  const days = daysUntil(step.deadline, today);
-  const band = urgencyBand(step.deadline, today);
+  // eslint-disable-next-line @eslint-react/purity -- intentional clock read
+  const now = new Date();
+  const days = daysUntil(step.deadline, now);
+  const band = urgencyBand(step.deadline, now);
 
   const label =
     band === 'late'
