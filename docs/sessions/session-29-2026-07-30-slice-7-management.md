@@ -53,11 +53,33 @@
   subagent review; also strengthened the `/implement` skill's commit wording so
   the mandate is upfront next time.
 
+## PR #44 review follow-up
+
+Addressed the 9 inline review comments on PR #44 (five follow-up commits,
+`2032a2e`..`173c7e7`):
+
+- Renamed `useUpdatePipeline` → `useUpdateWorkstreamPipeline` to disambiguate the
+  atomic step-list replace (`PUT /workstreams/:id/pipeline`) from the field-level
+  `useUpdateWorkstream` (`PATCH /workstreams/:id`); kept them as separate
+  endpoints, not merged.
+- Extracted a `FormDialog` shell (dialog chrome + Cancel/Save footer) now used by
+  `WorkstreamFormDialog` and `ProjectSettingsDialog`; `GroupManagerDialog` stays
+  as-is (it is a list + add-row + Done footer, not a single-form shape).
+- Un-nested the group delete `ConfirmDialog` — it is now a sibling of the
+  manager's `<Dialog>`, not rendered inside it.
+- Trimmed the over-long dialog doc comments; rewrote the unclear
+  `useUpdateProject` invalidation comment and the test-harness `escapeValue`
+  comment.
+- Deleted `docs/reviews/slice-7-plan.md` (point-in-time planning doc, actioned).
+
+Reply posted on the PR mapping each comment to its commit. `pnpm check-types`,
+`pnpm lint`, and the full web suite (172 tests) still pass.
+
 ## Status at end of session
 
-Slice 7 is complete on `feat/slice-7` (6 unitary commits + this session log):
-`pnpm check-types`, `pnpm lint`, and the full web suite (172 tests) pass. No API
-changes, so no e2e / `generate:api-types`. Next: push the branch and open the PR
-for #24. Remaining build work after this: #22 (Slice 5 notes writes), plus
-deployment (#26); UI polish tracked in #39 and #43. See
-[current-state.md](../current-state.md).
+Slice 7 is complete on `feat/slice-7` and pushed as PR #44, with review comments
+addressed: `pnpm check-types`, `pnpm lint`, and the full web suite (172 tests)
+pass. No API changes, so no e2e / `generate:api-types`. Next: land PR #44 (mind
+the `useUpdateWorkstreamPipeline` rename also touching draft PR #38). Remaining
+build work: #22 (Slice 5 notes writes), plus deployment (#26); UI polish tracked
+in #39 and #43. See [current-state.md](../current-state.md).

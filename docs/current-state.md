@@ -11,8 +11,9 @@ _Last updated: 2026-07-30 (session 29)_
 
 **Building.** Slices 1 and 2 are merged; Slices 3 and 6 are in draft PRs #37
 and #38. Slice 4 is complete on `feat/next-feature`. Slice 7 is complete on
-`feat/slice-7` (PR pending). The last remaining feature slice is #22 (Slice 5,
-notes writes); deployment (#26) follows.
+`feat/slice-7` and open as PR #44 with review comments addressed. The last
+remaining feature slice is #22 (Slice 5, notes writes); deployment (#26)
+follows.
 
 ## Done
 
@@ -146,7 +147,10 @@ notes writes); deployment (#26) follows.
   points. Group deletion relies on backend `SET NULL`. Fixed a real test-harness
   i18n bug (`escapeValue` divergence double-escaped `&` in interpolated names).
   `/code-review` run; one spec gap (event-date/countdown coverage) resolved.
-  Deferred edit-UX polish tracked in #43
+  PR #44 review comments addressed: renamed `useUpdatePipeline` →
+  `useUpdateWorkstreamPipeline`, extracted a shared `FormDialog` shell,
+  un-nested the group delete confirm, clarified comments, removed the planning
+  doc. Deferred edit-UX polish tracked in #43
   ([session 29](./sessions/session-29-2026-07-30-slice-7-management.md)).
 
 ## In flight
@@ -165,8 +169,9 @@ notes writes); deployment (#26) follows.
 
 ## Next steps
 
-1. Open the PR for Slice 7 (`feat/slice-7`, #24); review and land PRs #37 and
-   #38.
+1. Land Slice 7 PR #44 (review comments addressed — mind the
+   `useUpdateWorkstreamPipeline` rename also touching #38); review and land PRs
+   #37 and #38.
 2. Review and refine the management/step-editing UI in #39 and #43.
 3. Build the last feature slice #22 (notes writes), then deployment (#26).
    Reorder repositories use two-phase temporary positions because the generated
