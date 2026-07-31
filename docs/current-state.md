@@ -12,13 +12,17 @@ _Last updated: 2026-07-31 (session 33)_
 **Building #40 (inline overview rework) via orchestrated implementer agents.**
 Branch `feat/40-overview-rework` (from `prototype-2`, design commits squashed),
 tracked by PR #48 with a live C1–C20 checklist and a how-to-review comment.
-**Phase A (backend, C1–C7) is fully landed and pushed**: noteCount on the
-aggregate, position columns + migration, group/workstream reorder endpoints,
-granular step create/edit/delete + step reorder, checklist item endpoints,
-throttle 120/min. Each commit green (typecheck, lint, format, unit, e2e — 155
-API e2e at phase end). Next: Phase B (C8 urgency tokens, C9 date-bug fixes,
-C10 hooks + cache seam), then Phases C/D. Session log:
-[session 33](./sessions/session-33-2026-07-31-phase-a-backend-orchestration.md).
+**Phases A (backend, C1–C7), B (web foundation, C8–C10) and C (components,
+C11–C17) are fully landed and pushed** — the inline overview is the live
+production surface (page swapped in C17, visually verified against the
+running app). Each commit green (typecheck, lint, format, unit, and API e2e
+for backend commits). Phase D in progress: C18 (delete old components,
+prototype, whole-tail PUT) in flight, then C19 a11y, C20 mobile, and a
+four-way final review (spec/standards/simplicity/security). Deviations and
+new patterns are logged in
+[docs/reviews/pr-48-deviations-log.md](./reviews/pr-48-deviations-log.md) —
+**open decision #20: workstream deletion lost its UI entry point in C17**.
+Session log: [session 33](./sessions/session-33-2026-07-31-phase-a-backend-orchestration.md).
 Orchestration protocol + restart facts:
 [orchestration-prompt.md](./specs/v1-product/orchestration-prompt.md).
 Deployment (#26) remains after #40.

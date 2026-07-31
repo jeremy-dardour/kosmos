@@ -47,10 +47,22 @@ Session facts (kept current by the orchestrator — read on restart):
 - **Work branch: `feat/40-overview-rework`** (created from `prototype-2`,
   design/docs commits squashed to one; PR #48 open with a live checklist —
   keep it ticked as commits land). Resume point = first plan commit not
-  present in `git log --oneline`. **Phases A (C1–C7) and B (C8–C10) are fully
-  landed**; resume at C11. The save-model seam is `src/api/overview-cache.ts`
-  (`useOverviewCache`) — Phase C hooks commit through it, never per-mutation
-  invalidation.
+  present in `git log --oneline`. **Phases A (C1–C7), B (C8–C10) and C
+  (C11–C17) are fully landed**; C18 was in flight at the last checkpoint —
+  verify whether its commit exists before redispatching. The save-model seam
+  is `src/api/overview-cache.ts` (`useOverviewCache`); the new surface is
+  live on the page (C17), visually verified against the running app.
+- **`docs/reviews/pr-48-deviations-log.md` is load-bearing**: every deviation
+  or new pattern gets an entry when its commit lands, and the log is posted
+  as a PR comment at the end. **Open decision in it (#20): workstream
+  deletion lost its UI entry point in C17** — the user decides accept-or-fix;
+  a fix slots into C19.
+- End-game (user-mandated): after C20, four parallel review agents with
+  separate mandates — spec conformance vs A1–A16 + contract (Opus), repo
+  standards (Sonnet), over-complication (Sonnet), security (Sonnet) — then
+  fixes, the deviations-log PR comment, and stop for the user's review.
+- C14 was implemented by the orchestrator directly during a session-limit
+  outage; all other commits by implementer agents.
 - Gates per commit: `pnpm check-types && pnpm lint && pnpm format:check &&
 pnpm test`, plus `pnpm --filter api test:e2e` for API commits. Web
   typecheck: trust only `tsc -b --force` (incremental buildinfo false-passed
