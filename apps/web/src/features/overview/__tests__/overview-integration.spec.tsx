@@ -7,9 +7,7 @@ import { defaultOverview } from '@/features/overview/__tests__/overview-integrat
 import { OverviewPage } from '@/features/overview/overview-page';
 import { server } from '@/testing/mock-api';
 import {
-  checklistItem,
   group,
-  note,
   project,
   step,
   user,
@@ -63,6 +61,7 @@ describe('overview page — golden path', () => {
     setupDefaultMocks((request) => {
       authorization = request.headers.get('Authorization');
     });
+    const agent = userEvent.setup();
     renderWithApp(<OverviewPage />);
 
     expect(await screen.findByText('Our Wedding')).toBeVisible();
@@ -71,21 +70,22 @@ describe('overview page — golden path', () => {
     const groupedSection = screen.getByRole('region', {
       name: 'Venue & Catering',
     });
-    const cateringCard = within(groupedSection).getByRole('button', {
-      name: 'View Catering',
-    });
-    expect(cateringCard).toBeVisible();
-    expect(within(cateringCard).getByLabelText('Alice Doe')).toBeVisible();
-    expect(within(groupedSection).getByText('Flowers')).toBeVisible();
-    expect(within(groupedSection).queryByText('Venue')).not.toBeInTheDocument();
-
-    const ungroupedSection = screen.getByRole('region', {
-      name: 'Ungrouped',
-    });
-    expect(within(ungroupedSection).getByText('Venue')).toBeVisible();
     expect(
-      within(ungroupedSection).queryByText('Catering'),
+      within(groupedSection).getByRole('button', { name: 'Rename Catering' }),
+    ).toBeVisible();
+    expect(
+      within(groupedSection).getByRole('button', { name: 'Rename Flowers' }),
+    ).toBeVisible();
+
+    // Complete work leaves its group for the Completed section, collapsed.
+    const completed = screen.getByRole('region', { name: 'Completed' });
+    expect(
+      within(groupedSection).queryByRole('button', { name: 'Rename Venue' }),
     ).not.toBeInTheDocument();
+    await agent.click(within(completed).getByRole('button'));
+    expect(
+      within(completed).getByRole('button', { name: 'Rename Venue' }),
+    ).toBeVisible();
   });
 });
 
@@ -155,192 +155,6 @@ describe('overview page — loading and error states', () => {
   });
 });
 
-describe('detail panel', () => {
-  it('shows empty state before selection', async () => {
-    setupDefaultMocks();
-    renderWithApp(<OverviewPage />);
-
-    await screen.findByText('Catering');
-
-    const panel = screen.getByRole('complementary', {
-      name: 'Select a workstream',
-    });
-    expect(within(panel).getByText('Select a workstream')).toBeVisible();
-  });
-
-  it('opens with vertical pipeline on card click', async () => {
-    setupDefaultMocks();
-    server.use(
-      http.get(`${BASE}/api/workstreams/:id/notes`, () =>
-        HttpResponse.json([]),
-      ),
-    );
-    const agent = userEvent.setup();
-    renderWithApp(<OverviewPage />);
-
-    const cateringCard = await screen.findByRole('button', {
-      name: 'View Catering',
-    });
-    await agent.click(cateringCard);
-
-    const panel = screen.getByRole('complementary', { name: 'Catering' });
-    expect(
-      within(panel).getByRole('heading', { level: 2, name: 'Catering' }),
-    ).toBeVisible();
-
-    expect(within(panel).getByText('Research options')).toBeVisible();
-    expect(within(panel).getByText('Request quotes')).toBeVisible();
-    expect(within(panel).getByText('Book caterer')).toBeVisible();
-  });
-
-  it('shows checklist for current step', async () => {
-    const items = [
-      checklistItem('Bakery A', true, { id: 'ci-1', position: 1 }),
-      checklistItem('Bakery B', false, { id: 'ci-2', position: 2 }),
-    ];
-    const tastingStep = step('Visit bakeries', 'in_progress', {
-      id: 's-bake',
-      position: 1,
-      checklistItems: items,
-    });
-
-    server.use(
-      http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
-      http.get(`${BASE}/api/projects/:id/overview`, () =>
-        HttpResponse.json({
-          ...defaultOverview,
-          workstreams: [
-            workstream({
-              id: 'w-checklist',
-              name: 'Tasting',
-              icon: '🧁',
-              steps: [tastingStep],
-            }),
-          ],
-        }),
-      ),
-      http.get(`${BASE}/api/workstreams/:id/notes`, () =>
-        HttpResponse.json([]),
-      ),
-    );
-    const agent = userEvent.setup();
-    renderWithApp(<OverviewPage />);
-
-    const card = await screen.findByRole('button', {
-      name: 'View Tasting',
-    });
-    await agent.click(card);
-
-    expect(screen.getByText('Checklist')).toBeVisible();
-    expect(screen.getByText('Bakery A')).toBeVisible();
-    expect(screen.getByText('Bakery B')).toBeVisible();
-    expect(screen.getByText('1/2')).toBeVisible();
-  });
-
-  it('loads notes lazily — no request before selection, one after', async () => {
-    let noteFetchCount = 0;
-    setupDefaultMocks();
-    server.use(
-      http.get(`${BASE}/api/workstreams/w-catering/notes`, () => {
-        noteFetchCount++;
-        return HttpResponse.json([
-          note({
-            id: 'n-1',
-            stepId: 's2',
-            content: 'Called the caterer, they can do June.',
-            author: { id: 'u1', name: 'Alice Doe', avatarUrl: null },
-          }),
-        ]);
-      }),
-    );
-    const agent = userEvent.setup();
-    renderWithApp(<OverviewPage />);
-
-    await screen.findByText('Catering');
-    expect(noteFetchCount).toBe(0);
-
-    const card = screen.getByRole('button', { name: 'View Catering' });
-    await agent.click(card);
-    await agent.click(
-      await screen.findByRole('button', {
-        name: 'Show notes for Request quotes',
-      }),
-    );
-
-    expect(
-      await screen.findByText('Called the caterer, they can do June.'),
-    ).toBeVisible();
-    const panel = screen.getByRole('complementary', { name: 'Catering' });
-    expect(within(panel).getByText('AD')).toBeVisible();
-    expect(noteFetchCount).toBe(1);
-  });
-
-  it('closes panel and clears selection on close button click', async () => {
-    setupDefaultMocks();
-    server.use(
-      http.get(`${BASE}/api/workstreams/:id/notes`, () =>
-        HttpResponse.json([]),
-      ),
-    );
-    const agent = userEvent.setup();
-    renderWithApp(<OverviewPage />);
-
-    const card = await screen.findByRole('button', {
-      name: 'View Catering',
-    });
-    await agent.click(card);
-
-    expect(
-      screen.getByRole('complementary', { name: 'Catering' }),
-    ).toBeInTheDocument();
-    expect(card).toHaveAttribute('aria-pressed', 'true');
-
-    const closeButton = screen.getByRole('button', { name: 'Close' });
-    await agent.click(closeButton);
-
-    expect(
-      screen.getByRole('complementary', { name: 'Select a workstream' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('complementary', { name: 'Catering' }),
-    ).not.toBeInTheDocument();
-    expect(card).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('switches content and moves aria-pressed when clicking a different card', async () => {
-    setupDefaultMocks();
-    server.use(
-      http.get(`${BASE}/api/workstreams/:id/notes`, () =>
-        HttpResponse.json([]),
-      ),
-    );
-    const agent = userEvent.setup();
-    renderWithApp(<OverviewPage />);
-
-    const cateringCard = await screen.findByRole('button', {
-      name: 'View Catering',
-    });
-    await agent.click(cateringCard);
-
-    expect(
-      screen.getByRole('complementary', { name: 'Catering' }),
-    ).toBeInTheDocument();
-    expect(cateringCard).toHaveAttribute('aria-pressed', 'true');
-
-    const venueCard = screen.getByRole('button', { name: 'View Venue' });
-    await agent.click(venueCard);
-
-    expect(
-      screen.getByRole('complementary', { name: 'Venue' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('complementary', { name: 'Catering' }),
-    ).not.toBeInTheDocument();
-    expect(cateringCard).toHaveAttribute('aria-pressed', 'false');
-    expect(venueCard).toHaveAttribute('aria-pressed', 'true');
-  });
-});
-
 describe('with frozen date', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -379,7 +193,9 @@ describe('with frozen date', () => {
       );
       renderWithApp(<OverviewPage />);
 
-      expect(await screen.findByText('Book caterer in 9d')).toBeVisible();
+      const badge = await screen.findByTitle('Book caterer due 2026-08-10');
+      expect(badge).toHaveTextContent('Book caterer');
+      expect(badge).toHaveTextContent('in 9d');
     });
 
     describe('deadlines within a day', () => {
@@ -390,13 +206,17 @@ describe('with frozen date', () => {
       it('reads today for a deadline due today', async () => {
         renderWithDeadline('2026-08-01');
 
-        expect(await screen.findByText('Book caterer today')).toBeVisible();
+        expect(
+          await screen.findByTitle('Book caterer due 2026-08-01'),
+        ).toHaveTextContent('today');
       });
 
       it('reads tomorrow for a deadline due the next day', async () => {
         renderWithDeadline('2026-08-02');
 
-        expect(await screen.findByText('Book caterer tomorrow')).toBeVisible();
+        expect(
+          await screen.findByTitle('Book caterer due 2026-08-02'),
+        ).toHaveTextContent('tomorrow');
       });
     });
 
@@ -423,10 +243,10 @@ describe('with frozen date', () => {
       renderWithApp(<OverviewPage />);
 
       await screen.findByText('Catering');
-      expect(screen.queryByText(/\dd$/)).not.toBeInTheDocument();
+      expect(screen.queryByTitle(/ due /)).not.toBeInTheDocument();
     });
 
-    it('applies overdue card treatment', async () => {
+    it('marks an overdue deadline in the late band', async () => {
       server.use(
         http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
         http.get(`${BASE}/api/projects/:id/overview`, () =>
@@ -452,9 +272,9 @@ describe('with frozen date', () => {
       );
       renderWithApp(<OverviewPage />);
 
-      const card = await screen.findByRole('button', { name: 'View Catering' });
-      expect(card).toHaveClass('border-step-blocked/40');
-      expect(screen.getByText('Book caterer 4d overdue')).toBeVisible();
+      const badge = await screen.findByTitle('Book caterer due 2026-07-28');
+      expect(badge).toHaveClass('bg-urgency-late');
+      expect(badge).toHaveTextContent('4d late');
     });
 
     it('shows date ticks under dots, with a year only when it is not the current one', async () => {
@@ -606,7 +426,8 @@ describe('with frozen date', () => {
 
       await screen.findByText('Catering');
       expect(screen.getByText('Flowers')).toBeVisible();
-      expect(screen.getByText('Venue')).toBeVisible();
+      // The complete workstream is behind the collapsed Completed section.
+      expect(screen.getByRole('region', { name: 'Completed' })).toBeVisible();
 
       await agent.click(
         screen.getByRole('button', { name: 'Filter by current-step owner' }),
@@ -617,7 +438,9 @@ describe('with frozen date', () => {
 
       expect(screen.getByText('Catering')).toBeVisible();
       expect(screen.queryByText('Flowers')).not.toBeInTheDocument();
-      expect(screen.queryByText('Venue')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('region', { name: 'Completed' }),
+      ).not.toBeInTheDocument();
     });
   });
 

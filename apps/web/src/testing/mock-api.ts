@@ -75,6 +75,18 @@ function conflict(slug: string, detail: string) {
   );
 }
 
+/** What `@IsNotEmpty()` on a name answers with (RFC 9457 through the filter). */
+function emptyName() {
+  return problemResponse(
+    422,
+    problemDetails(422, {
+      type: 'https://wedding-planner.dev/errors/validation-failed',
+      title: 'Validation Failed',
+      detail: 'name: name should not be empty',
+    }),
+  );
+}
+
 function isExactMembership(ids: string[], members: string[]): boolean {
   return (
     ids.length === members.length &&
@@ -118,6 +130,7 @@ export function setupOverviewApi(initialOverview: Overview) {
   let overview = initialOverview;
   let generatedId = 0;
   let lastPipelineInput: UpdateWorkstreamPipelineInput | null = null;
+  let lastCreatedStep: CreateStepInput | null = null;
   let lastGroupOrder: ReorderGroupsInput | null = null;
   let lastWorkstreamOrder: ReorderWorkstreamsInput | null = null;
   let overviewFetches = 0;
@@ -170,6 +183,8 @@ export function setupOverviewApi(initialOverview: Overview) {
         if (!workstream) return notFound();
 
         const input = (await request.json()) as CreateStepInput;
+        lastCreatedStep = input;
+        if (input.name.trim() === '') return emptyName();
         if (
           workstream.lifecycle === 'complete' ||
           input.position <= pointerPosition(workstream) ||
@@ -220,6 +235,8 @@ export function setupOverviewApi(initialOverview: Overview) {
       }
 
       const input = (await request.json()) as UpdateStepInput;
+      if (input.name?.trim() === '') return emptyName();
+
       const { workstream, step } = located;
       const explicitOwnerId = patched(input.ownerId, step.explicitOwnerId);
       const updated: Step = {
@@ -683,6 +700,11 @@ export function setupOverviewApi(initialOverview: Overview) {
   return {
     getLastPipelineInput() {
       return lastPipelineInput;
+    },
+
+    /** The body of the last create-step call, rejected ones included. */
+    getLastCreatedStep() {
+      return lastCreatedStep;
     },
 
     getLastGroupOrder() {

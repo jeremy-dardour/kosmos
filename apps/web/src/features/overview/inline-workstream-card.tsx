@@ -15,6 +15,7 @@ import { ClickToEdit } from '@/features/overview/click-to-edit';
 import { daysUntil } from '@/features/overview/days-until';
 import { DotCaret } from '@/features/overview/dot-caret';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
+import { GhostStep } from '@/features/overview/ghost-step';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { isInsideCard } from '@/features/overview/is-inside-card';
 import { OwnerPicker } from '@/features/overview/owner-picker';
@@ -30,6 +31,7 @@ import type {
   UserSummary,
   Workstream,
 } from '@/api/hooks/use-overview';
+import type { GhostStepDraft } from '@/features/overview/ghost-step';
 import type { UrgencyBand } from '@/features/overview/urgency';
 import type { ReactNode } from 'react';
 
@@ -55,6 +57,8 @@ interface InlineWorkstreamCardProperties {
   now: Date;
   openStepId: string | null;
   openNotesStepId: string | null;
+  /** Set while this card holds the overview's unsaved step. */
+  ghost?: GhostStepDraft;
   /** `null` closes the step editor; an id opens it on that step. */
   onOpenStep: (stepId: string | null) => void;
   /** `null` closes the note panel; an id opens it on that step. */
@@ -76,6 +80,7 @@ export const InlineWorkstreamCard = ({
   now,
   openStepId,
   openNotesStepId,
+  ghost,
   onOpenStep,
   onOpenNotes,
   onCloseEditors,
@@ -87,7 +92,8 @@ export const InlineWorkstreamCard = ({
   const updateChecklistItem = useUpdateChecklistItem(projectId);
   const cardRef = useRef<HTMLElement>(null);
 
-  const isAnyPanelOpen = openStepId !== null || openNotesStepId !== null;
+  const isAnyPanelOpen =
+    openStepId !== null || openNotesStepId !== null || ghost !== undefined;
 
   useEffect(() => {
     if (!isAnyPanelOpen) return;
@@ -204,6 +210,8 @@ export const InlineWorkstreamCard = ({
           }
         />
       </div>
+
+      {ghost && <GhostStep ghost={ghost} />}
 
       {openedStep && (
         <>

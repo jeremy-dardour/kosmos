@@ -147,6 +147,9 @@ export interface Translations {
   'overview.stepEditor.close': string;
   'overview.stepEditor.savedAsYouType': string;
   'overview.stepEditor.frozen': string;
+  'overview.ghostStep.panelLabel': string;
+  'overview.ghostStep.nameLabel': string;
+  'overview.ghostStep.discard': string;
   'overview.notesPanel.close': string;
   'overview.notesPanel.label': string;
   'overview.thread.title': string;

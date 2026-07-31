@@ -16,6 +16,7 @@ import { SortableGroupSection } from '@/features/overview/sortable-group-section
 import { useOverviewDndSensors } from '@/features/overview/use-overview-dnd-sensors';
 
 import type { Group, Overview, Workstream } from '@/api/hooks/use-overview';
+import type { GhostStepDraft } from '@/features/overview/ghost-step';
 import type { DragEndEvent } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
 
@@ -34,6 +35,8 @@ interface OverviewListProperties {
   now: Date;
   /** Opens the ghost step the page owns, at that position in that workstream. */
   onInsertStep: (workstreamId: string, position: number) => void;
+  /** The page's single unsaved step, rendered by the card it belongs to. */
+  ghost?: GhostStepDraft | null;
   /** Filtering hides cards, so a partial list has no unambiguous order to drag. */
   isDragDisabled?: boolean;
 }
@@ -49,6 +52,7 @@ export const OverviewList = ({
   projectId,
   now,
   onInsertStep,
+  ghost,
   isDragDisabled = false,
 }: OverviewListProperties) => {
   const sensors = useOverviewDndSensors();
@@ -115,6 +119,7 @@ export const OverviewList = ({
       dragHandle={dragHandle}
       openStepId={selectedStepId(openStep, workstream.id)}
       openNotesStepId={selectedStepId(openNotes, workstream.id)}
+      ghost={ghost?.workstreamId === workstream.id ? ghost : undefined}
       onOpenStep={(stepId) =>
         setOpenStep(stepId ? { workstreamId: workstream.id, stepId } : null)
       }
@@ -125,7 +130,13 @@ export const OverviewList = ({
         setOpenStep(null);
         setOpenNotes(null);
       }}
-      onInsertStep={(position) => onInsertStep(workstream.id, position)}
+      onInsertStep={(position) => {
+        // The ghost is the open editor now — the one-at-a-time rule (A12)
+        // covers it too.
+        setOpenStep(null);
+        setOpenNotes(null);
+        onInsertStep(workstream.id, position);
+      }}
     />
   );
 

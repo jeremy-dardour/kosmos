@@ -170,6 +170,79 @@ describe('note threads', () => {
     expect(await screen.findAllByText('Revised')).not.toHaveLength(0);
   });
 
+  it('ignores a whitespace-only composer entry', async () => {
+    const agent = render([], { step: 's-current' });
+
+    const composer = await screen.findByRole('textbox', {
+      name: 'Add note to Draft invitations',
+    });
+    await agent.type(composer, ' '.repeat(3));
+    await agent.keyboard('{Enter}');
+
+    expect(composer).toHaveValue(' '.repeat(3));
+    expect(screen.queryByText('just now')).not.toBeInTheDocument();
+  });
+
+  it('renders a URL in an entry as a link', async () => {
+    render(
+      [
+        note({
+          id: 'n-link',
+          stepId: 's-current',
+          content: 'See https://example.com/details.',
+          author: THEM,
+          createdAt: minutesAgo(10),
+        }),
+      ],
+      { step: 's-current' },
+    );
+
+    expect(
+      await screen.findByRole('link', { name: 'https://example.com/details' }),
+    ).toHaveAttribute('href', 'https://example.com/details');
+  });
+
+  it('surfaces a rejected edit and leaves the stored entry alone', async () => {
+    setupOverviewApi(overview);
+    const notesApi = setupNotesApi(
+      [
+        note({
+          id: 'n-mine',
+          stepId: 's-current',
+          content: 'Mine',
+          author: ME,
+          createdAt: minutesAgo(30),
+        }),
+      ],
+      ME,
+    );
+    const agent = userEvent.setup();
+    renderWithApp(<CardHarness openStep="s-current" />);
+
+    await agent.click(
+      await screen.findByRole('button', {
+        name: 'Edit your note on Draft invitations',
+      }),
+    );
+    const field = screen.getByRole('textbox', {
+      name: 'Edit note on Draft invitations',
+    });
+    await agent.clear(field);
+    notesApi.rejectNextUpdate();
+    await agent.type(field, 'Forbidden replacement{Enter}');
+
+    // The global dialog is modal, so the thread is only queryable once closed.
+    await agent.click(
+      within(
+        await screen.findByRole('dialog', { name: 'An error occurred' }),
+      ).getByRole('button', { name: 'Ok' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Only the note author can change this note',
+    );
+    expect(notesApi.getNotes()[0]?.content).toBe('Mine');
+  });
+
   it('deletes an entry', async () => {
     const agent = render(
       [

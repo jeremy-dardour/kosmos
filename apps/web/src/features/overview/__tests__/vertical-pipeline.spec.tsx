@@ -104,7 +104,13 @@ describe('verticalPipeline', () => {
   it('shows a deadline with urgency for future steps', () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const isoDate = tomorrow.toISOString().split('T', 2)[0]!;
+    // Local calendar parts, not toISOString(): UTC rolls back a day between
+    // local and UTC midnight, turning "tomorrow" into "today".
+    const isoDate = [
+      tomorrow.getFullYear(),
+      String(tomorrow.getMonth() + 1).padStart(2, '0'),
+      String(tomorrow.getDate()).padStart(2, '0'),
+    ].join('-');
 
     render(
       <VerticalPipeline
