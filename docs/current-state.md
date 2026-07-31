@@ -5,7 +5,7 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-30 (session 30)_
+_Last updated: 2026-07-31 (session 31)_
 
 ## Phase
 
@@ -116,10 +116,9 @@ of review comments addressed. All feature slices are now built; deployment
   integration only; no Playwright E2E was added. Standards and spec re-reviews
   are clear
   ([session 26](./sessions/session-26-2026-07-28-slice-6-pipeline-editing.md)).
-- **Step-editing UI/design review** tracked separately in
-  [#39](https://github.com/jeremy-dardour/wedding-planner/issues/39), covering
-  editor density, hierarchy, control discoverability, constrained widths, and
-  accessibility without reopening settled domain behavior.
+- **Step-editing UI/design review** was tracked in
+  [#39](https://github.com/jeremy-dardour/wedding-planner/issues/39); answered
+  by the inline-editing design below and closed into #40.
 - **PR #38 review follow-up** — addressed all 13 review comments. Migrated four
   repositories to extend `EntityRepository<T>`, extracted `validatePipelineEdit`
   from `replacePipeline`, added 14 service unit tests and 13 component tests,
@@ -157,15 +156,18 @@ of review comments addressed. All feature slices are now built; deployment
   main (Slices 4/5 merged upstream). Deferred edit-UX polish tracked in #43
   ([session 30](./sessions/session-30-2026-07-30-slice-7-management.md)).
 
-- **Inline overview editing prototype** — complete on `prototype-2`. Four
-  iterations settled that every Workstream / Step / checklist / note edit
-  happens inline in the overview list with **no detail panel**. Decisions,
-  rejected ideas, backend requirements and remaining work are in
-  [docs/prototype/overview-editing/HANDOFF.md](./prototype/overview-editing/HANDOFF.md).
-  Two blocking backend questions before implementation: note counts on the
-  overview aggregate, and the save model for autosaved pipeline edits. All UI
-  rework tickets are consolidated into
-  [#40](https://github.com/jeremy-dardour/wedding-planner/issues/40).
+- **Inline overview editing settled** — prototype and specs on `prototype-2`.
+  Every Workstream / Step / checklist / note edit happens inline in the overview
+  list with **no detail panel**; the V1 PRD now specifies it and the superseded
+  two-panel wireframe is deleted. Decisions, rejected ideas, backend
+  requirements, a component map and a full behaviour spec are in
+  [docs/prototype/overview-editing/HANDOFF.md](./prototype/overview-editing/HANDOFF.md)
+  ([session 31](./sessions/session-31-2026-07-31-inline-overview-editing.md)).
+  All UI rework tickets are consolidated into
+  [#40](https://github.com/jeremy-dardour/wedding-planner/issues/40), which is
+  blocked on three decisions: note counts on the overview aggregate, the save
+  model for autosaved edits, and where Advance/Start/Resolve live in the new
+  card.
 
 ## In flight
 
@@ -178,18 +180,22 @@ of review comments addressed. All feature slices are now built; deployment
 
 ## Open questions
 
-- Overview ordering is alphabetical (groups and workstreams by name) — nothing
-  in the specs states an order. Revisit if manual ordering is wanted.
+- Group ordering is server-side alphabetical; within a group the UI now sorts
+  Active → NotStarted → Complete. Revisit if manual ordering is wanted.
+- Blocking #40: note counts on the overview aggregate, the save model for
+  autosaved edits, and where Advance/Start/Resolve live in the new card.
 
 ## Next steps
 
 1. Land Slice 7 PR #44 (review comments addressed — mind the
    `useUpdateWorkstreamPipeline` rename also touching #38); review and land PRs
-   #37 and #38.
-2. Review and land PRs #37 and #38, and open the Slice 5 (#22) draft PR from
-   `feat/slice-5`.
-3. Review and refine the management/step-editing UI in #39 and #43.
+   #37 and #38, and open the Slice 5 (#22) draft PR from `feat/slice-5`.
+2. Answer the three blocking decisions on #40, then productionalise the inline
+   overview design from `prototype-2`. #35, #39, #41 and #43 are folded into it
+   and closed.
+3. Fix the two production bugs the prototype surfaced (a deadline due today
+   renders "in 0d"; date ticks drop the year, so last year's deadline reads as
+   future) — see the handoff.
 4. All feature slices built — next is deployment (#26). Reorder repositories
    use two-phase temporary positions because the generated constraints are not
    deferrable.
-5. Mobile responsiveness deferred to #35.
