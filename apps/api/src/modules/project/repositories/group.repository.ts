@@ -49,6 +49,34 @@ export class GroupRepository extends EntityRepository<Group> {
     });
   }
 
+  /**
+   * Renumbers the project's groups to the order `order` returns, which receives
+   * them in their current order. Positions are rewritten contiguously from 0 in
+   * one transaction; the unique constraint is deferred, so the rows may collide
+   * until it commits.
+   */
+  async reorderProject(
+    projectId: string,
+    order: (groups: Group[]) => Group[],
+  ): Promise<Group[]> {
+    return this.em.transactional(async (em) => {
+      await lockProjectOrder(em, projectId);
+      const groups = await em.find(
+        Group,
+        { project: projectId },
+        { orderBy: { position: 'asc' } },
+      );
+
+      const ordered = order(groups);
+      for (const [index, group] of ordered.entries()) {
+        group.position = index;
+      }
+      await em.flush();
+
+      return ordered;
+    });
+  }
+
   /** Ungroups the group's workstreams — the FK is ON DELETE SET NULL. */
   async remove(group: Group): Promise<void> {
     this.em.remove(group);

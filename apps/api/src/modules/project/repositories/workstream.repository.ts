@@ -38,10 +38,14 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
     );
   }
 
-  async countNotesByStep(workstream: Workstream): Promise<NoteCountsByStep> {
+  async countNotesByStep(
+    workstreams: readonly Workstream[],
+  ): Promise<NoteCountsByStep> {
     return countNotesByStep(
       this.em,
-      workstream.getSteps().map((step) => step.id),
+      workstreams.flatMap((workstream) =>
+        workstream.getSteps().map((step) => step.id),
+      ),
     );
   }
 
@@ -94,6 +98,38 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
       workstream.group = group;
       workstream.position = 0;
       em.persist(workstream);
+    });
+  }
+
+  /**
+   * Renumbers one group scope to the order `order` returns, which receives the
+   * whole scope in its current order. Positions are rewritten contiguously from
+   * 0 in one transaction; the unique constraint is deferred, so the rows may
+   * collide until it commits.
+   */
+  async reorderScope(
+    projectId: string,
+    groupId: string | null,
+    order: (scope: Workstream[]) => Workstream[],
+  ): Promise<Workstream[]> {
+    return this.em.transactional(async (em) => {
+      await lockProjectOrder(em, projectId);
+      const scope = await em.find(
+        Workstream,
+        { project: projectId, group: groupId },
+        {
+          populate: [...WORKSTREAM_POPULATE],
+          orderBy: { position: 'asc' },
+        },
+      );
+
+      const ordered = order(scope);
+      for (const [index, workstream] of ordered.entries()) {
+        workstream.position = index;
+      }
+      await em.flush();
+
+      return ordered;
     });
   }
 

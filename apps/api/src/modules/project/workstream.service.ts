@@ -22,10 +22,12 @@ import {
 import { GroupRepository } from '@/modules/project/repositories/group.repository';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
+import { isExactMembership } from '@/modules/project/utils/order-membership.util';
 import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
 
 import type { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import type { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
+import type { ReorderWorkstreamsDto } from '@/modules/project/dtos/input/reorder-workstreams.dto';
 import type {
   EditableChecklistItemDto,
   UpdatePipelineDto,
@@ -98,6 +100,46 @@ export class WorkstreamService {
     return this.buildDto(id);
   }
 
+  async reorder(
+    projectId: string,
+    dto: ReorderWorkstreamsDto,
+  ): Promise<WorkstreamDto[]> {
+    const group = dto.groupId
+      ? await this.findGroupInProject(dto.groupId, projectId)
+      : null;
+
+    const ordered = await this.workstreamRepository.reorderScope(
+      projectId,
+      group?.id ?? null,
+      (scope) => {
+        const live = scope.filter((workstream) => !this.isComplete(workstream));
+        const byId = new Map(
+          live.map((workstream) => [workstream.id, workstream]),
+        );
+        const memberIds = live.map((workstream) => workstream.id);
+
+        if (!isExactMembership(dto.ids, memberIds)) {
+          this.conflict(
+            'order-mismatch',
+            "The submitted ids do not match the scope's live workstreams",
+          );
+        }
+
+        // Complete workstreams still share the scope's position sequence, so
+        // they trail the reordered live ones in their existing relative order.
+        return [
+          ...dto.ids.map((id) => byId.get(id)!),
+          ...scope.filter((workstream) => this.isComplete(workstream)),
+        ];
+      },
+    );
+
+    const live = ordered.slice(0, dto.ids.length);
+    const noteCounts = await this.workstreamRepository.countNotesByStep(live);
+
+    return live.map((workstream) => toWorkstreamDto(workstream, noteCounts));
+  }
+
   async remove(id: string): Promise<void> {
     await this.workstreamRepository.remove(id);
   }
@@ -135,7 +177,7 @@ export class WorkstreamService {
 
     return toWorkstreamDto(
       workstream,
-      await this.workstreamRepository.countNotesByStep(workstream),
+      await this.workstreamRepository.countNotesByStep([workstream]),
     );
   }
 
@@ -325,6 +367,10 @@ export class WorkstreamService {
     throw new ProblemDetailsException(HttpStatus.CONFLICT, typeSlug, detail);
   }
 
+  private isComplete(workstream: Workstream): boolean {
+    return workstream.getLifecycle() === WorkstreamLifecycle.Complete;
+  }
+
   private timestampAfter(previous: Date): Date {
     return new Date(Math.max(Date.now(), previous.getTime() + 1));
   }
@@ -376,7 +422,7 @@ export class WorkstreamService {
 
     return toWorkstreamDto(
       workstream,
-      await this.workstreamRepository.countNotesByStep(workstream),
+      await this.workstreamRepository.countNotesByStep([workstream]),
     );
   }
 

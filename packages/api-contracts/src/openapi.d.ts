@@ -161,6 +161,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/projects/{projectId}/group-order': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Reorder the project's groups
+     * @description The ids must be exactly the project's groups, in the new order.
+     */
+    put: operations['GroupController_reorder'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/groups/{id}': {
     parameters: {
       query?: never;
@@ -193,6 +213,26 @@ export interface paths {
     put?: never;
     /** Create a workstream */
     post: operations['WorkstreamController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/projects/{projectId}/workstream-order': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Reorder one group scope's workstreams
+     * @description The ids must be exactly the scope's live workstreams, in the new order. Complete workstreams trail them and are not returned.
+     */
+    put: operations['WorkstreamController_reorder'];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -543,6 +583,10 @@ export interface components {
        */
       color: string;
     };
+    ReorderGroupsDto: {
+      /** @description Every one of the project's groups, in the new order */
+      ids: string[];
+    };
     UpdateGroupDto: {
       name?: string;
       /**
@@ -562,6 +606,15 @@ export interface components {
       groupId?: string | null;
       /** Format: uuid */
       ownerId?: string | null;
+    };
+    ReorderWorkstreamsDto: {
+      /**
+       * Format: uuid
+       * @description The scope to reorder; null is the ungrouped bucket
+       */
+      groupId: string | null;
+      /** @description Every live workstream in that scope, in the new order */
+      ids: string[];
     };
     UpdateWorkstreamDto: {
       name?: string;
@@ -1668,6 +1721,103 @@ export interface operations {
       };
     };
   };
+  GroupController_reorder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReorderGroupsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupDto'][];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The submitted ids do not match the project's groups */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
   GroupController_remove: {
     parameters: {
       query?: never;
@@ -1881,6 +2031,103 @@ export interface operations {
       };
       /** @description Resource not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  WorkstreamController_reorder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReorderWorkstreamsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkstreamDto'][];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The submitted ids do not match the scope's live workstreams */
+      409: {
         headers: {
           [name: string]: unknown;
         };

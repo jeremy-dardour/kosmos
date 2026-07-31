@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 
 import { Group } from '@/database/entities/group.entity';
 import { GroupRepository } from '@/modules/project/repositories/group.repository';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
+import { isExactMembership } from '@/modules/project/utils/order-membership.util';
+import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
 
 import type { CreateGroupDto } from '@/modules/project/dtos/input/create-group.dto';
+import type { ReorderGroupsDto } from '@/modules/project/dtos/input/reorder-groups.dto';
 import type { UpdateGroupDto } from '@/modules/project/dtos/input/update-group.dto';
 
 @Injectable()
@@ -46,6 +49,23 @@ export class GroupService {
     await this.groupRepository.save(group);
 
     return group;
+  }
+
+  async reorder(projectId: string, dto: ReorderGroupsDto): Promise<Group[]> {
+    return this.groupRepository.reorderProject(projectId, (groups) => {
+      const byId = new Map(groups.map((group) => [group.id, group]));
+      const memberIds = groups.map((group) => group.id);
+
+      if (!isExactMembership(dto.ids, memberIds)) {
+        throw new ProblemDetailsException(
+          HttpStatus.CONFLICT,
+          'order-mismatch',
+          "The submitted ids do not match the project's groups",
+        );
+      }
+
+      return dto.ids.map((id) => byId.get(id)!);
+    });
   }
 
   /** Ungroups the group's workstreams — the FK is ON DELETE SET NULL. */

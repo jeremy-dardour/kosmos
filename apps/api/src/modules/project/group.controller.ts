@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -21,10 +22,12 @@ import {
 
 import {
   ApiCommonErrorResponses,
+  ApiConflictResponse,
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
 } from '@/app/decorators/api-problem-responses.decorator';
 import { CreateGroupDto } from '@/modules/project/dtos/input/create-group.dto';
+import { ReorderGroupsDto } from '@/modules/project/dtos/input/reorder-groups.dto';
 import { UpdateGroupDto } from '@/modules/project/dtos/input/update-group.dto';
 import { GroupDto, toGroupDto } from '@/modules/project/dtos/output/group.dto';
 import { GroupService } from '@/modules/project/group.service';
@@ -61,6 +64,23 @@ export class GroupController {
     @Body() dto: CreateGroupDto,
   ): Promise<GroupDto> {
     return toGroupDto(await this.groupService.create(projectId, dto));
+  }
+
+  @Put('projects/:projectId/group-order')
+  @ApiOperation({
+    summary: "Reorder the project's groups",
+    description:
+      "The ids must be exactly the project's groups, in the new order.",
+  })
+  @ApiOkResponse({ type: [GroupDto] })
+  @ApiConflictResponse("The submitted ids do not match the project's groups")
+  async reorder(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() dto: ReorderGroupsDto,
+  ): Promise<GroupDto[]> {
+    const groups = await this.groupService.reorder(projectId, dto);
+
+    return groups.map((group) => toGroupDto(group));
   }
 
   @Patch('groups/:id')

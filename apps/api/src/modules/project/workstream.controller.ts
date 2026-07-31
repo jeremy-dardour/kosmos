@@ -28,6 +28,7 @@ import {
 } from '@/app/decorators/api-problem-responses.decorator';
 import { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
+import { ReorderWorkstreamsDto } from '@/modules/project/dtos/input/reorder-workstreams.dto';
 import { UpdatePipelineDto } from '@/modules/project/dtos/input/update-pipeline.dto';
 import { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
@@ -55,6 +56,23 @@ export class WorkstreamController {
     @Body() dto: CreateWorkstreamDto,
   ): Promise<WorkstreamDto> {
     return this.workstreamService.create(projectId, dto);
+  }
+
+  @Put('projects/:projectId/workstream-order')
+  @ApiOperation({
+    summary: "Reorder one group scope's workstreams",
+    description:
+      "The ids must be exactly the scope's live workstreams, in the new order. Complete workstreams trail them and are not returned.",
+  })
+  @ApiOkResponse({ type: [WorkstreamDto] })
+  @ApiConflictResponse(
+    "The submitted ids do not match the scope's live workstreams",
+  )
+  async reorder(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() dto: ReorderWorkstreamsDto,
+  ): Promise<WorkstreamDto[]> {
+    return this.workstreamService.reorder(projectId, dto);
   }
 
   @Patch('workstreams/:id')
