@@ -136,6 +136,8 @@
   "overview.badge.today": "{{name}} today",
   "overview.badge.tomorrow": "{{name}} tomorrow",
   "overview.badge.overdue": "{{name}} {{count}}d overdue",
+  "overview.deadlineField.due": "Due {{date}}",
+  "overview.deadlineField.empty": "+ due date",
   "overview.filter.allOwners": "Owner: All",
   "overview.filter.myTasks": "Owner: Mine",
   "overview.filter.ownerUser": "Owner: {{name}}",

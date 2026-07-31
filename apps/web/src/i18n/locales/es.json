@@ -136,6 +136,8 @@
   "overview.badge.today": "{{name}} hoy",
   "overview.badge.tomorrow": "{{name}} mañana",
   "overview.badge.overdue": "{{name}} {{count}}d vencido",
+  "overview.deadlineField.due": "Vence {{date}}",
+  "overview.deadlineField.empty": "+ fecha límite",
   "overview.filter.allOwners": "Responsable: Todos",
   "overview.filter.myTasks": "Responsable: Yo",
   "overview.filter.ownerUser": "Responsable: {{name}}",

@@ -136,6 +136,8 @@
   "overview.badge.today": "{{name}} aujourd'hui",
   "overview.badge.tomorrow": "{{name}} demain",
   "overview.badge.overdue": "{{name}} {{count}}j en retard",
+  "overview.deadlineField.due": "Échéance {{date}}",
+  "overview.deadlineField.empty": "+ échéance",
   "overview.filter.allOwners": "Responsable : Tous",
   "overview.filter.myTasks": "Responsable : Moi",
   "overview.filter.ownerUser": "Responsable : {{name}}",

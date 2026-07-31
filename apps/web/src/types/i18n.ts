@@ -100,6 +100,8 @@ export interface Translations {
   'overview.notes.deleteTitle': string;
   'overview.notes.deleteDescription': string;
   'overview.notes.mutationError': string;
+  'overview.deadlineField.due': string;
+  'overview.deadlineField.empty': string;
   'overview.detail.deadline.in': string;
   'overview.detail.deadline.today': string;
   'overview.detail.deadline.tomorrow': string;
