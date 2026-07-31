@@ -57,15 +57,15 @@ A single `project` module owns Project, Group, Workstream, Step, Note and
 ChecklistItem. The `user` module owns the authenticated-user endpoint and user
 registration.
 
-| Controller                | Owns                                                 |
-| ------------------------- | ---------------------------------------------------- |
-| `ProjectController`       | Project CRUD + overview read model + ordering        |
-| `GroupController`         | Group CRUD                                           |
-| `WorkstreamController`    | Workstream CRUD + `advance` + step create/order      |
-| `StepController`          | Step field edits + delete + checklist item creation  |
-| `NoteController`          | Note CRUD (author-guarded)                           |
-| `ChecklistItemController` | Checklist item rename / toggle / delete              |
-| `UserController`          | Authenticated user (`/users/me`)                     |
+| Controller                | Owns                                                |
+| ------------------------- | --------------------------------------------------- |
+| `ProjectController`       | Project CRUD + overview read model + ordering       |
+| `GroupController`         | Group CRUD                                          |
+| `WorkstreamController`    | Workstream CRUD + `advance` + step create/order     |
+| `StepController`          | Step field edits + delete + checklist item creation |
+| `NoteController`          | Note CRUD (author-guarded)                          |
+| `ChecklistItemController` | Checklist item rename / toggle / delete             |
+| `UserController`          | Authenticated user (`/users/me`)                    |
 
 ---
 
@@ -112,8 +112,13 @@ columns — on `Group` scoped to the project, on `Workstream` scoped to its
 group (ungrouped is its own scope). One drag sends the whole ordered id list
 for that scope; the server validates the ids are exactly the scope's current
 membership (409 `order-mismatch` otherwise) and rewrites contiguous positions
-using the existing two-phase temporary-position pattern (the generated unique
-constraints are not deferrable).
+in one locked transaction. The unique position constraints are generated
+`deferrable initially deferred`, so transient collisions during the rewrite
+resolve at commit — no temporary-position phase is needed. Workstream
+membership is validated against the scope's **live** (NotStarted/Active)
+workstreams; Complete siblings keep sharing the scope's position sequence and
+are renumbered to trail the live tail in their existing relative order (the
+response returns only the live workstreams, in the new order).
 
 | Method | Path                                    | Body                    | Response          | Notes                                          |
 | ------ | --------------------------------------- | ----------------------- | ----------------- | ---------------------------------------------- |
@@ -164,12 +169,12 @@ against current server state:
 - **Future steps** (after the pointer): fully mutable — create, edit, delete,
   reorder.
 
-| Method   | Path                          | Body              | Response        | Notes                                             |
-| -------- | ----------------------------- | ----------------- | --------------- | ------------------------------------------------- |
+| Method   | Path                          | Body              | Response        | Notes                                                 |
+| -------- | ----------------------------- | ----------------- | --------------- | ----------------------------------------------------- |
 | `POST`   | `/workstreams/:id/steps`      | `CreateStepDto`   | `WorkstreamDto` | Insert at `position`; only where `position` is future |
-| `PATCH`  | `/steps/:id`                  | `UpdateStepDto`   | `StepDto`       | Field edits; current or future steps only         |
-| `DELETE` | `/steps/:id`                  | —                 | `WorkstreamDto` | Future steps only; siblings renumber              |
-| `PUT`    | `/workstreams/:id/step-order` | `ReorderStepsDto` | `WorkstreamDto` | The complete future tail's ids, in order          |
+| `PATCH`  | `/steps/:id`                  | `UpdateStepDto`   | `StepDto`       | Field edits; current or future steps only             |
+| `DELETE` | `/steps/:id`                  | —                 | `WorkstreamDto` | Future steps only; siblings renumber                  |
+| `PUT`    | `/workstreams/:id/step-order` | `ReorderStepsDto` | `WorkstreamDto` | The complete future tail's ids, in order              |
 
 - The client creates a step **only once it has a name**: clicking an insert
   point opens a local ghost; the `POST` fires on the first non-empty name
@@ -180,7 +185,7 @@ against current server state:
   a message.
 - `PUT step-order` submits every future step id exactly once; a list that does
   not match the current future tail returns 409 `order-mismatch`. Positions
-  are rewritten in one transaction (two-phase temporary positions).
+  are rewritten in one transaction under the deferred unique constraint.
 - Field edits are **last-write-wins** — no concurrency token. Structural
   invariants are re-validated per operation, which is what actually protects
   the pipeline; simultaneous field edits by 2–6 cooperating users are not a
@@ -206,11 +211,11 @@ Flat item-level CRUD, matching the granular step model. All operations are
 allowed on current and future Steps and rejected with `step-frozen` on past
 Steps.
 
-| Method   | Path                          | Body                     | Response           | Notes                          |
-| -------- | ----------------------------- | ------------------------ | ------------------ | ------------------------------ |
-| `POST`   | `/steps/:stepId/checklist-items` | `CreateChecklistItemDto` | `ChecklistItemDto` | Appended at the end            |
-| `PATCH`  | `/checklist-items/:id`        | `UpdateChecklistItemDto` | `ChecklistItemDto` | Rename and/or toggle `done`    |
-| `DELETE` | `/checklist-items/:id`        | —                        | `204`              | Siblings renumber              |
+| Method   | Path                             | Body                     | Response           | Notes                       |
+| -------- | -------------------------------- | ------------------------ | ------------------ | --------------------------- |
+| `POST`   | `/steps/:stepId/checklist-items` | `CreateChecklistItemDto` | `ChecklistItemDto` | Appended at the end         |
+| `PATCH`  | `/checklist-items/:id`           | `UpdateChecklistItemDto` | `ChecklistItemDto` | Rename and/or toggle `done` |
+| `DELETE` | `/checklist-items/:id`           | —                        | `204`              | Siblings renumber           |
 
 No standalone `GET` — checklist items are included inline in the overview's step
 data (they're small: name + boolean + position).
@@ -548,8 +553,9 @@ stored:
   mutable. NotStarted means every Step is future; Complete has no editable
   insertion zone.
 - **Ordered mutations.** Step insert/delete/reorder and the workstream/group
-  reorder endpoints each run in one transaction using two-phase temporary
-  positions (the generated unique constraints are not deferrable).
+  reorder endpoints each run in one transaction; the position unique
+  constraints are `deferrable initially deferred`, so contiguous final
+  positions are checked only at commit.
 - **`advance` persistence.** The repository performs the atomic entity load and
   save under a transaction with concurrency protection; the service never
   receives an EntityManager. The response is the canonical `WorkstreamDto`,

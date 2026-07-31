@@ -75,10 +75,11 @@ DTOs gain `position`. Tests: seed order, create-at-top, group-move renumber
 
 **C3 — Reorder endpoints.**
 `PUT /projects/:id/group-order`, `PUT /projects/:id/workstream-order`. Ids
-must equal exact scope membership → 409 `order-mismatch`; two-phase temporary
-positions (constraints are not deferrable — copy the existing step/checklist
-reorder repository pattern). Tests: happy reorder both levels, mismatch, ids
-from another scope (e2e).
+must equal exact scope membership → 409 `order-mismatch`; single-phase
+renumber in one locked transaction — the position constraints are generated
+`deferrable initially deferred`, matching the existing step/checklist reorder
+idiom. Tests: happy reorder both levels, mismatch, ids from another scope
+(e2e).
 
 **C4 — Granular step field/create/delete.**
 `POST /workstreams/:id/steps` (insert at `position`, future zone only, 409
@@ -91,8 +92,9 @@ guard, per endpoint (unit + e2e).
 
 **C5 — Step reorder.**
 `PUT /workstreams/:id/step-order`: complete future tail, exactly once each →
-409 `order-mismatch`; two-phase renumber. Tests: reorder, partial list,
-stale list after an advance (e2e).
+409 `order-mismatch`; single-phase renumber under the deferred unique
+constraint (see C3). Tests: reorder, partial list, stale list after an
+advance (e2e).
 
 **C6 — Checklist item endpoints.**
 `POST /steps/:stepId/checklist-items`, `PATCH /checklist-items/:id` gains
