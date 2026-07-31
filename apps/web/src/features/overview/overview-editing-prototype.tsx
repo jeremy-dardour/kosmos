@@ -15,12 +15,29 @@
  * is written back.
  */
 import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
   ArrowLeftIcon,
   ArrowRightIcon,
   CheckIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  GripVerticalIcon,
   ListChecksIcon,
   MessageSquareIcon,
   MessageSquarePlusIcon,
@@ -53,6 +70,8 @@ import type {
   Workstream,
 } from '@/api/hooks/use-overview';
 import type { NoteEntry } from '@/api/hooks/use-workstream-notes';
+import type { WorkstreamGroup } from '@/features/overview/group-workstreams';
+import type { DragEndEvent } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
 
 interface OverviewEditingPrototypeProperties {
@@ -60,6 +79,9 @@ interface OverviewEditingPrototypeProperties {
   workstreams: Workstream[];
   users: UserSummary[];
 }
+
+/** B3 candidates: where the primary action lives on the card. */
+type AdvancePlacement = 'top-right' | 'after-title' | 'bottom-right';
 
 /* ------------------------------------------------------------------ draft */
 
@@ -71,12 +93,21 @@ interface LocalNote {
 
 interface DraftStore {
   workstreams: Workstream[];
+  /** Groups in their manual order (drag & drop applied). */
+  orderedGroups: Group[];
   edits: number;
   localNotes: ReadonlyMap<string, LocalNote[]>;
   /** Overrides keyed by note id, covering both API and local notes. */
   noteEdits: ReadonlyMap<string, string>;
   deletedNoteIds: ReadonlySet<string>;
   patchWorkstream: (id: string, patch: Partial<Workstream>) => void;
+  /** Begin a NotStarted workstream: step 1 becomes current. */
+  startWorkstream: (id: string) => void;
+  /** Record the current step's outcome and move the pointer forward. */
+  advanceWorkstream: (id: string, outcome: 'done' | 'skipped') => void;
+  /** Reorders `activeId` to `overId`'s slot; no-op across different groups. */
+  moveWorkstream: (activeId: string, overId: string) => void;
+  moveGroup: (activeId: string, overId: string) => void;
   patchStep: (
     workstreamId: string,
     stepId: string,
@@ -119,8 +150,9 @@ function isStructurallyFree(step: Step): boolean {
   return step.status === 'not_started';
 }
 
-function useDraft(source: Workstream[]): DraftStore {
+function useDraft(source: Workstream[], groups: Group[]): DraftStore {
   const [draft, setDraft] = useState<Workstream[] | null>(null);
+  const [groupOrderIds, setGroupOrderIds] = useState<string[] | null>(null);
   const [edits, setEdits] = useState(0);
   const [localNotes, setLocalNotes] = useState<
     ReadonlyMap<string, LocalNote[]>
@@ -133,6 +165,13 @@ function useDraft(source: Workstream[]): DraftStore {
   );
 
   const workstreams = draft ?? source;
+
+  // Manual order: the API's alphabetical order until a drag says otherwise.
+  const orderedGroups = groupOrderIds
+    ? [...groups].sort(
+        (a, b) => groupOrderIds.indexOf(a.id) - groupOrderIds.indexOf(b.id),
+      )
+    : groups;
 
   const mutate = (
     workstreamId: string,
@@ -166,6 +205,7 @@ function useDraft(source: Workstream[]): DraftStore {
 
   return {
     workstreams,
+    orderedGroups,
     edits,
     localNotes,
     noteEdits,
@@ -173,6 +213,81 @@ function useDraft(source: Workstream[]): DraftStore {
 
     patchWorkstream: (id, patch) =>
       mutate(id, (workstream) => ({ ...workstream, ...patch })),
+
+    startWorkstream: (id) =>
+      mutate(id, (workstream) => {
+        const [first, ...rest] = workstream.steps;
+        if (!first || workstream.lifecycle !== 'not_started') return workstream;
+        return {
+          ...workstream,
+          lifecycle: 'active',
+          startedAt: new Date().toISOString(),
+          currentStepId: first.id,
+          steps: [{ ...first, status: 'in_progress' }, ...rest],
+        };
+      }),
+
+    advanceWorkstream: (id, outcome) =>
+      mutate(id, (workstream) => {
+        const index = workstream.steps.findIndex(
+          (step) => step.status === 'in_progress',
+        );
+        if (index === -1) return workstream;
+        const now = new Date().toISOString();
+        const next = workstream.steps[index + 1] ?? null;
+        return {
+          ...workstream,
+          lifecycle: next ? 'active' : 'complete',
+          completedAt: next ? null : now,
+          currentStepId: next?.id ?? null,
+          steps: workstream.steps.map((step, at) => {
+            if (at === index) {
+              return {
+                ...step,
+                status: outcome,
+                outcome,
+                outcomeAt: now,
+                blocked: false,
+              };
+            }
+            return at === index + 1
+              ? { ...step, status: 'in_progress' as const }
+              : step;
+          }),
+        };
+      }),
+
+    moveWorkstream: (activeId, overId) => {
+      setDraft((current) => {
+        const list = current ?? source;
+        const from = list.findIndex((w) => w.id === activeId);
+        const to = list.findIndex((w) => w.id === overId);
+        const moved = list[from];
+        const target = list[to];
+        if (!moved || !target) return list;
+        // Within-group only: dropping over another group's card is a no-op.
+        if ((moved.groupId ?? null) !== (target.groupId ?? null)) return list;
+        const next = [...list];
+        next.splice(from, 1);
+        next.splice(to, 0, moved);
+        return next;
+      });
+      setEdits((count) => count + 1);
+    },
+
+    moveGroup: (activeId, overId) => {
+      setGroupOrderIds((current) => {
+        const order = current ?? groups.map((group) => group.id);
+        const from = order.indexOf(activeId);
+        const to = order.indexOf(overId);
+        if (from === -1 || to === -1) return current;
+        const next = [...order];
+        next.splice(from, 1);
+        next.splice(to, 0, activeId);
+        return next;
+      });
+      setEdits((count) => count + 1);
+    },
 
     patchStep: (workstreamId, stepId, patch) =>
       mutateStep(workstreamId, stepId, (step) => ({ ...step, ...patch })),
@@ -818,58 +933,305 @@ function LifecycleBadges({ workstream }: { workstream: Workstream }) {
   );
 }
 
-/**
- * Work that still needs doing sits above work that is finished. `sort` is
- * stable, so the alphabetical order inside each tier is preserved.
- */
-const LIFECYCLE_ORDER: Record<Workstream['lifecycle'], number> = {
-  active: 0,
-  not_started: 1,
-  complete: 2,
-};
+function GroupHeader({
+  group,
+  count,
+  dragHandle,
+}: {
+  group: Group | null;
+  count: number;
+  dragHandle?: ReactNode;
+}) {
+  return (
+    <header className="mb-2 flex items-center gap-2">
+      {dragHandle}
+      <span
+        aria-hidden
+        className="size-2 rounded-[2px] border"
+        style={{ backgroundColor: group?.color ?? 'transparent' }}
+      />
+      <h2 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+        {group?.name ?? 'Ungrouped'}
+      </h2>
+      <span className="text-[11px] text-muted-foreground/60">{count}</span>
+    </header>
+  );
+}
 
-function GroupedList({
+function DragHandle({
+  label,
+  className,
+  ...rest
+}: {
+  label: string;
+  className?: string;
+} & Record<string, unknown>) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      {...rest}
+      className={cn(
+        'shrink-0 cursor-grab touch-none rounded text-muted-foreground/60 opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 active:cursor-grabbing',
+        className,
+      )}
+    >
+      <GripVerticalIcon className="size-3.5" />
+    </button>
+  );
+}
+
+const groupDndId = (group: Group | null) => `group:${group?.id ?? 'ungrouped'}`;
+
+function useDndSensors() {
+  return useSensors(
+    // The distance gate keeps plain clicks (open, edit) from starting a drag.
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+}
+
+/**
+ * Cards keep the manual order of the draft array — no lifecycle sort. Only
+ * completion moves a card, and that moves it out of the group entirely, into
+ * the Completed section.
+ *
+ * Each group runs its own card DndContext: a card drag only ever measures its
+ * siblings, so it cannot stutter against other groups' drop targets, and the
+ * within-group rule is enforced by construction rather than by rejection.
+ */
+function SortableGroupSection({
+  bucket,
+  draft,
+  children,
+}: {
+  bucket: WorkstreamGroup;
+  draft: DraftStore;
+  children: (workstream: Workstream, dragHandle?: ReactNode) => ReactNode;
+}) {
+  const sensors = useDndSensors();
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({
+      id: groupDndId(bucket.group),
+      // Ungrouped is "not yet filed", pinned after the real groups.
+      disabled: bucket.group === null,
+    });
+
+  const onCardDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    draft.moveWorkstream(String(active.id), String(over.id));
+  };
+
+  // A lone card has nothing to reorder against, so it gets no handle at all.
+  const hasSiblings = bucket.workstreams.length > 1;
+
+  return (
+    <section
+      ref={setNodeRef}
+      // Translate only: the sortable scale component would deform the section.
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      aria-label={bucket.group?.name ?? 'Ungrouped'}
+      className="group/section"
+    >
+      <GroupHeader
+        group={bucket.group}
+        count={bucket.workstreams.length}
+        dragHandle={
+          bucket.group && (
+            <DragHandle
+              label={`Reorder group ${bucket.group.name}`}
+              className="-ml-5 group-hover/section:opacity-100"
+              {...attributes}
+              {...listeners}
+            />
+          )
+        }
+      />
+      {hasSiblings ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={onCardDragEnd}
+        >
+          <SortableContext
+            items={bucket.workstreams.map((workstream) => workstream.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="flex flex-col gap-2.5">
+              {bucket.workstreams.map((workstream) => (
+                <SortableWorkstreamCard key={workstream.id} id={workstream.id}>
+                  {(dragHandle) => children(workstream, dragHandle)}
+                </SortableWorkstreamCard>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {bucket.workstreams.map((workstream) => children(workstream))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SortableWorkstreamCard({
+  id,
+  children,
+}: {
+  id: string;
+  children: (dragHandle: ReactNode) => ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      // Translate only — the scale part of the sortable transform is what was
+      // deforming cards of different heights mid-drag.
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn(
+        'rounded-lg',
+        // The dragged card floats above the list at full strength; the gap the
+        // siblings open up underneath is the drop zone.
+        isDragging && 'z-10 shadow-lg ring-2 ring-foreground/15',
+      )}
+    >
+      {children(
+        <DragHandle
+          label="Reorder workstream"
+          className="-ml-2 group-hover/card:opacity-100"
+          {...attributes}
+          {...listeners}
+        />,
+      )}
+    </div>
+  );
+}
+
+/**
+ * The live groups, both drag levels wired: whole groups by their header
+ * handle, workstreams within their own group by the card handle (its own
+ * nested context inside each section).
+ */
+function DraggableGroupedList({
   groups,
   workstreams,
-  className,
+  draft,
   children,
 }: {
   groups: Group[];
   workstreams: Workstream[];
-  className?: string;
+  draft: DraftStore;
+  children: (workstream: Workstream, dragHandle?: ReactNode) => ReactNode;
+}) {
+  const sensors = useDndSensors();
+  const buckets = groupWorkstreams(groups, workstreams);
+
+  const onGroupDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    draft.moveGroup(
+      String(active.id).slice('group:'.length),
+      String(over.id).slice('group:'.length),
+    );
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      modifiers={[restrictToVerticalAxis]}
+      onDragEnd={onGroupDragEnd}
+    >
+      <SortableContext
+        items={buckets
+          .filter((bucket) => bucket.group !== null)
+          .map((bucket) => groupDndId(bucket.group))}
+        strategy={verticalListSortingStrategy}
+      >
+        {buckets.map((bucket) => (
+          <SortableGroupSection
+            key={groupDndId(bucket.group)}
+            bucket={bucket}
+            draft={draft}
+          >
+            {children}
+          </SortableGroupSection>
+        ))}
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+/**
+ * Done work leaves its group and sinks here, collapsed by default — the page
+ * ends where live work ends. Inside, cards cluster by group (same order as
+ * above) and keep the recessive complete-card treatment.
+ */
+function CompletedSection({
+  groups,
+  workstreams,
+  children,
+}: {
+  groups: Group[];
+  workstreams: Workstream[];
   children: (workstream: Workstream) => ReactNode;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (workstreams.length === 0) return null;
+
   return (
-    <div className={cn('flex flex-col gap-5 pb-24', className)}>
-      {groupWorkstreams(groups, workstreams).map((bucket) => (
-        <section
-          key={bucket.group?.id ?? 'ungrouped'}
-          aria-label={bucket.group?.name ?? 'Ungrouped'}
-        >
-          <header className="mb-2 flex items-center gap-2">
-            <span
-              aria-hidden
-              className="size-2 rounded-[2px] border"
-              style={{ backgroundColor: bucket.group?.color ?? 'transparent' }}
-            />
-            <h2 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              {bucket.group?.name ?? 'Ungrouped'}
-            </h2>
-            <span className="text-[11px] text-muted-foreground/60">
-              {bucket.workstreams.length}
-            </span>
-          </header>
-          <div className="flex flex-col gap-2.5">
-            {[...bucket.workstreams]
-              .sort(
-                (a, b) =>
-                  LIFECYCLE_ORDER[a.lifecycle] - LIFECYCLE_ORDER[b.lifecycle],
-              )
-              .map((workstream) => children(workstream))}
-          </div>
-        </section>
-      ))}
-    </div>
+    <section aria-label="Completed">
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+        className="flex w-full items-center gap-2 rounded py-1 text-muted-foreground hover:text-foreground"
+      >
+        <ChevronRightIcon
+          className={cn(
+            'size-3.5 shrink-0 transition-transform',
+            isOpen && 'rotate-90',
+          )}
+        />
+        <CheckIcon className="size-3.5 shrink-0 text-step-done" />
+        <span className="text-[11px] font-medium uppercase tracking-wider">
+          Completed
+        </span>
+        <span className="text-[11px] tabular-nums text-muted-foreground/60">
+          {workstreams.length}
+        </span>
+        <span aria-hidden className="h-px flex-1 bg-border" />
+      </button>
+
+      {isOpen && (
+        <div className="mt-3 flex flex-col gap-4">
+          {groupWorkstreams(groups, workstreams).map((bucket) => (
+            <div key={bucket.group?.id ?? 'ungrouped'}>
+              <GroupHeader
+                group={bucket.group}
+                count={bucket.workstreams.length}
+              />
+              <div className="flex flex-col gap-2.5">
+                {bucket.workstreams.map((workstream) => children(workstream))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -895,63 +1257,189 @@ function LiveFieldList({
   users,
   draft,
   currentUserId,
+  advancePlacement,
 }: {
   groups: Group[];
   workstreams: Workstream[];
   users: UserSummary[];
   draft: DraftStore;
   currentUserId: string;
+  advancePlacement: AdvancePlacement;
 }) {
   const [openStep, setOpenStep] = useState<{
     workstreamId: string;
     stepId: string;
   } | null>(null);
 
+  const live = workstreams.filter(
+    (workstream) => workstream.lifecycle !== 'complete',
+  );
+  const completed = workstreams.filter(
+    (workstream) => workstream.lifecycle === 'complete',
+  );
+
+  const renderCard = (workstream: Workstream, dragHandle?: ReactNode) => (
+    <LiveFieldCard
+      key={workstream.id}
+      workstream={workstream}
+      groups={groups}
+      users={users}
+      draft={draft}
+      currentUserId={currentUserId}
+      dragHandle={dragHandle}
+      advancePlacement={advancePlacement}
+      openStepId={
+        openStep?.workstreamId === workstream.id ? openStep.stepId : null
+      }
+      onOpenStep={(stepId) =>
+        setOpenStep(stepId ? { workstreamId: workstream.id, stepId } : null)
+      }
+    />
+  );
+
   return (
     // Wide screens get the width the dropped side panel freed up; the cap only
     // stops the dot columns from stretching absurdly on an ultrawide.
-    <GroupedList
-      groups={groups}
-      workstreams={workstreams}
-      className="mx-auto w-full max-w-[110rem]"
-    >
-      {(workstream) => (
-        <LiveFieldCard
-          key={workstream.id}
-          workstream={workstream}
-          groups={groups}
-          users={users}
-          draft={draft}
-          currentUserId={currentUserId}
-          openStepId={
-            openStep?.workstreamId === workstream.id ? openStep.stepId : null
-          }
-          onOpenStep={(stepId) =>
-            setOpenStep(stepId ? { workstreamId: workstream.id, stepId } : null)
-          }
-        />
-      )}
-    </GroupedList>
+    <div className="mx-auto flex w-full max-w-[110rem] flex-col gap-5 pb-24">
+      <DraggableGroupedList groups={groups} workstreams={live} draft={draft}>
+        {(workstream, dragHandle) => renderCard(workstream, dragHandle)}
+      </DraggableGroupedList>
+      <CompletedSection groups={groups} workstreams={completed}>
+        {(workstream) => renderCard(workstream)}
+      </CompletedSection>
+    </div>
   );
 }
 
 /**
- * Chrome follows lifecycle: live work is a framed card, finished work drops the
- * border and surface and sits flat on the page. Selecting anything brings the
+ * Chrome follows lifecycle: live work is a framed card with a surface;
+ * finished work keeps only a light frame so it stays findable in the
+ * Completed section without competing. Selecting anything brings the full
  * frame back, so a complete card can still be opened without losing its
- * boundary. The idle border stays transparent rather than absent, so nothing
- * shifts by a pixel when a real one appears.
+ * boundary.
  */
 function cardChromeClass(isLive: boolean, isOpen: boolean): string {
   if (isOpen) return 'border-step-in-progress/60 bg-card shadow-xs';
   return isLive
     ? 'border-border bg-card shadow-xs hover:border-muted-foreground/30'
-    : 'border-transparent bg-transparent hover:bg-card/60';
+    : // A light frame keeps a finished card findable without competing with
+      // live work — half-strength border, no surface, no shadow.
+      'border-border/50 bg-transparent hover:bg-card/60';
 }
 
 /** The step whose checklist and notes the card surfaces without being opened. */
 function currentStepOf(workstream: Workstream): Step | null {
   return workstream.steps.find((step) => step.status === 'in_progress') ?? null;
+}
+
+/**
+ * The primary action, pinned as the card's right-most element so it sits in
+ * the same spot on every card. It is the only solid button on the card, which
+ * is what keeps it unmistakable among all the quiet click targets; the
+ * distance-gated drag sensor and its own dropdown keep it safe from misfires.
+ */
+function AdvanceControl({
+  workstream,
+  draft,
+}: {
+  workstream: Workstream;
+  draft: DraftStore;
+}) {
+  if (workstream.lifecycle === 'complete') return null;
+
+  if (workstream.lifecycle === 'not_started') {
+    if (workstream.steps.length === 0) return null;
+    return (
+      <Button
+        type="button"
+        size="xs"
+        variant="outline"
+        title="Begin this workstream — step 1 becomes current"
+        onClick={() => draft.startWorkstream(workstream.id)}
+      >
+        Start
+      </Button>
+    );
+  }
+
+  const current = currentStepOf(workstream);
+  if (!current) return null;
+
+  // A blocked step never advances in one click: resolving means choosing.
+  if (isBlockedNow(current)) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              title={`${current.name || 'The current step'} is blocked — choose how to resolve it`}
+              className="border-step-blocked/40 text-step-blocked hover:text-step-blocked"
+            />
+          }
+        >
+          Resolve
+          <ChevronDownIcon />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => draft.advanceWorkstream(workstream.id, 'done')}
+          >
+            Advance — mark {current.name || 'step'} done
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => draft.advanceWorkstream(workstream.id, 'skipped')}
+          >
+            Advance — skip it
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              draft.patchStep(workstream.id, current.id, { blocked: false })
+            }
+          >
+            Unblock — keep working on it
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <span className="flex items-center">
+      <Button
+        type="button"
+        size="xs"
+        title={`Mark ${current.name || 'the current step'} done and move on`}
+        className="rounded-r-none"
+        onClick={() => draft.advanceWorkstream(workstream.id, 'done')}
+      >
+        Advance
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              size="xs"
+              aria-label="More advance options"
+              className="rounded-l-none border-l border-l-background/30 px-1"
+            />
+          }
+        >
+          <ChevronDownIcon />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => draft.advanceWorkstream(workstream.id, 'skipped')}
+          >
+            Skip {current.name || 'current step'}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
+  );
 }
 
 function LiveFieldCard({
@@ -960,6 +1448,8 @@ function LiveFieldCard({
   users,
   draft,
   currentUserId,
+  dragHandle,
+  advancePlacement,
   openStepId,
   onOpenStep,
 }: {
@@ -968,6 +1458,8 @@ function LiveFieldCard({
   users: UserSummary[];
   draft: DraftStore;
   currentUserId: string;
+  dragHandle?: ReactNode;
+  advancePlacement: AdvancePlacement;
   openStepId: string | null;
   onOpenStep: (stepId: string | null) => void;
 }) {
@@ -1038,7 +1530,7 @@ function LiveFieldCard({
     <article
       ref={cardRef}
       className={cn(
-        'rounded-lg border p-card transition-colors',
+        'group/card rounded-lg border p-card transition-colors',
         cardChromeClass(isLive, Boolean(openedStep)),
       )}
     >
@@ -1047,6 +1539,7 @@ function LiveFieldCard({
           dimming lives on the parts rather than the card, because a parent
           `opacity` cannot be undone by a child. */}
       <div className={cn('flex items-center gap-2', !isLive && 'opacity-65')}>
+        {dragHandle}
         <IconPicker
           value={workstream.icon}
           onChange={(icon) => draft.patchWorkstream(workstream.id, { icon })}
@@ -1071,6 +1564,9 @@ function LiveFieldCard({
           }
         />
         <LifecycleBadges workstream={workstream} />
+        {advancePlacement === 'after-title' && (
+          <AdvanceControl workstream={workstream} draft={draft} />
+        )}
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {deadlineStep && <WorkstreamDeadline step={deadlineStep} now={now} />}
@@ -1082,12 +1578,16 @@ function LiveFieldCard({
               draft.patchWorkstream(workstream.id, { ownerId })
             }
           />
+          {advancePlacement === 'top-right' && (
+            <AdvanceControl workstream={workstream} draft={draft} />
+          )}
         </div>
       </div>
 
       <div className="mt-3">
         <EditableDots
           steps={workstream.steps}
+          users={users}
           openStepId={openStepId}
           previewStepIds={
             [currentStep?.id, nextStep?.id].filter(Boolean) as string[]
@@ -1146,6 +1646,14 @@ function LiveFieldCard({
             onClose={() => setNotesStepId(null)}
           />
         </>
+      )}
+
+      {/* `empty:hidden` keeps a card without an action (complete, or an
+          empty pipeline) from reserving a blank footer row. */}
+      {advancePlacement === 'bottom-right' && (
+        <div className="mt-2 flex justify-end empty:hidden">
+          <AdvanceControl workstream={workstream} draft={draft} />
+        </div>
       )}
     </article>
   );
@@ -1455,6 +1963,7 @@ function IconPicker({
           <button
             type="button"
             aria-label="Change icon"
+            title="Change icon"
             className="shrink-0 rounded px-0.5 text-base leading-none hover:bg-muted"
           />
         }
@@ -1478,6 +1987,7 @@ function IconPicker({
 
 function EditableDots({
   steps,
+  users,
   openStepId,
   previewStepIds,
   currentStepId,
@@ -1491,6 +2001,7 @@ function EditableDots({
   onInsertAt,
 }: {
   steps: Step[];
+  users: UserSummary[];
   openStepId: string | null;
   previewStepIds: string[];
   currentStepId: string | null;
@@ -1593,17 +2104,31 @@ function EditableDots({
                     )}
                   />
                 </span>
+                {/* Step names are the pipeline's labels — they read at body
+                    size, not caption size, so the row scans without leaning
+                    in. Colour still separates current from the rest. */}
                 <span
                   className={cn(
-                    'w-full truncate px-1 text-center text-[11px] leading-tight',
+                    'w-full truncate px-1 text-center text-[13px] leading-tight',
                     isOpen || isCurrent
-                      ? 'font-medium text-foreground'
-                      : 'text-muted-foreground group-hover/dot:text-foreground',
-                    !step.name && 'italic',
+                      ? 'font-semibold text-foreground'
+                      : 'font-medium text-foreground/75 group-hover/dot:text-foreground',
+                    !step.name && 'font-normal italic text-muted-foreground',
                   )}
                 >
                   {step.name || 'Untitled'}
                 </span>
+                {/* An avatar under a dot only ever means an owner override —
+                    inherited owners stay invisible here. */}
+                {step.explicitOwnerId && (
+                  <OwnerAvatar
+                    owner={
+                      users.find((user) => user.id === step.explicitOwnerId) ??
+                      null
+                    }
+                    className="size-4 text-[8px] ring-1 ring-border"
+                  />
+                )}
                 {/* The date is shaded by the same five-band scale as the ring. */}
                 {step.deadline && urgency && (
                   <span
@@ -1624,6 +2149,7 @@ function EditableDots({
                   type="button"
                   aria-pressed={step.id === openNotesStepId}
                   aria-label={`Notes on ${step.name || 'step'}`}
+                  title={`Notes on ${step.name || 'step'}`}
                   onClick={() => onOpenNotes(step.id)}
                   className={cn(
                     'mt-1 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] leading-none',
@@ -1654,6 +2180,7 @@ function EditableDots({
           <button
             type="button"
             aria-label="Add a step at the end"
+            title="Add a step at the end"
             onClick={() => onInsertAt?.(steps.length)}
             className="flex w-8 flex-col items-center text-muted-foreground hover:text-foreground"
           >
@@ -1684,6 +2211,7 @@ function InsertStepPoint({
       <button
         type="button"
         aria-label={label}
+        title={label}
         onClick={onClick}
         // `top-0` + `size-5` matches the dot row's height, so the button lands
         // centred on the connector line; the row has no height of its own.
@@ -1995,26 +2523,70 @@ function PrototypeStateStrip({ edits }: { edits: number }) {
   );
 }
 
+const ADVANCE_PLACEMENTS: AdvancePlacement[] = [
+  'top-right',
+  'after-title',
+  'bottom-right',
+];
+
+/** B3 comparison switcher — where does the primary action live on the card? */
+function AdvancePlacementSwitcher({
+  value,
+  onChange,
+}: {
+  value: AdvancePlacement;
+  onChange: (next: AdvancePlacement) => void;
+}) {
+  return (
+    <div className="fixed bottom-4 right-4 z-40 hidden items-center gap-1 rounded-full border bg-background/95 px-2 py-1 text-[10px] shadow-md backdrop-blur md:flex">
+      <span className="px-1 text-muted-foreground">Advance:</span>
+      {ADVANCE_PLACEMENTS.map((placement) => (
+        <button
+          key={placement}
+          type="button"
+          aria-pressed={placement === value}
+          onClick={() => onChange(placement)}
+          className={cn(
+            'rounded-full px-2 py-0.5',
+            placement === value
+              ? 'bg-foreground text-background'
+              : 'text-muted-foreground hover:text-foreground',
+          )}
+        >
+          {placement}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export const OverviewEditingPrototype = ({
   groups,
   workstreams,
   users,
 }: OverviewEditingPrototypeProperties) => {
-  const draft = useDraft(workstreams);
+  const draft = useDraft(workstreams, groups);
   const authState = useAuthState();
   const currentUserId =
     authState.status === 'authenticated' ? authState.user.id : '';
+  const [advancePlacement, setAdvancePlacement] =
+    useState<AdvancePlacement>('after-title');
 
   return (
     <>
       <LiveFieldList
-        groups={groups}
+        groups={draft.orderedGroups}
         workstreams={draft.workstreams}
         users={users}
         draft={draft}
         currentUserId={currentUserId}
+        advancePlacement={advancePlacement}
       />
       <PrototypeStateStrip edits={draft.edits} />
+      <AdvancePlacementSwitcher
+        value={advancePlacement}
+        onChange={setAdvancePlacement}
+      />
     </>
   );
 };
