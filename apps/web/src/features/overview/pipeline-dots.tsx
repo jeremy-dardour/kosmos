@@ -58,7 +58,7 @@ export const PipelineDots = ({ steps }: PipelineDotsProperties) => {
         const band = step.deadline
           ? urgencyBand(step.deadline, now)
           : undefined;
-        const isUrgent = band === 'soon' || band === 'late';
+        const isUrgent = band === 'passed' || band === 'week';
 
         return (
           <li

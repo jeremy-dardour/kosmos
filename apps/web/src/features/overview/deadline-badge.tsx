@@ -19,9 +19,10 @@ export const DeadlineBadge = ({ step }: DeadlineBadgeProperties) => {
   const now = new Date();
   const days = daysUntil(step.deadline, now);
   const band = urgencyBand(step.deadline, now);
+  const isUrgent = band === 'passed' || band === 'week';
 
   const label =
-    band === 'late'
+    band === 'passed'
       ? t('overview.badge.overdue', { name: step.name, count: -days })
       : t('overview.badge.upcoming', { name: step.name, count: days });
 
@@ -29,12 +30,12 @@ export const DeadlineBadge = ({ step }: DeadlineBadgeProperties) => {
     <span
       className={cn(
         'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight tabular-nums',
-        band === 'late' && 'bg-urgency-late text-urgency-late-foreground',
-        band === 'soon' && 'bg-urgency-soon text-urgency-soon-foreground',
-        band === 'calm' && 'bg-urgency-calm text-urgency-calm-foreground',
+        band === 'passed' && 'bg-urgency-late text-urgency-late-foreground',
+        band === 'week' && 'bg-urgency-soon text-urgency-soon-foreground',
+        !isUrgent && 'bg-urgency-calm text-urgency-calm-foreground',
       )}
     >
-      {band === 'soon' && <span aria-hidden>⚠</span>}
+      {band === 'week' && <span aria-hidden>⚠</span>}
       {label}
     </span>
   );
