@@ -1,12 +1,21 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 
+import type { CreateChecklistItemInput } from '@/api/hooks/use-create-checklist-item';
+import type { CreateStepInput } from '@/api/hooks/use-create-step';
 import type {
+  ChecklistItem,
   Group,
   Overview,
   Project,
+  Step,
   Workstream,
 } from '@/api/hooks/use-overview';
+import type { ReorderGroupsInput } from '@/api/hooks/use-reorder-groups';
+import type { ReorderStepsInput } from '@/api/hooks/use-reorder-steps';
+import type { ReorderWorkstreamsInput } from '@/api/hooks/use-reorder-workstreams';
+import type { UpdateChecklistItemInput } from '@/api/hooks/use-update-checklist-item';
+import type { UpdateStepInput } from '@/api/hooks/use-update-step';
 import type { UpdateWorkstreamPipelineInput } from '@/api/hooks/use-update-workstream-pipeline';
 import type {
   CreateNoteInput,
@@ -51,6 +60,55 @@ function problemResponse(status: number, problem: Record<string, unknown>) {
   });
 }
 
+function notFound() {
+  return problemResponse(404, problemDetails(404));
+}
+
+function conflict(slug: string, detail: string) {
+  return problemResponse(
+    409,
+    problemDetails(409, {
+      type: `https://wedding-planner.dev/errors/${slug}`,
+      title: 'Conflict',
+      detail,
+    }),
+  );
+}
+
+function isExactMembership(ids: string[], members: string[]): boolean {
+  return (
+    ids.length === members.length &&
+    new Set(ids).size === ids.length &&
+    ids.every((id) => members.includes(id))
+  );
+}
+
+function byPosition(left: { position: number }, right: { position: number }) {
+  return left.position - right.position;
+}
+
+/** PATCH semantics: an absent field leaves the stored value alone, `null` clears it. */
+function patched<T>(next: T | undefined, current: T): T {
+  if (next === undefined) return current;
+
+  return next;
+}
+
+function pointerPosition(workstream: Workstream) {
+  return (
+    workstream.steps.find((step) => step.id === workstream.currentStepId)
+      ?.position ?? 0
+  );
+}
+
+function futureSteps(workstream: Workstream) {
+  const pointer = pointerPosition(workstream);
+
+  return workstream.steps
+    .filter((step) => step.position > pointer && step.outcome == null)
+    .sort(byPosition);
+}
+
 interface AdvanceRequest {
   body: unknown;
   overview: Overview;
@@ -61,7 +119,326 @@ export function setupOverviewApi(initialOverview: Overview) {
   let generatedId = 0;
   let lastPipelineInput: UpdateWorkstreamPipelineInput | null = null;
 
+  function findWorkstream(id: string) {
+    return overview.workstreams.find((workstream) => workstream.id === id);
+  }
+
+  function saveWorkstream(updated: Workstream) {
+    overview = {
+      ...overview,
+      workstreams: overview.workstreams.map((workstream) =>
+        workstream.id === updated.id ? updated : workstream,
+      ),
+    };
+    return updated;
+  }
+
+  function saveSteps(workstream: Workstream, steps: Step[]) {
+    return saveWorkstream({
+      ...workstream,
+      steps: [...steps].sort(byPosition),
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  function locateStep(stepId: string) {
+    for (const workstream of overview.workstreams) {
+      const step = workstream.steps.find((item) => item.id === stepId);
+      if (step) return { workstream, step };
+    }
+    return null;
+  }
+
+  function locateChecklistItem(itemId: string) {
+    for (const workstream of overview.workstreams) {
+      for (const step of workstream.steps) {
+        const item = step.checklistItems.find((entry) => entry.id === itemId);
+        if (item) return { workstream, step, item };
+      }
+    }
+    return null;
+  }
+
   server.use(
+    http.post(
+      `${API_BASE}/api/workstreams/:id/steps`,
+      async ({ params, request }) => {
+        const workstream = findWorkstream(String(params.id));
+        if (!workstream) return notFound();
+
+        const input = (await request.json()) as CreateStepInput;
+        if (
+          workstream.lifecycle === 'complete' ||
+          input.position <= pointerPosition(workstream) ||
+          input.position > workstream.steps.length + 1
+        ) {
+          return conflict(
+            'step-insertion-illegal',
+            `Position ${input.position} is not in this workstream's future zone`,
+          );
+        }
+
+        const now = new Date().toISOString();
+        const created: Step = {
+          id: `mock-step-${++generatedId}`,
+          name: input.name,
+          position: input.position,
+          status: 'not_started',
+          blocked: false,
+          deadline: input.deadline ?? null,
+          outcome: null,
+          outcomeAt: null,
+          explicitOwnerId: input.ownerId ?? null,
+          effectiveOwnerId: input.ownerId ?? workstream.ownerId ?? null,
+          checklistItems: [],
+          noteCount: 0,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        return HttpResponse.json(
+          saveSteps(workstream, [
+            ...workstream.steps.map((step) =>
+              step.position >= input.position
+                ? { ...step, position: step.position + 1 }
+                : step,
+            ),
+            created,
+          ]),
+          { status: 201 },
+        );
+      },
+    ),
+    http.patch(`${API_BASE}/api/steps/:id`, async ({ params, request }) => {
+      const located = locateStep(String(params.id));
+      if (!located) return notFound();
+      if (located.step.outcome != null) {
+        return conflict('step-frozen', 'Past steps cannot be edited');
+      }
+
+      const input = (await request.json()) as UpdateStepInput;
+      const { workstream, step } = located;
+      const explicitOwnerId = patched(input.ownerId, step.explicitOwnerId);
+      const updated: Step = {
+        ...step,
+        name: input.name ?? step.name,
+        deadline: patched(input.deadline, step.deadline),
+        blocked: input.blocked ?? step.blocked,
+        explicitOwnerId,
+        effectiveOwnerId: explicitOwnerId ?? workstream.ownerId ?? null,
+        updatedAt: new Date().toISOString(),
+      };
+
+      saveSteps(
+        workstream,
+        workstream.steps.map((item) =>
+          item.id === updated.id ? updated : item,
+        ),
+      );
+      return HttpResponse.json(updated);
+    }),
+    http.delete(`${API_BASE}/api/steps/:id`, ({ params }) => {
+      const located = locateStep(String(params.id));
+      if (!located) return notFound();
+
+      const { workstream, step } = located;
+      if (step.outcome != null) {
+        return conflict('step-frozen', 'Past steps cannot be edited');
+      }
+      if (step.id === workstream.currentStepId) {
+        return conflict(
+          'step-not-deletable',
+          'The current step cannot be deleted while it is in progress',
+        );
+      }
+
+      return HttpResponse.json(
+        saveSteps(
+          workstream,
+          workstream.steps
+            .filter((item) => item.id !== step.id)
+            .map((item) =>
+              item.position > step.position
+                ? { ...item, position: item.position - 1 }
+                : item,
+            ),
+        ),
+      );
+    }),
+    http.put(
+      `${API_BASE}/api/workstreams/:id/step-order`,
+      async ({ params, request }) => {
+        const workstream = findWorkstream(String(params.id));
+        if (!workstream) return notFound();
+
+        const input = (await request.json()) as ReorderStepsInput;
+        const future = futureSteps(workstream);
+        if (
+          !isExactMembership(
+            input.ids,
+            future.map((step) => step.id),
+          )
+        ) {
+          return conflict(
+            'order-mismatch',
+            "The submitted ids do not match the workstream's future steps",
+          );
+        }
+
+        const slots = future.map((step) => step.position);
+        const byId = new Map(future.map((step) => [step.id, step]));
+        const reordered = input.ids.map((id, index) => ({
+          ...byId.get(id)!,
+          position: slots[index]!,
+        }));
+
+        return HttpResponse.json(
+          saveSteps(workstream, [
+            ...workstream.steps.filter((step) => !byId.has(step.id)),
+            ...reordered,
+          ]),
+        );
+      },
+    ),
+    http.put(
+      `${API_BASE}/api/projects/:projectId/group-order`,
+      async ({ request }) => {
+        const input = (await request.json()) as ReorderGroupsInput;
+        if (
+          !isExactMembership(
+            input.ids,
+            overview.groups.map((group) => group.id),
+          )
+        ) {
+          return conflict(
+            'order-mismatch',
+            "The submitted ids do not match the project's groups",
+          );
+        }
+
+        const byId = new Map(overview.groups.map((group) => [group.id, group]));
+        const ordered = input.ids.map((id, index) => ({
+          ...byId.get(id)!,
+          position: index,
+        }));
+        overview = { ...overview, groups: ordered };
+        return HttpResponse.json(ordered);
+      },
+    ),
+    http.put(
+      `${API_BASE}/api/projects/:projectId/workstream-order`,
+      async ({ request }) => {
+        const input = (await request.json()) as ReorderWorkstreamsInput;
+        const scope = overview.workstreams.filter(
+          (workstream) =>
+            (workstream.groupId ?? null) === (input.groupId ?? null),
+        );
+        const live = scope.filter(
+          (workstream) => workstream.lifecycle !== 'complete',
+        );
+        if (
+          !isExactMembership(
+            input.ids,
+            live.map((workstream) => workstream.id),
+          )
+        ) {
+          return conflict(
+            'order-mismatch',
+            "The submitted ids do not match the scope's live workstreams",
+          );
+        }
+
+        const byId = new Map(
+          live.map((workstream) => [workstream.id, workstream]),
+        );
+        const ordered = input.ids.map((id, index) => ({
+          ...byId.get(id)!,
+          position: index,
+        }));
+        // Complete workstreams share the scope's position sequence and trail
+        // the live ones, in their existing relative order.
+        const trailing = scope
+          .filter((workstream) => workstream.lifecycle === 'complete')
+          .map((workstream, index) => ({
+            ...workstream,
+            position: ordered.length + index,
+          }));
+        const replacements = new Map(
+          [...ordered, ...trailing].map((workstream) => [
+            workstream.id,
+            workstream,
+          ]),
+        );
+        overview = {
+          ...overview,
+          workstreams: overview.workstreams.map(
+            (workstream) => replacements.get(workstream.id) ?? workstream,
+          ),
+        };
+        return HttpResponse.json(ordered);
+      },
+    ),
+    http.post(
+      `${API_BASE}/api/steps/:stepId/checklist-items`,
+      async ({ params, request }) => {
+        const located = locateStep(String(params.stepId));
+        if (!located) return notFound();
+        if (located.step.outcome != null) {
+          return conflict('step-frozen', 'Past steps cannot be edited');
+        }
+
+        const input = (await request.json()) as CreateChecklistItemInput;
+        const now = new Date().toISOString();
+        const created: ChecklistItem = {
+          id: `mock-item-${++generatedId}`,
+          name: input.name,
+          position:
+            Math.max(
+              0,
+              ...located.step.checklistItems.map((item) => item.position),
+            ) + 1,
+          done: false,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        saveSteps(
+          located.workstream,
+          located.workstream.steps.map((step) =>
+            step.id === located.step.id
+              ? { ...step, checklistItems: [...step.checklistItems, created] }
+              : step,
+          ),
+        );
+        return HttpResponse.json(created, { status: 201 });
+      },
+    ),
+    http.delete(`${API_BASE}/api/checklist-items/:id`, ({ params }) => {
+      const located = locateChecklistItem(String(params.id));
+      if (!located) return notFound();
+      if (located.step.outcome != null) {
+        return conflict('step-frozen', 'Past steps cannot be edited');
+      }
+
+      saveSteps(
+        located.workstream,
+        located.workstream.steps.map((step) =>
+          step.id === located.step.id
+            ? {
+                ...step,
+                checklistItems: step.checklistItems
+                  .filter((item) => item.id !== located.item.id)
+                  .map((item) =>
+                    item.position > located.item.position
+                      ? { ...item, position: item.position - 1 }
+                      : item,
+                  ),
+              }
+            : step,
+        ),
+      );
+      return new HttpResponse(null, { status: 204 });
+    }),
     http.get(`${API_BASE}/api/projects`, () =>
       HttpResponse.json([overview.project]),
     ),
@@ -135,32 +512,34 @@ export function setupOverviewApi(initialOverview: Overview) {
     http.patch(
       `${API_BASE}/api/checklist-items/:id`,
       async ({ params, request }) => {
-        const input = (await request.json()) as { done: boolean };
-        const updatedAt = new Date().toISOString();
-        let responseItem:
-          | Workstream['steps'][number]['checklistItems'][number]
-          | null = null;
+        const located = locateChecklistItem(String(params.id));
+        if (!located) return notFound();
+        if (located.step.outcome != null) {
+          return conflict('step-frozen', 'Past steps cannot be edited');
+        }
 
-        overview = {
-          ...overview,
-          workstreams: overview.workstreams.map((workstream) => {
-            let didChange = false;
-            const steps = workstream.steps.map((step) => ({
-              ...step,
-              checklistItems: step.checklistItems.map((item) => {
-                if (item.id !== params.id) return item;
-                didChange = true;
-                responseItem = { ...item, done: input.done, updatedAt };
-                return responseItem;
-              }),
-            }));
-            return didChange ? { ...workstream, steps, updatedAt } : workstream;
-          }),
+        const input = (await request.json()) as UpdateChecklistItemInput;
+        const updated: ChecklistItem = {
+          ...located.item,
+          name: input.name ?? located.item.name,
+          done: input.done ?? located.item.done,
+          updatedAt: new Date().toISOString(),
         };
 
-        return responseItem
-          ? HttpResponse.json(responseItem)
-          : problemResponse(404, problemDetails(404));
+        saveSteps(
+          located.workstream,
+          located.workstream.steps.map((step) =>
+            step.id === located.step.id
+              ? {
+                  ...step,
+                  checklistItems: step.checklistItems.map((item) =>
+                    item.id === updated.id ? updated : item,
+                  ),
+                }
+              : step,
+          ),
+        );
+        return HttpResponse.json(updated);
       },
     ),
     http.post(

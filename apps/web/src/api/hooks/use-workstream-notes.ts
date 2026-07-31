@@ -1,8 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 
 import { $api } from '@/api/api-client';
+import { useOverviewCache } from '@/api/overview-cache';
 
 import type { dtos } from '@/types/openapi';
+import type { QueryClient } from '@tanstack/react-query';
 
 export type NoteEntry = dtos['NoteDto'];
 export type CreateNoteInput = dtos['CreateNoteDto'];
@@ -24,6 +26,22 @@ function useInvalidateNotes(workstreamId: string) {
   };
 }
 
+/**
+ * Note bodies stay on demand, so a deletion only carries the note id — the
+ * step it belonged to is read back from the still-cached thread.
+ */
+function findCachedNoteStepId(
+  queryClient: QueryClient,
+  workstreamId: string,
+  noteId: string,
+): string | undefined {
+  const notes = queryClient.getQueryData<NoteEntry[]>(
+    notesQueryOptions(workstreamId).queryKey,
+  );
+
+  return notes?.find((note) => note.id === noteId)?.stepId;
+}
+
 export function useWorkstreamNotes(workstreamId: string | undefined) {
   return $api.useQuery(
     'get',
@@ -33,14 +51,25 @@ export function useWorkstreamNotes(workstreamId: string | undefined) {
   );
 }
 
-export function useCreateNote(workstreamId: string) {
+/**
+ * `projectId` is what lets a note mutation keep the overview's per-step note
+ * markers in step; the pre-rework notes UI has neither markers nor a project
+ * id in scope, so it omits it.
+ */
+export function useCreateNote(workstreamId: string, projectId?: string) {
   const queryClient = useQueryClient();
   const invalidateNotes = useInvalidateNotes(workstreamId);
+  const patchOverview = useOverviewCache(projectId);
 
   return $api.useMutation(
     'post',
     '/api/steps/{stepId}/notes',
-    { onSuccess: invalidateNotes },
+    {
+      onSuccess: async (note) => {
+        patchOverview({ type: 'note-count', stepId: note.stepId, delta: 1 });
+        await invalidateNotes();
+      },
+    },
     queryClient,
   );
 }
@@ -57,14 +86,27 @@ export function useUpdateNote(workstreamId: string) {
   );
 }
 
-export function useDeleteNote(workstreamId: string) {
+export function useDeleteNote(workstreamId: string, projectId?: string) {
   const queryClient = useQueryClient();
   const invalidateNotes = useInvalidateNotes(workstreamId);
+  const patchOverview = useOverviewCache(projectId);
 
   return $api.useMutation(
     'delete',
     '/api/notes/{id}',
-    { onSuccess: invalidateNotes },
+    {
+      onSuccess: async (_data, variables) => {
+        const stepId = findCachedNoteStepId(
+          queryClient,
+          workstreamId,
+          variables.params.path.id,
+        );
+        if (stepId) {
+          patchOverview({ type: 'note-count', stepId, delta: -1 });
+        }
+        await invalidateNotes();
+      },
+    },
     queryClient,
   );
 }

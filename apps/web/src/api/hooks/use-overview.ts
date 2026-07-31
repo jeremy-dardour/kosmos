@@ -11,6 +11,13 @@ export type ChecklistItem = dtos['ChecklistItemDto'];
 export type Group = dtos['GroupDto'];
 export type UserSummary = dtos['UserSummaryDto'];
 
+/** The single home of the aggregate's query key — callers never rebuild it. */
+export function overviewQueryOptions(projectId: string) {
+  return $api.queryOptions('get', '/api/projects/{projectId}/overview', {
+    params: { path: { projectId } },
+  });
+}
+
 /** The whole overview aggregate in one request; idle until the id is known. */
 export function useOverview(projectId: string | undefined) {
   return $api.useQuery(

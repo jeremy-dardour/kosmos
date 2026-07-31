@@ -2,7 +2,7 @@ import { MoreHorizontalIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useToggleChecklistItem } from '@/api/hooks/use-toggle-checklist-item';
+import { useUpdateChecklistItem } from '@/api/hooks/use-update-checklist-item';
 import { useUpdateWorkstreamPipeline } from '@/api/hooks/use-update-workstream-pipeline';
 import { useWorkstreamNotes } from '@/api/hooks/use-workstream-notes';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,7 @@ export const DetailPanel = ({
     null,
   );
   const updatePipeline = useUpdateWorkstreamPipeline(projectId);
-  const toggleChecklist = useToggleChecklistItem(projectId);
+  const toggleChecklist = useUpdateChecklistItem(projectId);
   const notes = useWorkstreamNotes(workstream?.id);
   const notesByStepId = new Map<string, NoteEntry[]>();
   const noteEntries = notes.data ?? [];

@@ -40,10 +40,19 @@ src/
   each child.
 - Store selected entity IDs, then derive the selected entity from query data;
   do not keep a copied response object that can become stale.
-- Mutations invalidate only queries whose response can change. Workstream,
-  step, checklist, group, project, and pipeline mutations invalidate the
-  overview. Note mutations invalidate the on-demand notes query only while the
-  overview contains no note data or counts.
+- Mutations touch only queries whose response can change. Two refresh models
+  coexist while the inline overview rework lands:
+  - **Legacy, per-mutation invalidation** (`useInvalidateOverview`) — the
+    advance, workstream / group / project CRUD and whole-tail pipeline hooks
+    serving the pre-rework components. Leave them as they are; they die with
+    their callers.
+  - **The overview cache seam** (`src/api/overview-cache.ts`) — every hook
+    behind the inline overview merges its response into the cached aggregate
+    with `useOverviewCache` and lets one debounced, focus-deferred trailing
+    invalidate reconcile the server-derived fields. Never add a per-mutation
+    overview invalidation to a hook that commits through the seam.
+- Note mutations patch the cached per-step `noteCount` through the seam and
+  invalidate the on-demand notes query.
 
 ## Auth
 
