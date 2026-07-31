@@ -10,11 +10,13 @@ import { ConfirmDialog } from '@/features/overview/confirm-dialog';
 import { DetailPanel } from '@/features/overview/detail-panel';
 import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
 import { GroupManagerDialog } from '@/features/overview/group-manager-dialog';
+import { OverviewEditingPrototype } from '@/features/overview/overview-editing-prototype';
 import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
 import { ProjectSettingsDialog } from '@/features/overview/project-settings-dialog';
 import { WorkstreamCardList } from '@/features/overview/workstream-card-list';
 import { WorkstreamFormDialog } from '@/features/overview/workstream-form-dialog';
+import { cn } from '@/lib/utils';
 
 import type { AdvanceOutcome } from '@/api/hooks/use-advance-workstream';
 import type { UserSummary, Workstream } from '@/api/hooks/use-overview';
@@ -22,6 +24,16 @@ import type { UserSummary, Workstream } from '@/api/hooks/use-overview';
 type WorkstreamForm =
   | { mode: 'create' }
   | { mode: 'edit'; workstream: Workstream };
+
+/**
+ * PROTOTYPE seam — `?variant=A` swaps the overview body for the inline-editing
+ * prototype and hides the detail panel. Read straight off the URL rather than
+ * through the router, so the page keeps rendering outside a <Router>
+ * (integration tests do that). Remove with the prototype.
+ */
+function isPrototypeRequested(): boolean {
+  return new URLSearchParams(globalThis.location.search).get('variant') === 'A';
+}
 
 function applyOwnerFilter(
   workstreams: Workstream[],
@@ -117,8 +129,15 @@ export const OverviewPage = () => {
     });
   }, []);
 
+  const isPrototype = isPrototypeRequested();
+
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 gap-4 lg:grid-cols-[58fr_42fr]">
+    <div
+      className={cn(
+        'grid h-full min-h-0 grid-cols-1 gap-4',
+        !isPrototype && 'lg:grid-cols-[58fr_42fr]',
+      )}
+    >
       <div className="flex min-h-0 flex-col">
         {overview.data && (
           <OverviewHeader
@@ -150,7 +169,15 @@ export const OverviewPage = () => {
             </div>
           )}
 
-          {overview.data && (
+          {overview.data && isPrototype && (
+            <OverviewEditingPrototype
+              groups={overview.data.groups}
+              workstreams={filteredWorkstreams}
+              users={overview.data.users}
+            />
+          )}
+
+          {overview.data && !isPrototype && (
             <WorkstreamCardList
               groups={overview.data.groups}
               workstreams={filteredWorkstreams}
@@ -164,15 +191,19 @@ export const OverviewPage = () => {
         </div>
       </div>
 
-      <DetailPanel
-        workstream={selectedWorkstream}
-        projectId={projectId}
-        users={overview.data?.users ?? []}
-        usersById={usersById}
-        onClose={() => setSelectedId(null)}
-        onEdit={(workstream) => setWorkstreamForm({ mode: 'edit', workstream })}
-        onDelete={setDeleteTarget}
-      />
+      {!isPrototype && (
+        <DetailPanel
+          workstream={selectedWorkstream}
+          projectId={projectId}
+          users={overview.data?.users ?? []}
+          usersById={usersById}
+          onClose={() => setSelectedId(null)}
+          onEdit={(workstream) =>
+            setWorkstreamForm({ mode: 'edit', workstream })
+          }
+          onDelete={setDeleteTarget}
+        />
+      )}
 
       {overview.data && projectId && workstreamForm && (
         <WorkstreamFormDialog

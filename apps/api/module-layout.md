@@ -80,6 +80,6 @@ project, 20–50 workstreams).
 Earlier drafts of this document split `project`, `group`, `workstream` and
 `user` into four modules. That was reversed during slice 1 (#18) in favour of
 the single-module layout the
-[API contract PRD](../../docs/specs/api-contract/PRD.md#module-structure) had
+[API contract PRD](../../docs/specs/v1-product/api-contract.md#module-structure) had
 specified;
 the `user` module was kept.

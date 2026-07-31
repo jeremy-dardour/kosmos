@@ -9,7 +9,7 @@
   [docs/specs/auth/PRD.md](../specs/auth/PRD.md).
 - Resolved **ticket 04 (API contract)**: designed the full REST API — endpoints,
   input/output DTOs, overview read model, error codes. Wrote spec at
-  [docs/specs/api-contract/PRD.md](../specs/api-contract/PRD.md).
+  [docs/specs/v1-product/api-contract.md](../specs/v1-product/api-contract.md).
 - Reviewed the API contract and fixed several issues (see Learnings below).
 - Created **ticket 09 (state machine implementation)** — grilling for the
   transactional `start`/`advance` logic with MikroORM.
