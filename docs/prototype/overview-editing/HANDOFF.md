@@ -244,7 +244,7 @@ Do not re-propose these without new information.
 **No backend code was changed on this branch.** Everything below is a
 requirement the production implementation must satisfy.
 
-### 6.1 The overview aggregate carries no note data — blocking
+### 6.1 The overview aggregate carries no note data — settled
 
 Per-step markers need a note count for **every step of every workstream**. The
 prototype gets this by calling `GET /api/workstreams/:id/notes` once per card.
@@ -255,49 +255,51 @@ against a 30-per-minute throttle
 `ThrottlerException: Too Many Requests`. This was hit repeatedly during review —
 it is measured, not theoretical.
 
-Pick one before building:
+**Settled (2026-07-31): option 1.** `noteCount` joins the step DTO on the
+overview aggregate; thread bodies stay on-demand. Note mutations patch the
+cached count and invalidate the notes query — see the
+[V1 API contract](../../specs/v1-product/api-contract.md).
 
-1. **Add `noteCount` to the step DTO on the overview aggregate** (preferred —
-   one extra count per step, no new round trips), or
-2. fetch a thread only when a marker is expanded, and render the marker from a
-   count that still has to come from somewhere.
+### 6.2 The save model — settled (2026-07-31)
 
-Note the knock-on: the web standard says note mutations invalidate the notes
-query only "while the overview contains no note data or counts". Adding
-`noteCount` changes that rule — note mutations would then have to invalidate the
-overview too.
+Full contract in the [V1 API contract](../../specs/v1-product/api-contract.md);
+the decisions in short:
 
-### 6.2 The save model is unresolved — blocking
+- **Save trigger**: text fields commit on blur/Enter ("saved when you leave
+  the field", not per keystroke); pickers and toggles on selection; structural
+  clicks immediately.
+- **Granular endpoints replace the whole-tail PUT**: `PATCH /steps/:id`,
+  `POST /workstreams/:id/steps`, `DELETE /steps/:id`,
+  `PUT /workstreams/:id/step-order`, plus checklist item create/rename/delete.
+  `PUT /workstreams/:id/pipeline` and its `expectedUpdatedAt` token are
+  **removed**.
+- **Concurrency**: field edits are last-write-wins; every operation
+  re-validates the pipeline invariants server-side and 409s only on a real
+  violation.
+- **Refresh**: one aggregate read for load; each mutation response returns the
+  smallest changed entity (StepDto for field edits, WorkstreamDto for
+  structural/pointer ops) and is patched into the cached aggregate; a single
+  trailing invalidate reconciles derived fields and is **deferred while any
+  inline input has focus**. Raise the authenticated throttle (30/min →
+  ~120/min).
+- **New steps**: a clicked insert point opens a local ghost; the `POST` fires
+  on the first non-empty name commit; empty names are rejected server-side;
+  an illegal-by-then position 409s and discards the ghost with a message.
 
-The prototype autosaves ("Saved as you type") because a local draft is free.
-Production has no such endpoint shape:
-
-- `PUT /api/workstreams/:id/pipeline` is an **atomic whole-tail replace with an
-  optimistic-concurrency token** (`expectedUpdatedAt`), designed for one Save
-  after a deliberate edit session.
-- Autosaving every keystroke against it means frequent full-pipeline PUTs and a
-  concurrency token that goes stale constantly.
-
-Decide between: debounced whole-pipeline PUT with token refresh; granular
-per-field step endpoints; or reintroducing an explicit Save for structural
-changes only while field edits stay immediate. **This choice shapes the whole
-implementation** — settle it first.
-
-Whatever you choose, `useDraft` in the prototype is not a model for it: it
-snapshots the server list on first edit and **never resyncs**, so a refetch
-during editing is silently ignored. Production needs a real answer for server
-data arriving mid-edit — the rule inherited from the old #40 was that an active
-draft must survive an overview refetch without being remounted or reset.
+`useDraft` in the prototype is not a model for any of this — it snapshots the
+server list on first edit and never resyncs. With commit-on-blur there are no
+long-lived drafts left; the only protection production needs is that a
+focused input is never clobbered by a refetch (keyed editors + the deferred
+invalidate above).
 
 ### 6.3 Endpoints that already exist and need no change
 
-- `PATCH /api/checklist-items/:id` — the ghost checklist ticks in place on the
-  overview, which is a write from the list itself.
+- `PATCH /api/checklist-items/:id` — extended with rename, otherwise as-is.
 - Note CRUD from #22 — `NoteDto.author.id` already carries what authorship
   rules need.
 - `PATCH /api/workstreams/:id` — inline name / icon / group / owner edits.
-- `POST /workstreams/:id/advance` and the start command — unchanged, but see
-  §4.1 for where they go in the UI.
+- `POST /workstreams/:id/advance` and the start command — unchanged; their UI
+  home is §3.8.
 
 ### 6.4 Manual ordering needs persistence — new since the second pass
 
@@ -341,8 +343,10 @@ Both are **live on `main`** and were only fixed inside the prototype.
 
 Roughly in order:
 
-1. **Settle §6.2 (save model) and §6.1 (note counts).** Everything else depends
-   on these. _(Advance placement — the old item 2 — is settled, §3.8.)_
+1. **Build the API changes** — every decision is settled: `noteCount` on the
+   aggregate (§6.1), the granular step/checklist endpoints replacing the
+   whole-tail PUT (§6.2), and the throttle raise. Contract:
+   [V1 API contract](../../specs/v1-product/api-contract.md).
 2. **Build the ordering persistence** (§6.4) — position columns, reorder
    endpoints, migration.
 3. **Add the two urgency colour tokens** to `apps/web/src/main.css`, light and

@@ -34,7 +34,7 @@ of review comments addressed. All feature slices are now built; deployment
   ([docs/specs/auth/PRD.md](./specs/auth/PRD.md)).
 - API contract resolved: unified `advance` endpoint, one overview aggregate
   read, flat CRUD, derived state server-side
-  ([docs/specs/api-contract/PRD.md](./specs/api-contract/PRD.md)).
+  ([docs/specs/v1-product/api-contract.md](./specs/v1-product/api-contract.md)).
 - Hosting & deployment resolved: Cloud Run + Neon, single deployable, ~$0/mo.
 - **V1 Technical Design** written — links all decisions
   ([docs/specs/v1-tech-design.md](./specs/v1-tech-design.md)).
@@ -180,10 +180,12 @@ of review comments addressed. All feature slices are now built; deployment
 
 ## Open questions
 
-- Blocking #40: note counts on the overview aggregate (B1) and the save model
-  for autosaved edits (B2). B3 (Advance placement) is settled — see the
-  handoff §3.8; ordering is now **manual** (drag & drop, grilled 2026-07-31),
-  which resolves the old "revisit if manual ordering is wanted" question.
+- None blocking #40 — B1 (noteCount on the aggregate), B2 (granular
+  commit-on-blur save model, whole-tail PUT removed) and B3 (advance control
+  after the status badges) are all settled; see the handoff §3.8/§6 and the
+  [V1 API contract](./specs/v1-product/api-contract.md). Ordering is manual
+  (drag & drop), resolving the old "revisit if manual ordering is wanted"
+  question.
 
 ## Next steps
 
