@@ -88,3 +88,14 @@ through as one.
     when the entity vanished between lookup and lock. A NestJS exception in a
     repository-layer helper — consistent with the pre-existing repository
     idiom, but note it if the seam is ever meant to be framework-free.
+18. **Card selection callbacks are `onOpenStep(stepId | null)` /
+    `onOpenNotes(stepId | null)`, not toggles** (C15). The C14 sketch had
+    toggle-shaped callbacks; the step editor's footer needs "close" and
+    "navigate to sibling", which a toggle cannot express. The card derives
+    dot/marker toggling itself.
+19. **`use-step-notes.ts` and `step-mutability.ts` exist as separate modules**
+    (C15): the hook because `react-refresh/only-export-components` errors on
+    hook exports from `.tsx` component files; the predicates following the
+    established one-predicate-per-module idiom. `note-thread.tsx` carries a
+    URL-linkifying `NoteBody` that duplicates the one in the doomed
+    `step-notes.tsx` — C18 must delete the old copy.
