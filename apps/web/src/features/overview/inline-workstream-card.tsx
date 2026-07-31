@@ -10,13 +10,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { AdvanceControl } from '@/features/overview/advance-control';
+import { canAppendStep } from '@/features/overview/can-append-step';
 import { ClickToEdit } from '@/features/overview/click-to-edit';
 import { daysUntil } from '@/features/overview/days-until';
+import { DotCaret } from '@/features/overview/dot-caret';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { isInsideCard } from '@/features/overview/is-inside-card';
 import { OwnerPicker } from '@/features/overview/owner-picker';
 import { PipelineRow } from '@/features/overview/pipeline-row';
+import { StepEditor } from '@/features/overview/step-editor';
+import { StepNotesPanel } from '@/features/overview/step-notes-panel';
 import { urgencyBand } from '@/features/overview/urgency';
 import { cn } from '@/lib/utils';
 
@@ -51,8 +55,10 @@ interface InlineWorkstreamCardProperties {
   now: Date;
   openStepId: string | null;
   openNotesStepId: string | null;
-  onStepToggle: (stepId: string) => void;
-  onNoteMarkerToggle: (stepId: string) => void;
+  /** `null` closes the step editor; an id opens it on that step. */
+  onOpenStep: (stepId: string | null) => void;
+  /** `null` closes the note panel; an id opens it on that step. */
+  onOpenNotes: (stepId: string | null) => void;
   onCloseEditors: () => void;
   onInsertStep: (position: number) => void;
   dragHandle?: ReactNode;
@@ -70,8 +76,8 @@ export const InlineWorkstreamCard = ({
   now,
   openStepId,
   openNotesStepId,
-  onStepToggle,
-  onNoteMarkerToggle,
+  onOpenStep,
+  onOpenNotes,
   onCloseEditors,
   onInsertStep,
   dragHandle,
@@ -99,6 +105,16 @@ export const InlineWorkstreamCard = ({
   const isLive = workstream.lifecycle !== 'complete';
   const users = usersById.values().toArray();
   const deadlineStep = deadlineStepOf(workstream);
+  const openedStep =
+    workstream.steps.find((step) => step.id === openStepId) ?? null;
+  // A step's own editor already carries its thread, so the marker panel would
+  // only repeat it (handoff A10).
+  const notesStep =
+    workstream.steps.find(
+      (step) => step.id === openNotesStepId && step.id !== openStepId,
+    ) ?? null;
+  const stepIds = workstream.steps.map((step) => step.id);
+  const hasAppendColumn = canAppendStep(workstream.lifecycle);
 
   const commit = (body: {
     name?: string;
@@ -173,8 +189,12 @@ export const InlineWorkstreamCard = ({
           now={now}
           openStepId={openStepId}
           openNotesStepId={openNotesStepId}
-          onStepToggle={onStepToggle}
-          onNoteMarkerToggle={onNoteMarkerToggle}
+          onStepToggle={(stepId) =>
+            onOpenStep(stepId === openStepId ? null : stepId)
+          }
+          onNoteMarkerToggle={(stepId) =>
+            onOpenNotes(stepId === openNotesStepId ? null : stepId)
+          }
           onInsertStep={onInsertStep}
           onChecklistItemToggle={(itemId, isDone) =>
             updateChecklistItem.mutate({
@@ -184,6 +204,43 @@ export const InlineWorkstreamCard = ({
           }
         />
       </div>
+
+      {openedStep && (
+        <>
+          <DotCaret
+            stepIds={stepIds}
+            targetStepId={openedStep.id}
+            hasAppendColumn={hasAppendColumn}
+          />
+          <StepEditor
+            key={openedStep.id}
+            workstream={workstream}
+            step={openedStep}
+            users={users}
+            projectId={projectId}
+            now={now}
+            onOpenStep={onOpenStep}
+          />
+        </>
+      )}
+
+      {notesStep && (
+        <>
+          <DotCaret
+            stepIds={stepIds}
+            targetStepId={notesStep.id}
+            hasAppendColumn={hasAppendColumn}
+          />
+          <StepNotesPanel
+            key={notesStep.id}
+            workstreamId={workstream.id}
+            step={notesStep}
+            projectId={projectId}
+            now={now}
+            onClose={() => onOpenNotes(null)}
+          />
+        </>
+      )}
     </article>
   );
 };

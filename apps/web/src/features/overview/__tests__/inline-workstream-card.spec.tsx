@@ -87,8 +87,8 @@ function CardHarness({
       now={NOW}
       openStepId={openStepId}
       openNotesStepId={null}
-      onStepToggle={noop}
-      onNoteMarkerToggle={noop}
+      onOpenStep={noop}
+      onOpenNotes={noop}
       onCloseEditors={onCloseEditors}
       onInsertStep={noop}
     />
