@@ -1,5 +1,14 @@
 # Handoff: Wedding Preparation Tracker — Pipeline Overview
 
+> **Superseded — layout only.** The two-panel "Pipeline Stack" (card list +
+> slide-over detail panel) described below was replaced by inline editing in the
+> overview with **no detail panel**; see
+> [../overview-editing/HANDOFF.md](../overview-editing/HANDOFF.md). This file is
+> kept because the V1 PRD and the api-contract PRD still link to it and still
+> describe the two-panel layout — updating that wording is part of the
+> productionalisation ticket. The grouping, pipeline-dot and deadline concepts
+> below all survive.
+
 ## Overview
 
 A **timeline + pipeline hybrid** for tracking 20–50 wedding workstreams at a glance. The final wireframe (turn 3, option 3a) defines the chosen layout: a **Pipeline Stack** (grouped card list on the left, slide-over detail panel on the right) with a **hybrid deadline treatment** (countdown badge in each card header + date-tick labels under pipeline dots that have deadlines).

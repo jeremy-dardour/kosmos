@@ -15,7 +15,11 @@ surfaced so nothing slips.
 
 For how the concepts are defined, see [CONTEXT.md](../CONTEXT.md) (domain
 glossary); for the reasoning behind them, [docs/domain-decisions.md](./domain-decisions.md).
-For the current UI direction, see [docs/prototype/timeline/](./prototype/timeline/).
+For the current UI direction, see
+[docs/prototype/overview-editing/](./prototype/overview-editing/) — everything
+is edited inline in the overview, with no detail panel. The original
+[Pipeline Stack wireframe](./prototype/timeline/) still holds for grouping,
+pipeline dots and deadlines, but its two-panel layout is superseded.
 
 ## Who it's for
 

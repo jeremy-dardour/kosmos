@@ -20,8 +20,10 @@ of review comments addressed. All feature slices are now built; deployment
 - Domain model defined and agreed — entities, statuses, and rules in
   [CONTEXT.md](../CONTEXT.md); full behavioral spec with rationale in the
   [V1 Product PRD](./specs/v1-product/PRD.md).
-- UI direction chosen: the two-panel "Pipeline Stack" wireframe
-  ([docs/prototype/timeline/](./prototype/timeline/), turn 3 / option 3a).
+- UI direction chosen: originally the two-panel "Pipeline Stack" wireframe
+  ([docs/prototype/timeline/](./prototype/timeline/), turn 3 / option 3a); its
+  **two-panel layout is now superseded** by inline overview editing with no
+  detail panel ([docs/prototype/overview-editing/](./prototype/overview-editing/)).
 - Specified the Workstream **pipeline state machine** end-to-end
   ([ADR 0005](./adr/0005-workstream-pipeline-state-machine.md)).
 - Entity/schema design written
@@ -153,6 +155,16 @@ of review comments addressed. All feature slices are now built; deployment
   removed redundant comments, and deleted the planning doc. Rebased on latest
   main (Slices 4/5 merged upstream). Deferred edit-UX polish tracked in #43
   ([session 30](./sessions/session-30-2026-07-30-slice-7-management.md)).
+
+- **Inline overview editing prototype** — complete on `prototype-2`. Four
+  iterations settled that every Workstream / Step / checklist / note edit
+  happens inline in the overview list with **no detail panel**. Decisions,
+  rejected ideas, backend requirements and remaining work are in
+  [docs/prototype/overview-editing/HANDOFF.md](./prototype/overview-editing/HANDOFF.md).
+  Two blocking backend questions before implementation: note counts on the
+  overview aggregate, and the save model for autosaved pipeline edits. All UI
+  rework tickets are consolidated into
+  [#40](https://github.com/jeremy-dardour/wedding-planner/issues/40).
 
 ## In flight
 
