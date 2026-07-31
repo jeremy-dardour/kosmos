@@ -322,8 +322,31 @@ alternatives tried and why each lost.
 ### The card list
 
 A scrollable list of Workstream cards, grouped by Group with section headers.
-Within a group, workstreams are ordered **Active → NotStarted → Complete**, so
-finished work sinks and live work is always at the top of its section.
+
+**Ordering is manual.** Workstreams are reordered by **drag & drop within
+their group** (a grip handle at the card's top-left, shown on hover), and
+whole groups are reordered the same way from their section header. Position
+the user authored is stable — starting or advancing other workstreams never
+reshuffles it, so a NotStarted card may sit above an Active one if that's
+where it was put. Rules:
+
+- A card cannot be dragged into another group — changing group stays a
+  deliberate edit on the card's group field.
+- The Ungrouped section is pinned after the real groups and is not draggable;
+  cards inside it reorder normally.
+- A workstream alone in its group shows no drag handle.
+- A newly created workstream lands at the **top of its group**.
+- Dragging is **disabled while any filter is active** — reordering a list with
+  hidden cards is ambiguous.
+
+**Completed workstreams leave their group** and sink into a single
+**Completed section** at the bottom of the page — the overview's job is what
+still needs doing. The section is **collapsed by default** behind a
+`✓ Completed (n)` header (the count carries the progress-feel); expanded, its
+cards cluster under small group headers in the same group order as the live
+list. Cards there stay fully interactive (open steps, read notes, append
+notes) but are never draggable. A group whose workstreams are all complete
+disappears from the live area.
 
 **Header bar:**
 
@@ -361,21 +384,31 @@ finished work sinks and live work is always at the top of its section.
   place; the next step's are read-only.
 - **Note markers**: a step with notes shows a count under its dot, opening that
   step's thread anchored beneath it — including for past steps.
+- **Step names** render at near-body size (13px) so the pipeline row scans
+  without leaning in; the current/open step's name is emphasized.
+- **Owner-override marker**: a small avatar under a step's name, shown **only
+  when the step has an explicit owner** — inherited owners stay invisible in
+  the row, so an avatar under a dot always means an override of the
+  workstream's owner.
 
 **Card chrome follows lifecycle.** Active and NotStarted Workstreams are framed
-cards; Complete ones drop their border and surface and sit flat on the page, so
-live work carries the visual weight. Selecting any card restores its frame.
+cards with a surface; Complete ones keep only a **light half-strength frame**
+(no surface), so live work carries the visual weight while finished cards stay
+findable. Selecting any card restores its full frame.
 
-- **Advance button**: one-click advance directly from the card — the most
-  frequent action kept to one click. For blocked steps, this becomes a "Resolve"
-  dropdown offering "Mark Done" / "Mark Skipped." A NotStarted Workstream shows
-  "Start" instead. Richer edits (notes, owner, deadline) live in the step
-  editor. Advancing must stay a single click that never requires opening an
-  editor first.
+- **Advance button**: sits in the card's header row, **immediately right of the
+  status badges**, and is the card's only solid button — unmistakable among
+  the quieter click targets. It is a split button: one click advances with
+  outcome Done; a chevron menu offers "Skip". For blocked steps it becomes a
+  "Resolve" dropdown offering "Mark Done" / "Mark Skipped" / "Unblock". A
+  NotStarted Workstream shows "Start" instead (hidden while its pipeline is
+  empty). A Complete one shows nothing. Richer edits (notes, owner, deadline)
+  live in the step editor. Advancing must stay a single click that never
+  requires opening an editor first.
 
 **Card visual states:**
 
-- Default: neutral border (Complete: no border).
+- Default: neutral border (Complete: light half-strength border, no surface).
 - Selected (a step editor open): blue border, light blue background.
 - Blocked: red border, light red background, "BLOCKED" badge.
 - Overdue: red border, light red background.
@@ -431,6 +464,13 @@ Workstream that means every position, in a Complete one none.
 | Filter by owner                       | Header dropdown                              | Filters card list to matching workstreams            |
 | Filter by group                       | Header dropdown                              | Shows/hides groups                                   |
 | Manage checklist sub-items            | Step editor                                  | Add, rename, delete, and toggle current/future items |
+| Reorder workstreams                   | Drag handle, card top-left                   | Within its group only; disabled while filtered       |
+| Reorder groups                        | Drag handle, group header                    | Whole sections; Ungrouped stays pinned last          |
+| Browse completed workstreams          | Completed section, page bottom               | Collapsed by default; expands to per-group clusters  |
+
+Icon-only controls (add-step `+`, drag handles, note markers, icon picker, the
+advance cluster) each carry a tooltip naming the action — at minimum the native
+`title` mirroring the accessible name.
 
 ---
 

@@ -180,10 +180,10 @@ of review comments addressed. All feature slices are now built; deployment
 
 ## Open questions
 
-- Group ordering is server-side alphabetical; within a group the UI now sorts
-  Active → NotStarted → Complete. Revisit if manual ordering is wanted.
-- Blocking #40: note counts on the overview aggregate, the save model for
-  autosaved edits, and where Advance/Start/Resolve live in the new card.
+- Blocking #40: note counts on the overview aggregate (B1) and the save model
+  for autosaved edits (B2). B3 (Advance placement) is settled — see the
+  handoff §3.8; ordering is now **manual** (drag & drop, grilled 2026-07-31),
+  which resolves the old "revisit if manual ordering is wanted" question.
 
 ## Next steps
 

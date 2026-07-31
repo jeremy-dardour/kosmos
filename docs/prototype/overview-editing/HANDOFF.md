@@ -29,6 +29,13 @@ The V1 PRD and the api-contract PRD have been updated to describe this design,
 and the superseded two-panel wireframe (`docs/prototype/timeline/`) is deleted —
 it is in git history if you need it.
 
+A **second prototyping pass** (2026-07-31) answered five follow-up questions on
+top of the settled layout: a collapsed **Completed section** at the page
+bottom, **manual drag & drop ordering** of workstreams and groups (replacing
+the lifecycle auto-sort), the home of **Advance / Start / Resolve** (§4.1 — now
+answered), larger step titles, and a per-step **owner-override marker**. Each
+is recorded in §3.6–§3.8 and the appendix.
+
 ## 2. How to run it
 
 Ports are workspace-specific — read them per [PORTS.md](../../../PORTS.md)
@@ -91,8 +98,9 @@ Two things to know before judging it:
 ### 3.4 Lifecycle legibility
 
 - **Chrome follows lifecycle**: live workstreams are framed cards; complete ones
-  drop border and surface and sit flat. Selecting anything restores the frame.
-  Idle borders are `transparent`, not absent, so nothing shifts by a pixel.
+  keep a **light half-strength frame** (no surface, no shadow) — fully
+  transparent chrome made them invisible in review. Selecting anything restores
+  the full frame.
 - **Settled steps recede** (`opacity-55`, full on hover) so a card reads as
   "here and ahead" rather than a wall of green.
 - A **selected complete workstream stays recessive** — only the frame, the
@@ -101,8 +109,10 @@ Two things to know before judging it:
 - Reinforcing signals: darker connector rail for live pipelines, solid vs muted
   name, "Not started" as a filled chip. **Complete stays plain text** — it is
   the state that should recede.
-- **Within a group, workstreams sort active → not started → complete.** Stable
-  sort, so alphabetical order holds inside each tier.
+- ~~Within a group, workstreams sort active → not started → complete.~~
+  **Superseded by manual ordering (§3.6)**: within a group, live cards sit
+  exactly where the user put them. The only automatic movement left is
+  completion, which moves the card into the Completed section (§3.7).
 
 ### 3.5 Pipeline structure editing
 
@@ -119,6 +129,60 @@ Two things to know before judging it:
 - Checklist preview shows **unfinished items first** (three fit under a dot).
   The editor's full list keeps authored order so items do not jump as you tick.
 
+### 3.6 Manual ordering (drag & drop)
+
+Grilled and settled 2026-07-31:
+
+- **Two drag levels**: workstreams reorder **within their own group**; whole
+  groups reorder on the page. No cross-group card drags — group reassignment
+  stays a deliberate act on the card's group chip.
+- **Pure manual order** replaces the lifecycle sort. Position the user authored
+  is stable; starting another workstream never reshuffles around it. A
+  NotStarted card may sit above Active ones if that's where it was put.
+- **New workstreams insert at the top of their group** (create endpoint shifts
+  positions server-side).
+- **Ungrouped is pinned last** (above Completed) and is not itself draggable —
+  it is "not yet filed", not a peer group, and has no entity to store a
+  position on. Cards inside it reorder normally.
+- **Drag affordance: a grip handle at the top-left** of the card and of the
+  group header, visible on hover/focus. Nothing else on the card initiates a
+  drag — the title is a live text field and the card is dense with targets.
+  A workstream **alone in its group gets no handle** (nothing to reorder).
+- **Dragging is disabled while any filter is active** — reordering a filtered
+  list is ambiguous (hidden cards sit between visible neighbours). The
+  prototype has no filters, so this rule is production-only.
+- Library: **dnd-kit** (`@dnd-kit/core` / `sortable` / `modifiers` /
+  `utilities`) — keyboard-accessible sorting, distance-gated pointer sensor so
+  plain clicks never start a drag.
+
+### 3.7 Completed section
+
+- Completed workstreams **leave their group** and sink into one section at the
+  page bottom, **collapsed by default** behind a `✓ Completed (n)` header row
+  with a chevron. The count alone carries the progress-feel.
+- Inside, cards **cluster by group** in the same group order as the live list,
+  each cluster under a small group header.
+- Cards reuse the **recessive complete-card treatment unchanged** — fully
+  interactive (open steps, read notes, append notes), never draggable.
+- A group whose workstreams are all complete disappears from the live area.
+
+### 3.8 The primary action on the card (B3 — answered)
+
+- **Placement: in the header row, immediately right of the lifecycle badges**
+  (`after-title`) — the eye lands on name → status → action in one sweep.
+  Top-right and bottom-right were built and compared live; top-right collides
+  with the deadline badge + owner cluster and bottom-right adds a footer row.
+- **Form: the only solid button on the card** — that is what keeps it
+  unmistakable among the quiet click targets. A split button: one-click
+  **Advance** (Done), chevron dropdown for **Skip**.
+- **Blocked current step**: the button becomes an outlined red **Resolve ▾**
+  dropdown — advance as done, advance as skipped, or unblock and keep working.
+  A blocked step never advances in one click; resolving means choosing.
+- **NotStarted**: an outlined **Start** button, hidden when the pipeline is
+  empty (nothing to start). **Complete**: no action at all.
+- Misfire safety: the drag sensor's distance gate plus the dropdown for
+  destructive-ish outcomes (Skip) keep accidental advances out.
+
 ## 4. What the prototype does NOT cover
 
 Read this section before estimating. The prototype answers a **layout and
@@ -126,26 +190,17 @@ interaction** question; several shipped capabilities have no home in it yet.
 
 ### 4.1 Advance / Start / Resolve — the product's primary action
 
-**The prototype has no advance affordance at all.** Not a rejected idea — simply
-out of scope for the question being asked, and easy to miss because the cards
-look complete.
+**Answered by the second pass — see §3.8 for the settled design** (after-title
+placement, split button, Resolve dropdown, Start). The prototype's control
+mutates the local draft only; production keeps the shipped command semantics.
 
-This matters more than anything else in this section:
+What still holds from the original warning:
 [project-purpose.md](../../project-purpose.md) says "the primary action is
 'advance' a workstream to its next step", and production already ships it
-(`workstream-card-action.tsx`, Slice 3 / #20): one-click **Advance** on the
-card, **Skip**, a **Resolve** dropdown when the current step is blocked, and
-**Start** for a NotStarted workstream, all with row-local pending state.
-
-The new card must give these a home **without** costing a click. The PRD keeps
-the rule explicit: advancing stays a single click and must never require opening
-an editor first. The obvious candidate is the card's top-right, beside the
-deadline badge — but that area is already carrying the badge and the owner
-avatar, so it needs deliberate design rather than an assumption.
-
-Note the interaction risk: the whole card is now covered in click targets (dots,
-insertion points, note markers, live fields). An Advance button sitting among
-them must be unmistakable and must not be reachable by accident.
+(`workstream-card-action.tsx`, Slice 3 / #20) with **row-local pending state**
+and descriptive Problem Details errors — the prototype models neither, and the
+production rewrite must keep both. Advancing stays a single click and must
+never require opening an editor first (PRD rule).
 
 ### 4.2 Everything else the prototype skips
 
@@ -244,12 +299,30 @@ draft must survive an overview refetch without being remounted or reset.
 - `POST /workstreams/:id/advance` and the start command — unchanged, but see
   §4.1 for where they go in the UI.
 
-### 6.4 Not a backend concern but easy to miss
+### 6.4 Manual ordering needs persistence — new since the second pass
+
+Neither `Workstream` nor `Group` has a position today. Settled shape
+(grilled 2026-07-31):
+
+- **Integer `position` columns**: on `Workstream`, scoped to its group (the
+  ungrouped bucket is its own scope); on `Group`, scoped to the project.
+- **Full-ordered-list reorder endpoints**: one drag sends the whole ordered id
+  list for that scope — `PUT /api/groups/:id/workstream-order { ids }`,
+  `PUT /api/projects/:id/group-order { ids }` (plus a variant for the
+  ungrouped scope). Atomic, idempotent; the server rewrites contiguous
+  positions. Use the existing two-phase temporary-position pattern — the
+  generated unique constraints are not deferrable.
+- **Migration seeds positions from today's alphabetical order** so nothing
+  visibly moves on upgrade.
+- **Create inserts at position 0** (top of group), shifting server-side.
+- Changing a workstream's group appends it to the target group's scope (top or
+  bottom — implementer's choice, record it).
+
+### 6.5 Not a backend concern but easy to miss
 
 - The theme ships **three** urgency tokens; the five-band scale needs **orange
   and yellow tokens for light and dark** in `apps/web/src/main.css`. The
   prototype uses Tailwind defaults as a stand-in.
-- Workstream sorting is done client-side; server-side ordering would work too.
 
 ## 7. Bugs found in production while prototyping
 
@@ -269,9 +342,9 @@ Both are **live on `main`** and were only fixed inside the prototype.
 Roughly in order:
 
 1. **Settle §6.2 (save model) and §6.1 (note counts).** Everything else depends
-   on these.
-2. **Decide where Advance / Start / Resolve live** (§4.1) — the design is not
-   complete without it.
+   on these. _(Advance placement — the old item 2 — is settled, §3.8.)_
+2. **Build the ordering persistence** (§6.4) — position columns, reorder
+   endpoints, migration.
 3. **Add the two urgency colour tokens** to `apps/web/src/main.css`, light and
    dark.
 4. **Rewrite the prototype through production modules** — see the component map
@@ -286,7 +359,9 @@ Roughly in order:
    standard. No Playwright. Expect to rewrite the specs listed in §10.
 9. **Accessibility pass** — keyboard reachability of the hover `+`, the note
    markers and the dot buttons; accessible names; focus management when a step
-   editor opens and closes.
+   editor opens and closes. **Every icon-only button carries a tooltip** (at
+   minimum a native `title` mirroring its accessible name) — the add-step `+`,
+   drag handles, note markers, icon picker, and the advance cluster.
 10. **Mobile.**
 11. **Fix the two production bugs in §7** while you are in this code.
 
@@ -306,6 +381,17 @@ Roughly in order:
   owner dismisses the editor underneath.
 - **A parent `opacity` cannot be undone by a child.** Dimming must live on the
   parts you want dimmed, never on a container whose children must stay bright.
+- **DnD: apply `CSS.Translate`, not `CSS.Transform`.** The sortable transform
+  carries a scale component that visibly deforms cards of different heights
+  mid-drag.
+- **DnD: one context per group for cards.** A single page-wide context made
+  drags stutter against every foreign drop target; per-group contexts measure
+  only siblings and enforce the within-group rule by construction. The outer
+  group-reorder context nests around them without conflict because listeners
+  live on the handles.
+- **DnD: gate the pointer sensor by distance** (4px) or every click on the
+  card's dense targets risks starting a drag; lock both contexts to the
+  vertical axis (`restrictToVerticalAxis`) for continuity.
 - **The clock is read at render** (`new Date()` behind an eslint-disable), in
   both the prototype and production's `deadline-badge.tsx`. Nothing refreshes at
   local midnight, so urgency bands can sit stale on a long-lived tab. Worth
@@ -381,25 +467,26 @@ and why_; this says _what it does_. Where a rule restates a domain rule from
 ## A1. The list
 
 - Single column, centred, capped at `max-w-[110rem]`.
-- Grouped by Group with a section header: colour swatch, group name, workstream
-  count. Empty groups are dropped; ungrouped workstreams form a final
-  "Ungrouped" section.
-- Groups keep the order the API returned (`groupWorkstreams` does not sort;
-  ordering is server-side and alphabetical today). **Within a group, workstreams
-  sort Active → NotStarted → Complete** — a stable sort, so the server's
-  alphabetical order holds inside each tier.
+- Grouped by Group with a section header: drag handle (hover) · colour swatch ·
+  group name · workstream count. Empty groups are dropped; ungrouped
+  workstreams form a final "Ungrouped" section, pinned after the real groups.
+- **Manual order at both levels** (A14). Groups start in the API's alphabetical
+  order until dragged; workstreams keep the draft array order. No lifecycle
+  sort.
+- Only **live** (Active / NotStarted) workstreams render in the group
+  sections; Complete ones render in the Completed section at the bottom (A15).
 - The production header, owner filter, group filter and management dialogs
   render unchanged above it.
 
 ## A2. The card
 
 - **Chrome by lifecycle**: live (Active/NotStarted) = border + surface + shadow;
-  Complete = transparent border + no surface, surface appears on hover; any card
-  with an open step editor = accent border + surface + shadow.
-- The idle border is `transparent`, never absent, so nothing shifts when a real
-  border appears.
-- **Header row**, left to right: icon picker · name · group chip · lifecycle
-  badges · _(spacer)_ · deadline badge · owner avatar.
+  Complete = **half-strength border** (`border-border/50`), no surface, surface
+  appears on hover; any card with an open step editor = accent border + surface
+  - shadow.
+- **Header row**, left to right: drag handle (hover; A14) · icon picker · name ·
+  group chip · lifecycle badges · **advance control (A16)** · _(spacer)_ ·
+  deadline badge · owner avatar.
 - The header row is dimmed (`opacity-65`) when the workstream is Complete.
 - Name is `font-semibold`/foreground when live, `font-medium`/muted when
   Complete.
@@ -448,8 +535,13 @@ step name, its date, its note marker, its checklist preview.
 - **Hover**: the dot scales up.
 - **Settled steps** (Done/Skipped) that are not open render at `opacity-55`,
   returning to full opacity on hover. They stay clickable.
-- **Step name**: truncated, centred. Bold foreground when open or current, muted
-  otherwise, italic "Untitled" when unnamed.
+- **Step name**: truncated, centred, **13px** (body-adjacent — the pipeline's
+  labels must scan without leaning in). Semibold foreground when open or
+  current, medium at 75% foreground otherwise, italic muted "Untitled" when
+  unnamed.
+- **Owner-override marker**: a small avatar (16px) under the step name,
+  rendered **only when the step has an explicit owner** — inherited owners stay
+  invisible here, so an avatar under a dot always means an override.
 - The whole dot + label + date is one button carrying `aria-pressed`.
 
 ## A4. Per-step deadline signals
@@ -598,3 +690,50 @@ requirement. Every mutation writes to an in-memory draft and increments a
 counter; step positions are renumbered after any structural change; nothing is
 ever sent to the API; the draft snapshots the server list on first edit and
 never resyncs. See §6.2 for what production must do instead.
+
+## A14. Manual ordering (drag & drop)
+
+- A grip handle appears on hover/focus at the **top-left of a card** and at the
+  **left of a group header**. Nothing else initiates a drag.
+- Cards drag **vertically within their own group only**; each group is its own
+  drag context, so foreign cards and groups are never drop targets. The
+  dragged card floats at full strength with a shadow ring; the gap its
+  siblings open is the drop indicator. Translation only — no scaling.
+- Group headers drag **whole sections** vertically among the real groups.
+  Ungrouped has no handle and never moves.
+- A card alone in its group has **no handle**; single real groups still drag.
+- Keyboard: the handles are buttons; dnd-kit's keyboard sensor picks up, moves
+  and drops with arrow keys.
+- Production additions the prototype skips: persistence (§6.4) and disabling
+  drags while a filter is active (§3.6).
+
+## A15. The Completed section
+
+- Rendered after the last group section, only when at least one workstream is
+  Complete.
+- Header: chevron (rotates when open) · green check · "Completed" · count ·
+  a hairline rule filling the rest of the row. The whole row is one button
+  carrying `aria-expanded`. **Collapsed by default.**
+- Expanded: completed workstreams cluster under small group headers, same
+  group order as the live list, ungrouped last.
+- Cards are the standard recessive complete cards — openable, notes appendable,
+  not draggable, no advance control.
+- A workstream completes → its card leaves the group section and appears here;
+  there is no other route in (no undo in V1).
+
+## A16. The advance control
+
+- Lives in the header row, right of the lifecycle badges. The only solid
+  button on the card.
+- **Active, current step not blocked**: split button — `Advance` commits the
+  current step as Done and moves the pointer; the chevron opens a menu with
+  `Skip {step name}` (advance as Skipped).
+- **Active, current step blocked**: outlined red `Resolve ▾` menu — advance as
+  done, advance as skipped, or unblock and keep working.
+- **NotStarted**: outlined `Start` (activates step 1); hidden when the
+  pipeline has no steps.
+- **Complete**: nothing rendered.
+- Advancing the last step completes the workstream and moves the card to the
+  Completed section immediately.
+- Production must keep row-local pending state and Problem Details error
+  surfacing from `workstream-card-action.tsx` (§4.1).
