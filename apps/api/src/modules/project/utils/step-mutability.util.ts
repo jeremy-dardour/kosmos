@@ -44,6 +44,20 @@ export function assertPipelineMutable(workstream: Workstream): void {
 }
 
 /**
+ * The steps strictly after the pointer, in position order — the zone that
+ * accepts structural change. A NotStarted workstream has no pointer, so every
+ * step is future; a Complete one has none.
+ */
+export function futureSteps(workstream: Workstream): Step[] {
+  const pointerPosition = workstream.currentStep?.position ?? 0;
+
+  return workstream
+    .getSteps()
+    .filter((step) => step.position > pointerPosition && step.outcome == null)
+    .sort((left, right) => left.position - right.position);
+}
+
+/**
  * Insertion is legal strictly after the pointer, and only where it keeps
  * positions contiguous. A complete workstream has no future zone at all.
  */

@@ -211,6 +211,112 @@ describe('stepService.update', () => {
   });
 });
 
+/** past (done), current, then two future steps. */
+function buildActivePipeline(): Workstream {
+  const past = buildStep({
+    id: 'past',
+    position: 1,
+    name: 'Past',
+    outcome: StepOutcome.Done,
+  });
+  const current = buildStep({ id: 'current', position: 2, name: 'Current' });
+  const first = buildStep({ id: 'f1', position: 3, name: 'First future' });
+  const second = buildStep({ id: 'f2', position: 4, name: 'Second future' });
+
+  return buildWorkstream({
+    startedAt: new Date('2026-07-01'),
+    currentStep: current,
+    steps: [past, current, first, second],
+  });
+}
+
+describe('stepService.reorder', () => {
+  it('reorders the future tail without moving past or current steps', async () => {
+    const { service, positions } = createService(buildActivePipeline());
+
+    await service.reorder('ws-1', { ids: ['f2', 'f1'] });
+
+    expect(positions()).toEqual([
+      { name: 'Past', position: 1 },
+      { name: 'Current', position: 2 },
+      { name: 'Second future', position: 3 },
+      { name: 'First future', position: 4 },
+    ]);
+  });
+
+  it('reorders every step of a not-started workstream', async () => {
+    const { service, positions } = createService(
+      buildWorkstream({
+        steps: [
+          buildStep({ id: 's1', position: 1, name: 'First' }),
+          buildStep({ id: 's2', position: 2, name: 'Second' }),
+        ],
+      }),
+    );
+
+    await service.reorder('ws-1', { ids: ['s2', 's1'] });
+
+    expect(positions()).toEqual([
+      { name: 'Second', position: 1 },
+      { name: 'First', position: 2 },
+    ]);
+  });
+
+  it('rejects a list missing a future step', async () => {
+    const { service } = createService(buildActivePipeline());
+
+    await expect(service.reorder('ws-1', { ids: ['f1'] })).rejects.toThrow(
+      "do not match the workstream's future steps",
+    );
+  });
+
+  it('rejects a list naming the current or a past step', async () => {
+    const { service } = createService(buildActivePipeline());
+
+    await expect(
+      service.reorder('ws-1', { ids: ['current', 'f1', 'f2'] }),
+    ).rejects.toThrow("do not match the workstream's future steps");
+    await expect(
+      service.reorder('ws-1', { ids: ['past', 'f1'] }),
+    ).rejects.toThrow("do not match the workstream's future steps");
+  });
+
+  it('rejects a duplicated id', async () => {
+    const { service } = createService(buildActivePipeline());
+
+    await expect(
+      service.reorder('ws-1', { ids: ['f1', 'f1'] }),
+    ).rejects.toThrow("do not match the workstream's future steps");
+  });
+
+  it('rejects reordering a complete workstream', async () => {
+    const { service } = createService(
+      buildWorkstream({
+        startedAt: new Date('2026-07-01'),
+        completedAt: new Date('2026-07-05'),
+        currentStep: null,
+        steps: [
+          buildStep({ id: 's1', position: 1, outcome: StepOutcome.Done }),
+        ],
+      }),
+    );
+
+    await expect(service.reorder('ws-1', { ids: [] })).rejects.toThrow(
+      'Completed workstream pipelines cannot be edited',
+    );
+  });
+
+  it('bumps the workstream timestamp so pipeline drafts go stale', async () => {
+    const workstream = buildActivePipeline();
+    const { service } = createService(workstream);
+    const before = workstream.updatedAt.getTime();
+
+    await service.reorder('ws-1', { ids: ['f2', 'f1'] });
+
+    expect(workstream.updatedAt.getTime()).toBeGreaterThan(before);
+  });
+});
+
 describe('stepService.remove', () => {
   it('renumbers the steps after the deleted one', async () => {
     const { service, positions } = createService(

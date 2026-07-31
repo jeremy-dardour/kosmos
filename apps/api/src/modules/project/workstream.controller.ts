@@ -29,6 +29,7 @@ import {
 import { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import { CreateStepDto } from '@/modules/project/dtos/input/create-step.dto';
 import { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
+import { ReorderStepsDto } from '@/modules/project/dtos/input/reorder-steps.dto';
 import { ReorderWorkstreamsDto } from '@/modules/project/dtos/input/reorder-workstreams.dto';
 import { UpdatePipelineDto } from '@/modules/project/dtos/input/update-pipeline.dto';
 import { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
@@ -117,6 +118,23 @@ export class WorkstreamController {
     @Body() dto: CreateStepDto,
   ): Promise<WorkstreamDto> {
     return this.stepService.create(id, dto);
+  }
+
+  @Put('workstreams/:id/step-order')
+  @ApiOperation({
+    summary: "Reorder the workstream's future steps",
+    description:
+      'The ids must be exactly the steps after the pointer, in the new order. Past and current steps never move.',
+  })
+  @ApiOkResponse({ type: WorkstreamDto })
+  @ApiConflictResponse(
+    "The submitted ids do not match the workstream's future steps",
+  )
+  async reorderSteps(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReorderStepsDto,
+  ): Promise<WorkstreamDto> {
+    return this.stepService.reorder(id, dto);
   }
 
   @Put('workstreams/:id/pipeline')

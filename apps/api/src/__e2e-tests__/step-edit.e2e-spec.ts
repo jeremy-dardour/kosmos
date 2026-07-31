@@ -13,6 +13,7 @@ import { Step, StepOutcome } from '@/database/entities/step.entity';
 import { User } from '@/database/entities/user.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 
+import type { OverviewDto } from '@/modules/project/dtos/output/overview.dto';
 import type { StepDto } from '@/modules/project/dtos/output/step.dto';
 import type { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
 import type { SqlEntityManager } from '@mikro-orm/postgresql';
@@ -20,6 +21,9 @@ import type { INestApplication } from '@nestjs/common';
 
 const errorType = (slug: string): string =>
   `https://api.example.com/errors/${slug}`;
+
+const stepOrder = (body: WorkstreamDto) =>
+  body.steps.map(({ name, position }) => ({ name, position }));
 
 describe('Step editing E2E Tests', () => {
   const mockOidc = new MockOidcService();
@@ -100,6 +104,25 @@ describe('Step editing E2E Tests', () => {
     await em.flush();
 
     return { workstream, steps };
+  }
+
+  /** The started pipeline plus a second future step, so the tail can move. */
+  async function createReorderablePipeline(): Promise<{
+    workstream: Workstream;
+    past: Step;
+    current: Step;
+    future: Step;
+    trailing: Step;
+  }> {
+    const started = await createStartedWorkstream();
+    const trailing = em.create(Step, {
+      workstream: started.workstream,
+      position: 4,
+      name: 'Pay deposit',
+    });
+    await em.flush();
+
+    return { ...started, trailing };
   }
 
   describe('POST /workstreams/:id/steps', () => {
@@ -320,6 +343,158 @@ describe('Step editing E2E Tests', () => {
         .patch(`/steps/${current.id}`)
         .set('Authorization', authorization)
         .send({ name: null })
+        .expect(422);
+    });
+  });
+
+  describe('PUT /workstreams/:id/step-order', () => {
+    it('reorders the future tail and leaves past and current steps in place', async () => {
+      const { workstream, future, trailing } =
+        await createReorderablePipeline();
+
+      const response = await request(app.getHttpServer() as never)
+        .put(`/workstreams/${workstream.id}/step-order`)
+        .set('Authorization', authorization)
+        .send({ ids: [trailing.id, future.id] })
+        .expect(200);
+
+      expect(stepOrder(response.body as WorkstreamDto)).toEqual([
+        { name: 'Research venues', position: 1 },
+        { name: 'Tour venues', position: 2 },
+        { name: 'Pay deposit', position: 3 },
+        { name: 'Sign contract', position: 4 },
+      ]);
+
+      const overview = await request(app.getHttpServer() as never)
+        .get(`/projects/${workstream.project.id}/overview`)
+        .set('Authorization', authorization)
+        .expect(200);
+
+      const persisted = (overview.body as OverviewDto).workstreams.find(
+        (candidate) => candidate.id === workstream.id,
+      )!;
+      expect(stepOrder(persisted)).toEqual([
+        { name: 'Research venues', position: 1 },
+        { name: 'Tour venues', position: 2 },
+        { name: 'Pay deposit', position: 3 },
+        { name: 'Sign contract', position: 4 },
+      ]);
+    });
+
+    it('reorders every step of a not-started workstream', async () => {
+      const { workstream, steps } = await createNotStartedWorkstream();
+
+      const response = await request(app.getHttpServer() as never)
+        .put(`/workstreams/${workstream.id}/step-order`)
+        .set('Authorization', authorization)
+        .send({ ids: [steps[1]!.id, steps[0]!.id] })
+        .expect(200);
+
+      expect(stepOrder(response.body as WorkstreamDto)).toEqual([
+        { name: 'Choose bouquets', position: 1 },
+        { name: 'Find florist', position: 2 },
+      ]);
+    });
+
+    it('rejects a list missing one of the future steps', async () => {
+      const { workstream, trailing } = await createReorderablePipeline();
+
+      const response = await request(app.getHttpServer() as never)
+        .put(`/workstreams/${workstream.id}/step-order`)
+        .set('Authorization', authorization)
+        .send({ ids: [trailing.id] })
+        .expect(409);
+
+      expect(response.body).toMatchObject({
+        type: errorType('order-mismatch'),
+      });
+    });
+
+    it('rejects duplicated, foreign, past and current ids', async () => {
+      const { workstream, past, current, future, trailing } =
+        await createReorderablePipeline();
+      const foreign = await createNotStartedWorkstream();
+
+      const rejected: string[][] = [
+        [future.id, future.id],
+        [future.id, trailing.id, foreign.steps[0]!.id],
+        [current.id, future.id, trailing.id],
+        [past.id, future.id, trailing.id],
+      ];
+
+      for (const ids of rejected) {
+        const response = await request(app.getHttpServer() as never)
+          .put(`/workstreams/${workstream.id}/step-order`)
+          .set('Authorization', authorization)
+          .send({ ids })
+          .expect(409);
+
+        expect(response.body).toMatchObject({
+          type: errorType('order-mismatch'),
+        });
+      }
+
+      em.clear();
+      const unchanged = await em.find(
+        Step,
+        { workstream: workstream.id },
+        { orderBy: { position: 'asc' } },
+      );
+      expect(unchanged.map((step) => step.name)).toEqual([
+        'Research venues',
+        'Tour venues',
+        'Sign contract',
+        'Pay deposit',
+      ]);
+    });
+
+    it('rejects a list that an advance made stale', async () => {
+      const { workstream, future, trailing } =
+        await createReorderablePipeline();
+
+      await request(app.getHttpServer() as never)
+        .post(`/workstreams/${workstream.id}/advance`)
+        .set('Authorization', authorization)
+        .send({})
+        .expect(200);
+
+      const response = await request(app.getHttpServer() as never)
+        .put(`/workstreams/${workstream.id}/step-order`)
+        .set('Authorization', authorization)
+        .send({ ids: [trailing.id, future.id] })
+        .expect(409);
+
+      expect(response.body).toMatchObject({
+        type: errorType('order-mismatch'),
+      });
+    });
+
+    it('rejects reordering a complete workstream', async () => {
+      const { workstream, current, future } = await createStartedWorkstream();
+      workstream.currentStep = null;
+      workstream.completedAt = new Date();
+      for (const step of [current, future]) {
+        step.outcome = StepOutcome.Done;
+        step.outcomeAt = new Date();
+      }
+      await em.flush();
+
+      const response = await request(app.getHttpServer() as never)
+        .put(`/workstreams/${workstream.id}/step-order`)
+        .set('Authorization', authorization)
+        .send({ ids: [] })
+        .expect(409);
+
+      expect(response.body).toMatchObject({ type: errorType('step-frozen') });
+    });
+
+    it('rejects ids that are not uuids', async () => {
+      const { workstream } = await createReorderablePipeline();
+
+      await request(app.getHttpServer() as never)
+        .put(`/workstreams/${workstream.id}/step-order`)
+        .set('Authorization', authorization)
+        .send({ ids: ['not-a-uuid'] })
         .expect(422);
     });
   });

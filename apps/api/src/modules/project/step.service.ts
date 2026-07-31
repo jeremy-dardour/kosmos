@@ -9,15 +9,20 @@ import {
 } from '@/modules/project/dtos/output/workstream.dto';
 import { StepRepository } from '@/modules/project/repositories/step.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
+import { isExactMembership } from '@/modules/project/utils/order-membership.util';
 import {
   assertInsertablePosition,
+  assertPipelineMutable,
   assertStepDeletable,
   assertStepEditable,
+  futureSteps,
+  stepConflict,
 } from '@/modules/project/utils/step-mutability.util';
 import { touchWorkstream } from '@/modules/project/utils/touch-workstream.util';
 
 import type { User } from '@/database/entities/user.entity';
 import type { CreateStepDto } from '@/modules/project/dtos/input/create-step.dto';
+import type { ReorderStepsDto } from '@/modules/project/dtos/input/reorder-steps.dto';
 import type { UpdateStepDto } from '@/modules/project/dtos/input/update-step.dto';
 
 /**
@@ -95,6 +100,44 @@ export class StepService {
       workstream,
       await this.workstreamRepository.countNotesByStep([workstream]),
     );
+  }
+
+  async reorder(
+    workstreamId: string,
+    dto: ReorderStepsDto,
+  ): Promise<WorkstreamDto> {
+    await this.workstreamRepository.updateLockedDetails(
+      workstreamId,
+      (workstream) => {
+        assertPipelineMutable(workstream);
+
+        const future = futureSteps(workstream);
+        if (
+          !isExactMembership(
+            dto.ids,
+            future.map((step) => step.id),
+          )
+        ) {
+          stepConflict(
+            'order-mismatch',
+            "The submitted ids do not match the workstream's future steps",
+          );
+        }
+
+        // The tail keeps the position slots it already occupies, so past and
+        // current steps never shift. Collisions during the rewrite resolve at
+        // commit under the deferred unique constraint.
+        const slots = future.map((step) => step.position);
+        const byId = new Map(future.map((step) => [step.id, step]));
+        for (const [index, id] of dto.ids.entries()) {
+          byId.get(id)!.position = slots[index]!;
+        }
+
+        touchWorkstream(workstream);
+      },
+    );
+
+    return this.buildWorkstreamDto(workstreamId);
   }
 
   async remove(id: string): Promise<WorkstreamDto> {
