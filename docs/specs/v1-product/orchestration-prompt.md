@@ -41,3 +41,29 @@ Orchestration rules:
   running app.
 - When all of C1–C20 are green: open the PR to `main` referencing #40, then
   stop for my review.
+
+Session facts (kept current by the orchestrator — read on restart):
+
+- **Work branch: `feat/40-overview-rework`** (created from `prototype-2`).
+  Resume point = first plan commit not present in `git log --oneline`.
+- The API and web apps are **already running** on the ports in the `.env`
+  files — agents must not start their own servers or database, and use the
+  running API for `pnpm generate:api-types`.
+- Implementer briefs follow the `/implement` skill style (TDD at clear seams,
+  typecheck/lint/targeted tests continuously, full gates at the end) but
+  agents **never commit** — the orchestrator reviews, runs gates, commits.
+- Each brief carries: the commit's plan entry verbatim, the handoff/contract
+  excerpts it needs, an **explicit non-goals list** (no scope creep, no
+  overengineering, no speculative seams), and a strict comment rule (no
+  narration; only real edge cases, workarounds, constraints, or public API
+  docs). The orchestrator's review checks spec conformance, repo standards,
+  module depth (per the codebase-design skill), and trims comment noise.
+- An untracked personal `todo.md` sits at the repo root. It must **never be
+  staged or committed** (contains private information; the repo may go
+  public).
+- Known flake: two date-sensitive `project-crud` e2e tests failed once during
+  C1 (unreproducible in 25+ reruns, pre-existing date fragility). Not caused
+  by this branch; watch for recurrence.
+- At ~400k context or a phase boundary, the orchestrator checkpoints: run
+  `log-session`, refresh `docs/current-state.md`, and update this section so
+  a fresh session can resume cleanly.
