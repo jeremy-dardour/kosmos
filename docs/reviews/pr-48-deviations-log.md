@@ -99,3 +99,27 @@ through as one.
     established one-predicate-per-module idiom. `note-thread.tsx` carries a
     URL-linkifying `NoteBody` that duplicates the one in the doomed
     `step-notes.tsx` — C18 must delete the old copy.
+20. **Workstream deletion lost its only UI entry point** (C17). The detail
+    panel hosted both "edit workstream" (now redundant — every field is live
+    on the card) and "delete workstream" (ConfirmDialog + useDeleteWorkstream).
+    The handoff never gives the card a delete affordance (§4.2 assumed the
+    existing dialogs kept handling it, but the entry point WAS the panel), so
+    the agent unwired rather than invent UI. **DECISION NEEDED**: accept the
+    gap for V1 or add a minimal card-level delete (recommend: carry into C19
+    with the existing ConfirmDialog).
+21. **Ghost steps are a dedicated panel, not `StepEditor` with
+    `isPersisted={false}`** (C17). Every StepEditor control mutates a step id
+    the server doesn't have; the ghost needs exactly one input. `isPersisted`
+    is now unused in step-editor.tsx — C18 drops it.
+22. **Old page-level integration specs deleted with their UI** (C17):
+    `overview-workstream-actions` (8 tests — all duplicated in
+    `advance-control.spec`), `notes-actions` (5 — ported to `note-thread.spec`
+    except the delete-confirmation dialog, which died by design: C15 deletes
+    inline), `pipeline-editing` (8 — covered across `pipeline-row.spec` /
+    `step-editor.spec`; whole-tail atomicity + `expectedUpdatedAt` staleness
+    died with the model per §6.2). Every surviving behaviour was mapped to its
+    new home in the C17 report.
+23. **`useCurrentDate` does not exist** despite the plan/current-state citing
+    it (session 28's extraction isn't in the tree); the page reads one clock
+    at render like the old cards did. The known "stale urgency on a long-lived
+    tab" issue (§9) remains — unchanged from production.
