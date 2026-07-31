@@ -47,8 +47,10 @@ Session facts (kept current by the orchestrator — read on restart):
 - **Work branch: `feat/40-overview-rework`** (created from `prototype-2`,
   design/docs commits squashed to one; PR #48 open with a live checklist —
   keep it ticked as commits land). Resume point = first plan commit not
-  present in `git log --oneline`. **Phase A (C1–C7) is fully landed**; resume
-  at C8.
+  present in `git log --oneline`. **Phases A (C1–C7) and B (C8–C10) are fully
+  landed**; resume at C11. The save-model seam is `src/api/overview-cache.ts`
+  (`useOverviewCache`) — Phase C hooks commit through it, never per-mutation
+  invalidation.
 - Gates per commit: `pnpm check-types && pnpm lint && pnpm format:check &&
 pnpm test`, plus `pnpm --filter api test:e2e` for API commits. Web
   typecheck: trust only `tsc -b --force` (incremental buildinfo false-passed
