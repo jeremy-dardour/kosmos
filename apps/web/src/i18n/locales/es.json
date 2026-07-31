@@ -57,6 +57,8 @@
   "overview.action.resolveLabel": "Resolver {{name}}",
   "overview.action.markDone": "Marcar como completado",
   "overview.action.markSkipped": "Marcar como omitido",
+  "overview.action.skipStep": "Omitir {{name}}",
+  "overview.action.unblock": "Desbloquear — seguir con ello",
   "overview.stepStatus.notStarted": "Sin empezar",
   "overview.stepStatus.inProgress": "En curso",
   "overview.stepStatus.done": "Hecho",

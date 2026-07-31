@@ -57,6 +57,8 @@
   "overview.action.resolveLabel": "Resolve {{name}}",
   "overview.action.markDone": "Mark done",
   "overview.action.markSkipped": "Mark skipped",
+  "overview.action.skipStep": "Skip {{name}}",
+  "overview.action.unblock": "Unblock — keep working on it",
   "overview.stepStatus.notStarted": "Not started",
   "overview.stepStatus.inProgress": "In progress",
   "overview.stepStatus.done": "Done",

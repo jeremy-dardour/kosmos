@@ -57,6 +57,8 @@ export interface Translations {
   'overview.action.resolveLabel': string;
   'overview.action.markDone': string;
   'overview.action.markSkipped': string;
+  'overview.action.skipStep': string;
+  'overview.action.unblock': string;
   'overview.stepStatus.notStarted': string;
   'overview.stepStatus.inProgress': string;
   'overview.stepStatus.done': string;
