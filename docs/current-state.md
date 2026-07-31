@@ -5,15 +5,23 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-31 (session 32)_
+_Last updated: 2026-07-31 (session 33)_
 
 ## Phase
 
-**Building.** Slices 1 and 2 are merged; Slices 3 and 6 are in draft PRs #37
-and #38. Slices 4 and 5 are complete on feature branches. Slice 7 is complete
-on `feat/slice-7`, rebased on latest main, and open as PR #44 with two rounds
-of review comments addressed. All feature slices are now built; deployment
-(#26) is the last remaining issue.
+**Building #40 (inline overview rework) via orchestrated implementer agents.**
+Branch `feat/40-overview-rework` (from `prototype-2`, design commits squashed),
+tracked by PR #48 with a live C1–C20 checklist and a how-to-review comment.
+**Phase A (backend, C1–C7) is fully landed and pushed**: noteCount on the
+aggregate, position columns + migration, group/workstream reorder endpoints,
+granular step create/edit/delete + step reorder, checklist item endpoints,
+throttle 120/min. Each commit green (typecheck, lint, format, unit, e2e — 155
+API e2e at phase end). Next: Phase B (C8 urgency tokens, C9 date-bug fixes,
+C10 hooks + cache seam), then Phases C/D. Session log:
+[session 33](./sessions/session-33-2026-07-31-phase-a-backend-orchestration.md).
+Orchestration protocol + restart facts:
+[orchestration-prompt.md](./specs/v1-product/orchestration-prompt.md).
+Deployment (#26) remains after #40.
 
 ## Done
 

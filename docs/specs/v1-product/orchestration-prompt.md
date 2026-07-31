@@ -44,8 +44,22 @@ Orchestration rules:
 
 Session facts (kept current by the orchestrator — read on restart):
 
-- **Work branch: `feat/40-overview-rework`** (created from `prototype-2`).
-  Resume point = first plan commit not present in `git log --oneline`.
+- **Work branch: `feat/40-overview-rework`** (created from `prototype-2`,
+  design/docs commits squashed to one; PR #48 open with a live checklist —
+  keep it ticked as commits land). Resume point = first plan commit not
+  present in `git log --oneline`. **Phase A (C1–C7) is fully landed**; resume
+  at C8.
+- Gates per commit: `pnpm check-types && pnpm lint && pnpm format:check &&
+pnpm test`, plus `pnpm --filter api test:e2e` for API commits. Web
+  typecheck: trust only `tsc -b --force` (incremental buildinfo false-passed
+  once after generated-type changes).
+- Agents must not touch the user's running dev processes; regenerate
+  api-types against a temporary built API instance on a free port.
+- Amended premises agents must not "re-fix": position unique constraints ARE
+  `deferrable initially deferred`; ordered renumbering is single-phase (no
+  temporary positions) — see ADR 0008, api-contract §Manual ordering, and
+  C3–C6 for the established idioms (`step-mutability.util`,
+  `lock-workstream-graph.query`, `touchWorkstream`, `isExactMembership`).
 - The API and web apps are **already running** on the ports in the `.env`
   files — agents must not start their own servers or database, and use the
   running API for `pnpm generate:api-types`.
