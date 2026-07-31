@@ -50,6 +50,7 @@ describe('Workstream advance E2E Tests', () => {
       workstream,
       position: 1,
       name: 'Request quotes',
+      notes: [{ content: 'Three caterers contacted.' }],
     });
     em.create(Step, {
       workstream,
@@ -77,6 +78,7 @@ describe('Workstream advance E2E Tests', () => {
       'not_started',
     ]);
     expect(body.steps[0]?.outcome).toBeNull();
+    expect(body.steps.map((step) => step.noteCount)).toEqual([1, 0]);
   });
 
   it('rejects an outcome when starting a workstream', async () => {

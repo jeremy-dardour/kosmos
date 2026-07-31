@@ -124,7 +124,10 @@ export class WorkstreamService {
       },
     );
 
-    return toWorkstreamDto(workstream);
+    return toWorkstreamDto(
+      workstream,
+      await this.workstreamRepository.countNotesByStep(workstream),
+    );
   }
 
   async updatePipeline(
@@ -362,7 +365,10 @@ export class WorkstreamService {
   private async buildDto(id: string): Promise<WorkstreamDto> {
     const workstream = await this.workstreamRepository.findDetails(id);
 
-    return toWorkstreamDto(workstream);
+    return toWorkstreamDto(
+      workstream,
+      await this.workstreamRepository.countNotesByStep(workstream),
+    );
   }
 
   /** Same-project guard, enforced here rather than as a composite FK (ADR 0006). */

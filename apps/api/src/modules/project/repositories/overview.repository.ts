@@ -6,6 +6,9 @@ import { Group } from '@/database/entities/group.entity';
 import { Project } from '@/database/entities/project.entity';
 import { User } from '@/database/entities/user.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
+import { countNotesByStep } from '@/modules/project/repositories/note-count.query';
+
+import type { NoteCountsByStep } from '@/modules/project/repositories/note-count.query';
 
 @Injectable()
 export class OverviewRepository {
@@ -16,6 +19,7 @@ export class OverviewRepository {
     groups: Group[];
     workstreams: Workstream[];
     users: User[];
+    noteCounts: NoteCountsByStep;
   }> {
     return this.em.transactional(
       async (em) => {
@@ -41,8 +45,14 @@ export class OverviewRepository {
           },
         );
         const users = await em.find(User, {}, { orderBy: { name: 'asc' } });
+        const noteCounts = await countNotesByStep(
+          em,
+          workstreams.flatMap((workstream) =>
+            workstream.getSteps().map((step) => step.id),
+          ),
+        );
 
-        return { project, groups, workstreams, users };
+        return { project, groups, workstreams, users, noteCounts };
       },
       {
         isolationLevel: IsolationLevel.REPEATABLE_READ,

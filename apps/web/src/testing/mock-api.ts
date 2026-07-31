@@ -112,6 +112,8 @@ export function setupOverviewApi(initialOverview: Overview) {
             createdAt: updatedAt,
             updatedAt,
           })),
+          noteCount:
+            ws.steps.find((s) => s.id === submitted.id)?.noteCount ?? 0,
           createdAt: updatedAt,
           updatedAt,
         }));

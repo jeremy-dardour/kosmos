@@ -302,6 +302,7 @@ function useDraft(source: Workstream[], groups: Group[]): DraftStore {
         blocked: false,
         deadline: null,
         checklistItems: [],
+        noteCount: 0,
         createdAt: now,
         updatedAt: now,
       };

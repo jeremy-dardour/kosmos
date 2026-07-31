@@ -482,6 +482,8 @@ export interface components {
        */
       effectiveOwnerId?: string | null;
       checklistItems: components['schemas']['ChecklistItemDto'][];
+      /** @description Number of notes on this step; the notes themselves load on demand */
+      noteCount: number;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */

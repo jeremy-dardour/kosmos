@@ -8,6 +8,7 @@ import {
 } from '@/modules/project/dtos/output/step.dto';
 
 import type { Workstream } from '@/database/entities/workstream.entity';
+import type { NoteCountsByStep } from '@/modules/project/repositories/note-count.query';
 
 export class WorkstreamDto {
   @ApiProperty({ format: 'uuid' })
@@ -58,7 +59,10 @@ export class WorkstreamDto {
   updatedAt!: Date;
 }
 
-export function toWorkstreamDto(workstream: Workstream): WorkstreamDto {
+export function toWorkstreamDto(
+  workstream: Workstream,
+  noteCounts: NoteCountsByStep,
+): WorkstreamDto {
   return {
     id: workstream.id,
     name: workstream.name,
@@ -71,7 +75,7 @@ export function toWorkstreamDto(workstream: Workstream): WorkstreamDto {
     completedAt: workstream.completedAt ?? null,
     nearestDeadlineStepId: workstream.nearestDeadlineStep()?.id ?? null,
     steps: sortSteps(workstream.getSteps()).map((step) =>
-      toStepDto(step, workstream),
+      toStepDto(step, workstream, noteCounts),
     ),
     createdAt: workstream.createdAt,
     updatedAt: workstream.updatedAt,

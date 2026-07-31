@@ -112,6 +112,7 @@ function createService() {
       },
     ),
     findDetails: vi.fn(() => testWorkstream!),
+    countNotesByStep: vi.fn(() => new Map<string, number>()),
   };
   const userRepo = { findOneOrFail: vi.fn() };
 

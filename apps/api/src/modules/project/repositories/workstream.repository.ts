@@ -1,10 +1,13 @@
-import { EntityRepository, LockMode } from '@mikro-orm/core';
-import { SqlEntityManager } from '@mikro-orm/postgresql';
+import { LockMode } from '@mikro-orm/core';
+import { EntityRepository, SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
 import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
+import { countNotesByStep } from '@/modules/project/repositories/note-count.query';
+
+import type { NoteCountsByStep } from '@/modules/project/repositories/note-count.query';
 
 export interface LockedWorkstreamChanges {
   removedSteps?: Step[];
@@ -30,6 +33,13 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
     return this.findOneOrFail(
       { id },
       { populate: [...WORKSTREAM_POPULATE], refresh: true },
+    );
+  }
+
+  async countNotesByStep(workstream: Workstream): Promise<NoteCountsByStep> {
+    return countNotesByStep(
+      this.em,
+      workstream.getSteps().map((step) => step.id),
     );
   }
 
