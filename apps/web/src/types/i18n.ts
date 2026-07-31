@@ -102,6 +102,12 @@ export interface Translations {
   'overview.notes.mutationError': string;
   'overview.deadlineField.due': string;
   'overview.deadlineField.empty': string;
+  'overview.pipeline.untitled': string;
+  'overview.pipeline.dueTooltip': string;
+  'overview.pipeline.insertStepBefore': string;
+  'overview.pipeline.appendStep': string;
+  'overview.pipeline.toggleItem': string;
+  'overview.pipeline.moreItems': string;
   'overview.detail.deadline.in': string;
   'overview.detail.deadline.today': string;
   'overview.detail.deadline.tomorrow': string;

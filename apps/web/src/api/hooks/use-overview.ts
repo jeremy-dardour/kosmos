@@ -5,6 +5,7 @@ import type { dtos } from '@/types/openapi';
 export type Project = dtos['ProjectDto'];
 export type Overview = dtos['OverviewDto'];
 export type Workstream = dtos['WorkstreamDto'];
+export type WorkstreamLifecycle = dtos['WorkstreamLifecycle'];
 export type Step = dtos['StepDto'];
 export type StepStatus = dtos['StepStatus'];
 export type ChecklistItem = dtos['ChecklistItemDto'];
