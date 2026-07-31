@@ -11,6 +11,11 @@ interface NoteCountRow {
   count: number;
 }
 
+/**
+ * Repository-internal query function (Persistence seam, apps/api/STANDARDS.md;
+ * ADR 0008): takes the caller's `em` so it can join the overview's
+ * repeatable-read transaction.
+ */
 export async function countNotesByStep(
   em: SqlEntityManager,
   stepIds: readonly string[],

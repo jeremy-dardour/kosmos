@@ -68,6 +68,12 @@ Controller → Service → Repository → EntityManager
   persistence adapter. Do not add a parallel abstract repository plus a
   `MikroOrm*Repository` implementation or generic base repository until a
   second real adapter requires that seam.
+- A query shared by multiple repositories, or one that must join a caller's
+  transaction (run on the forked `em` of `em.transactional`), lives as an
+  `em`-parameterized function in `repositories/<concern>.query.ts`. Only
+  repository implementations may call it — it is inside the persistence seam,
+  not a service-facing interface
+  ([ADR 0008](../../docs/adr/0008-shared-queries-as-em-parameterized-functions.md)).
 
 ## Entity definitions (MikroORM 7)
 
