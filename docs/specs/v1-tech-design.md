@@ -144,7 +144,7 @@ decisions behind the unified API surface.
 ## API contract
 
 Full endpoint spec, DTOs, and error codes in the
-[API contract PRD](./api-contract/PRD.md).
+[V1 API contract](./v1-product/api-contract.md).
 
 ### Design principles
 

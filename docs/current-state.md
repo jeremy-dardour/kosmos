@@ -5,7 +5,7 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-31 (session 31)_
+_Last updated: 2026-07-31 (session 32)_
 
 ## Phase
 
@@ -164,10 +164,21 @@ of review comments addressed. All feature slices are now built; deployment
   [docs/prototype/overview-editing/HANDOFF.md](./prototype/overview-editing/HANDOFF.md)
   ([session 31](./sessions/session-31-2026-07-31-inline-overview-editing.md)).
   All UI rework tickets are consolidated into
-  [#40](https://github.com/jeremy-dardour/wedding-planner/issues/40), which is
-  blocked on three decisions: note counts on the overview aggregate, the save
-  model for autosaved edits, and where Advance/Start/Resolve live in the new
-  card.
+  [#40](https://github.com/jeremy-dardour/wedding-planner/issues/40).
+
+- **#40 fully unblocked** — a second prototyping pass on `prototype-2` added
+  the collapsed Completed section, manual drag & drop ordering (dnd-kit), the
+  advance control (B3: right of the status badges), 13px step titles,
+  owner-override markers, light frames on complete cards and tooltips. B1/B2
+  settled through a data-lifecycle grilling: `noteCount` on the aggregate;
+  commit-on-blur with granular step/checklist endpoints replacing the
+  whole-tail pipeline PUT; last-write-wins + per-op validation; mutation
+  responses patched into the cached aggregate with a focus-deferred trailing
+  invalidate; throttle raise. The api-contract spec moved to
+  [docs/specs/v1-product/api-contract.md](./specs/v1-product/api-contract.md)
+  and was rewritten; the phased build plan is
+  [overview-rework-plan.md](./specs/v1-product/overview-rework-plan.md)
+  ([session 32](./sessions/session-32-2026-07-31-prototype-2-and-b-decisions.md)).
 
 ## In flight
 
@@ -192,12 +203,8 @@ of review comments addressed. All feature slices are now built; deployment
 1. Land Slice 7 PR #44 (review comments addressed — mind the
    `useUpdateWorkstreamPipeline` rename also touching #38); review and land PRs
    #37 and #38, and open the Slice 5 (#22) draft PR from `feat/slice-5`.
-2. Answer the three blocking decisions on #40, then productionalise the inline
-   overview design from `prototype-2`. #35, #39, #41 and #43 are folded into it
-   and closed.
-3. Fix the two production bugs the prototype surfaced (a deadline due today
-   renders "in 0d"; date ticks drop the year, so last year's deadline reads as
-   future) — see the handoff.
-4. All feature slices built — next is deployment (#26). Reorder repositories
-   use two-phase temporary positions because the generated constraints are not
-   deferrable.
+2. Execute the [#40 build plan](./specs/v1-product/overview-rework-plan.md)
+   phase by phase, backend first (noteCount, positions + reorder endpoints,
+   granular step editing replacing the whole-tail PUT, throttle raise). The
+   two production date bugs are Phase B of that plan.
+3. All feature slices built — after #40, deployment (#26) remains.
