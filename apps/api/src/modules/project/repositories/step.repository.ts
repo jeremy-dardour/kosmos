@@ -1,8 +1,8 @@
 import { EntityRepository, SqlEntityManager } from '@mikro-orm/postgresql';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { Step } from '@/database/entities/step.entity';
-import { lockWorkstreamGraph } from '@/modules/project/repositories/lock-workstream-graph.query';
+import { lockWorkstreamGraphOfStep } from '@/modules/project/repositories/lock-workstream-graph.query';
 
 import type { Workstream } from '@/database/entities/workstream.entity';
 
@@ -20,7 +20,7 @@ export class StepRepository extends EntityRepository<Step> {
     apply: ApplyToStep,
   ): Promise<{ workstream: Workstream; step: Step }> {
     return this.em.transactional(async (em) => {
-      const located = await this.lockGraphOf(em, id);
+      const located = await lockWorkstreamGraphOfStep(em, id);
 
       apply(located.step, located.workstream);
       await em.flush();
@@ -32,7 +32,7 @@ export class StepRepository extends EntityRepository<Step> {
   /** Same lock as `updateLocked`; `apply` renumbers the siblings left behind. */
   async removeLocked(id: string, apply: ApplyToStep): Promise<Workstream> {
     return this.em.transactional(async (em) => {
-      const { workstream, step } = await this.lockGraphOf(em, id);
+      const { workstream, step } = await lockWorkstreamGraphOfStep(em, id);
 
       apply(step, workstream);
       em.remove(step);
@@ -40,24 +40,5 @@ export class StepRepository extends EntityRepository<Step> {
 
       return workstream;
     });
-  }
-
-  private async lockGraphOf(
-    em: SqlEntityManager,
-    id: string,
-  ): Promise<{ workstream: Workstream; step: Step }> {
-    const unlocked = await em.findOneOrFail(
-      Step,
-      { id },
-      { populate: ['workstream'] },
-    );
-    const workstream = await lockWorkstreamGraph(em, unlocked.workstream.id);
-    const step = workstream.getSteps().find((sibling) => sibling.id === id);
-
-    if (!step) {
-      throw new NotFoundException(`Step ${id} no longer exists`);
-    }
-
-    return { workstream, step };
   }
 }

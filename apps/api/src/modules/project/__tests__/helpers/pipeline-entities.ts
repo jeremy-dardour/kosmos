@@ -34,12 +34,16 @@ export function buildUser(id: string): User {
   return user;
 }
 
-export function buildChecklistItem(id: string, name: string): ChecklistItem {
+export function buildChecklistItem(
+  id: string,
+  name: string,
+  position = 1,
+): ChecklistItem {
   const item = new ChecklistItem();
   item.id = id;
   item.name = name;
   item.done = false;
-  item.position = 1;
+  item.position = position;
   item.createdAt = new Date('2026-07-01');
   item.updatedAt = new Date('2026-07-01');
 
@@ -65,7 +69,11 @@ export function buildStep(overrides: {
   step.owner = null;
   step.createdAt = new Date('2026-07-01');
   step.updatedAt = new Date('2026-07-01');
-  step.checklistItems = stubCollection(overrides.checklistItems ?? []);
+  const checklistItems = overrides.checklistItems ?? [];
+  step.checklistItems = stubCollection(checklistItems);
+  for (const item of checklistItems) {
+    item.step = step;
+  }
 
   return step;
 }
