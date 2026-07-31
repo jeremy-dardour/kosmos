@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PipelineDots } from '@/features/overview/pipeline-dots';
 
@@ -113,5 +113,37 @@ describe('pipelineDots', () => {
     render(<PipelineDots steps={[]} />);
 
     expect(screen.getByText('overview.card.noSteps')).toBeInTheDocument();
+  });
+
+  describe('date ticks', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date(2026, 7, 1));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('drops the year for a deadline in the current year', () => {
+      render(
+        <PipelineDots
+          steps={[step('Visit', 'in_progress', { deadline: '2026-09-12' })]}
+        />,
+      );
+
+      expect(screen.getByText(/12/)).toBeInTheDocument();
+      expect(screen.queryByText(/\b26\b/)).not.toBeInTheDocument();
+    });
+
+    it('keeps a 2-digit year for a deadline in another year', () => {
+      render(
+        <PipelineDots
+          steps={[step('Visit', 'in_progress', { deadline: '2025-10-01' })]}
+        />,
+      );
+
+      expect(screen.getByText(/\b25\b/)).toBeInTheDocument();
+    });
   });
 });

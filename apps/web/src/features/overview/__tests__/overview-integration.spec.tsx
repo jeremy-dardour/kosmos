@@ -30,6 +30,33 @@ function setupDefaultMocks(onOverviewRequest?: (request: Request) => void) {
   );
 }
 
+function renderWithDeadline(deadline: string) {
+  server.use(
+    http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
+    http.get(`${BASE}/api/projects/:id/overview`, () =>
+      HttpResponse.json({
+        ...defaultOverview,
+        workstreams: [
+          workstream({
+            id: 'w1',
+            name: 'Catering',
+            icon: '🍽️',
+            nearestDeadlineStepId: 's1',
+            steps: [
+              step('Book caterer', 'in_progress', {
+                id: 's1',
+                position: 1,
+                deadline,
+              }),
+            ],
+          }),
+        ],
+      }),
+    ),
+  );
+  renderWithApp(<OverviewPage />);
+}
+
 describe('overview page — golden path', () => {
   it('renders authenticated, grouped workstream data', async () => {
     let authorization: string | null = null;
@@ -355,6 +382,24 @@ describe('with frozen date', () => {
       expect(await screen.findByText('Book caterer in 9d')).toBeVisible();
     });
 
+    describe('deadlines within a day', () => {
+      beforeEach(() => {
+        vi.setSystemTime(new Date(2026, 7, 1));
+      });
+
+      it('reads today for a deadline due today', async () => {
+        renderWithDeadline('2026-08-01');
+
+        expect(await screen.findByText('Book caterer today')).toBeVisible();
+      });
+
+      it('reads tomorrow for a deadline due the next day', async () => {
+        renderWithDeadline('2026-08-02');
+
+        expect(await screen.findByText('Book caterer tomorrow')).toBeVisible();
+      });
+    });
+
     it('hides badge when no deadlines', async () => {
       server.use(
         http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
@@ -412,7 +457,7 @@ describe('with frozen date', () => {
       expect(screen.getByText('Book caterer 4d overdue')).toBeVisible();
     });
 
-    it('shows date ticks under pipeline dots with deadlines', async () => {
+    it('shows date ticks under dots, with a year only when it is not the current one', async () => {
       server.use(
         http.get(`${BASE}/api/projects`, () => HttpResponse.json([project()])),
         http.get(`${BASE}/api/projects/:id/overview`, () =>
@@ -437,6 +482,7 @@ describe('with frozen date', () => {
                   step('Finalize', 'not_started', {
                     id: 's3',
                     position: 3,
+                    deadline: '2025-10-01',
                   }),
                 ],
               }),
@@ -447,8 +493,9 @@ describe('with frozen date', () => {
       renderWithApp(<OverviewPage />);
 
       await screen.findByText('Catering');
-      expect(screen.getByText('7/15')).toBeVisible();
-      expect(screen.getByText('8/20')).toBeVisible();
+      expect(screen.getByText('Jul 15')).toBeVisible();
+      expect(screen.getByText('Aug 20')).toBeVisible();
+      expect(screen.getByText('Oct 1, 25')).toBeVisible();
     });
   });
 

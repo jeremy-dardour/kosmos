@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { urgencyBand } from '@/features/overview/urgency';
 import { cn } from '@/lib/utils';
@@ -32,13 +33,8 @@ const STATUS_LABELS = {
   skipped: 'overview.stepStatus.skipped',
 } as const satisfies Record<StepVisual, string>;
 
-function formatDateTick(deadline: string): string {
-  const [, month, day] = deadline.split('-');
-  return `${Number(month)}/${Number(day)}`;
-}
-
 export const PipelineDots = ({ steps }: PipelineDotsProperties) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (steps.length === 0) {
     return (
@@ -104,7 +100,7 @@ export const PipelineDots = ({ steps }: PipelineDotsProperties) => {
                     : 'text-muted-foreground',
                 )}
               >
-                {formatDateTick(step.deadline)}
+                {formatDeadlineDate(step.deadline, now, i18n.language)}
               </span>
             )}
           </li>

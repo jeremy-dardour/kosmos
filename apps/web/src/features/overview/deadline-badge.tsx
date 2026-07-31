@@ -24,7 +24,11 @@ export const DeadlineBadge = ({ step }: DeadlineBadgeProperties) => {
   const label =
     band === 'passed'
       ? t('overview.badge.overdue', { name: step.name, count: -days })
-      : t('overview.badge.upcoming', { name: step.name, count: days });
+      : days === 0
+        ? t('overview.badge.today', { name: step.name })
+        : days === 1
+          ? t('overview.badge.tomorrow', { name: step.name })
+          : t('overview.badge.upcoming', { name: step.name, count: days });
 
   return (
     <span

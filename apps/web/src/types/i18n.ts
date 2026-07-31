@@ -133,6 +133,8 @@ export interface Translations {
   'overview.editor.save': string;
   'overview.editor.saving': string;
   'overview.badge.upcoming': string;
+  'overview.badge.today': string;
+  'overview.badge.tomorrow': string;
   'overview.badge.overdue': string;
   'overview.filter.allOwners': string;
   'overview.filter.myTasks': string;

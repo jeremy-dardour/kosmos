@@ -133,6 +133,8 @@
   "overview.editor.save": "Enregistrer le pipeline",
   "overview.editor.saving": "Enregistrement…",
   "overview.badge.upcoming": "{{name}} dans {{count}}j",
+  "overview.badge.today": "{{name}} aujourd'hui",
+  "overview.badge.tomorrow": "{{name}} demain",
   "overview.badge.overdue": "{{name}} {{count}}j en retard",
   "overview.filter.allOwners": "Responsable : Tous",
   "overview.filter.myTasks": "Responsable : Moi",
