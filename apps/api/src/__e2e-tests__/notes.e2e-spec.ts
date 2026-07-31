@@ -73,6 +73,7 @@ describe('Notes E2E Tests', () => {
 
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Venue',
       icon: '🏛️',
       startedAt: instantAt(-30),
@@ -97,6 +98,7 @@ describe('Notes E2E Tests', () => {
 
     const emptyWorkstream = em.create(Workstream, {
       project,
+      position: 1,
       name: 'Flowers',
       icon: '💐',
     });

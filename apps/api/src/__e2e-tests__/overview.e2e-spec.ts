@@ -81,12 +81,14 @@ describe('Overview E2E Tests', () => {
 
     const group = em.create(Group, {
       project,
+      position: 0,
       name: 'Vendors',
       color: '#5a9e6f',
     });
 
     const completed = em.create(Workstream, {
       project,
+      position: 0,
       group,
       owner: workstreamOwner,
       name: 'Venue',
@@ -112,6 +114,7 @@ describe('Overview E2E Tests', () => {
 
     const active = em.create(Workstream, {
       project,
+      position: 0,
       owner: workstreamOwner,
       name: 'Catering',
       icon: '🍽️',
@@ -158,6 +161,7 @@ describe('Overview E2E Tests', () => {
 
     const notStarted = em.create(Workstream, {
       project,
+      position: 1,
       name: 'Flowers',
       icon: '💐',
     });
@@ -225,13 +229,13 @@ describe('Overview E2E Tests', () => {
       });
     });
 
-    it('returns every workstream, ordered by name', async () => {
+    it('returns every workstream, ordered by position', async () => {
       const overview = await fetchOverview();
 
-      expect(overview.workstreams.map((w) => w.name)).toEqual([
-        'Catering',
-        'Flowers',
-        'Venue',
+      expect(overview.workstreams.map((w) => [w.name, w.position])).toEqual([
+        ['Catering', 0],
+        ['Venue', 0],
+        ['Flowers', 1],
       ]);
     });
 

@@ -28,6 +28,7 @@ describe('ordered position constraints', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Catering',
       icon: '🍽️',
     });

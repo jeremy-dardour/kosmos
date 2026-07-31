@@ -175,6 +175,7 @@ export function setupOverviewApi(initialOverview: Overview) {
         const now = new Date().toISOString();
         const created: Workstream = {
           id: `mock-ws-${++generatedId}`,
+          position: 0,
           name: input.name,
           icon: input.icon,
           groupId: input.groupId ?? null,
@@ -190,7 +191,14 @@ export function setupOverviewApi(initialOverview: Overview) {
         };
         overview = {
           ...overview,
-          workstreams: [...overview.workstreams, created],
+          workstreams: [
+            created,
+            ...overview.workstreams.map((item) =>
+              (item.groupId ?? null) === created.groupId
+                ? { ...item, position: item.position + 1 }
+                : item,
+            ),
+          ],
         };
         return HttpResponse.json(created, { status: 201 });
       },
@@ -235,6 +243,7 @@ export function setupOverviewApi(initialOverview: Overview) {
         const now = new Date().toISOString();
         const created: Group = {
           id: `mock-group-${++generatedId}`,
+          position: overview.groups.length,
           name: input.name,
           color: input.color,
           createdAt: now,

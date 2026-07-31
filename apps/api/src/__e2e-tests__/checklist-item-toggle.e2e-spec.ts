@@ -43,6 +43,7 @@ describe('Checklist item toggle E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Venue',
       icon: '🏛️',
       startedAt: new Date('2026-07-01T00:00:00.000Z'),
@@ -87,6 +88,7 @@ describe('Checklist item toggle E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Invitations',
       icon: '✉️',
       startedAt: new Date('2026-07-01T00:00:00.000Z'),

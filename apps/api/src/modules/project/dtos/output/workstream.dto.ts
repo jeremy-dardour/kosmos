@@ -14,6 +14,11 @@ export class WorkstreamDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
+  @ApiProperty({
+    description: 'Manual order within its group scope; ungrouped is its own',
+  })
+  position!: number;
+
   @ApiProperty()
   name!: string;
 
@@ -65,6 +70,7 @@ export function toWorkstreamDto(
 ): WorkstreamDto {
   return {
     id: workstream.id,
+    position: workstream.position,
     name: workstream.name,
     icon: workstream.icon,
     groupId: workstream.group?.id ?? null,

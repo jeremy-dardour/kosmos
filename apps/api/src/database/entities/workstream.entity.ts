@@ -5,6 +5,7 @@ import {
   OneToMany,
   PrimaryKey,
   Property,
+  Unique,
 } from '@mikro-orm/decorators/legacy';
 
 import { Group } from '@/database/entities/group.entity';
@@ -21,9 +22,19 @@ export enum WorkstreamLifecycle {
 }
 
 @Entity()
+// Ungrouped workstreams share one scope per project, but Postgres treats null
+// group ids as distinct, so only grouped scopes are constraint-enforced.
+@Unique({
+  properties: ['group', 'position'],
+  deferMode: 'deferred',
+})
 export class Workstream {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: Opt<string>;
+
+  /** Manual order within its group scope; ungrouped is its own scope. */
+  @Property()
+  position!: number;
 
   @Property()
   name!: string;

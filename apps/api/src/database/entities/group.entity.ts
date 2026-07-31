@@ -5,6 +5,7 @@ import {
   OneToMany,
   PrimaryKey,
   Property,
+  Unique,
 } from '@mikro-orm/decorators/legacy';
 
 import { Project } from '@/database/entities/project.entity';
@@ -13,9 +14,16 @@ import type { Workstream } from '@/database/entities/workstream.entity';
 import type { Opt } from '@mikro-orm/core';
 
 @Entity()
+@Unique({
+  properties: ['project', 'position'],
+  deferMode: 'deferred',
+})
 export class Group {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: Opt<string>;
+
+  @Property()
+  position!: number;
 
   @Property()
   name!: string;

@@ -239,6 +239,23 @@
           "enumItems": [],
           "mappedType": "string"
         },
+        "position": {
+          "name": "position",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
         "project_id": {
           "name": "project_id",
           "type": "uuid",
@@ -246,7 +263,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "unique": false,
+          "unique": true,
           "length": null,
           "precision": null,
           "scale": null,
@@ -282,6 +299,15 @@
           "keyName": "group_pkey",
           "primary": true,
           "unique": true
+        },
+        {
+          "columnNames": ["project_id", "position"],
+          "composite": true,
+          "constraint": true,
+          "keyName": "group_project_id_position_unique",
+          "primary": false,
+          "unique": true,
+          "deferMode": "deferred"
         }
       ],
       "checks": [],
@@ -976,7 +1002,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "unique": false,
+          "unique": true,
           "length": null,
           "precision": null,
           "scale": null,
@@ -1054,6 +1080,23 @@
           "enumItems": [],
           "mappedType": "uuid"
         },
+        "position": {
+          "name": "position",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
         "project_id": {
           "name": "project_id",
           "type": "uuid",
@@ -1107,6 +1150,15 @@
         }
       },
       "indexes": [
+        {
+          "columnNames": ["group_id", "position"],
+          "composite": true,
+          "constraint": true,
+          "keyName": "workstream_group_id_position_unique",
+          "primary": false,
+          "unique": true,
+          "deferMode": "deferred"
+        },
         {
           "columnNames": ["id"],
           "composite": false,

@@ -424,6 +424,8 @@ export interface components {
     GroupDto: {
       /** Format: uuid */
       id: string;
+      /** @description Manual order within the project */
+      position: number;
       name: string;
       /** @example #8b6cc1 */
       color: string;
@@ -492,6 +494,8 @@ export interface components {
     WorkstreamDto: {
       /** Format: uuid */
       id: string;
+      /** @description Manual order within its group scope; ungrouped is its own */
+      position: number;
       name: string;
       /** @description Emoji or icon name */
       icon: string;

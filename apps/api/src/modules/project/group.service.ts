@@ -28,7 +28,7 @@ export class GroupService {
     group.name = dto.name;
     group.color = dto.color;
 
-    await this.groupRepository.save(group);
+    await this.groupRepository.insertAtEnd(group);
 
     return group;
   }

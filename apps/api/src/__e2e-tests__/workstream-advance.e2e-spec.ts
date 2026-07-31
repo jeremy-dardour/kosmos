@@ -43,6 +43,7 @@ describe('Workstream advance E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Catering',
       icon: '🍽️',
     });
@@ -85,6 +86,7 @@ describe('Workstream advance E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Flowers',
       icon: '💐',
     });
@@ -106,6 +108,7 @@ describe('Workstream advance E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Empty pipeline',
       icon: '📭',
     });
@@ -127,6 +130,7 @@ describe('Workstream advance E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Catering',
       icon: '🍽️',
       startedAt: new Date('2026-07-01T00:00:00.000Z'),
@@ -171,6 +175,7 @@ describe('Workstream advance E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Invitations',
       icon: '✉️',
       startedAt: new Date('2026-07-01T00:00:00.000Z'),
@@ -217,6 +222,7 @@ describe('Workstream advance E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Venue',
       icon: '🏛️',
       startedAt: new Date('2026-07-01T00:00:00.000Z'),
@@ -252,6 +258,7 @@ describe('Workstream advance E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Venue',
       icon: '🏛️',
       startedAt: new Date('2026-07-01T00:00:00.000Z'),
@@ -282,6 +289,7 @@ describe('Workstream advance E2E Tests', () => {
     const project = em.create(Project, { name: 'Wedding Prep' });
     const workstream = em.create(Workstream, {
       project,
+      position: 0,
       name: 'Music',
       icon: '🎵',
       startedAt: new Date('2026-07-01T00:00:00.000Z'),

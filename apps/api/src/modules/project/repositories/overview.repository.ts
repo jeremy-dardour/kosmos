@@ -27,7 +27,7 @@ export class OverviewRepository {
         const groups = await em.find(
           Group,
           { project: projectId },
-          { orderBy: { name: 'asc' } },
+          { orderBy: { position: 'asc' } },
         );
         const workstreams = await em.find(
           Workstream,
@@ -41,7 +41,9 @@ export class OverviewRepository {
               'steps.owner',
               'steps.checklistItems',
             ],
-            orderBy: { name: 'asc' },
+            // Positions only order a group scope, so name keeps the flat list
+            // deterministic across scopes.
+            orderBy: { position: 'asc', name: 'asc' },
           },
         );
         const users = await em.find(User, {}, { orderBy: { name: 'asc' } });

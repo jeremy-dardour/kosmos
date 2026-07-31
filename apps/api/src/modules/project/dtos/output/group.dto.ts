@@ -6,6 +6,9 @@ export class GroupDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
+  @ApiProperty({ description: 'Manual order within the project' })
+  position!: number;
+
   @ApiProperty()
   name!: string;
 
@@ -22,6 +25,7 @@ export class GroupDto {
 export function toGroupDto(group: Group): GroupDto {
   return {
     id: group.id,
+    position: group.position,
     name: group.name,
     color: group.color,
     createdAt: group.createdAt,

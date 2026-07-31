@@ -28,6 +28,7 @@ function step(name: string, status: StepStatus, isBlocked = false): Step {
 function workstream(overrides: Partial<Workstream> = {}): Workstream {
   return {
     id: 'w1',
+    position: 0,
     name: 'Catering',
     icon: '🍽️',
     groupId: null,

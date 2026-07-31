@@ -61,7 +61,7 @@ export class WorkstreamService {
       : null;
     workstream.owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
 
-    await this.workstreamRepository.save(workstream);
+    await this.workstreamRepository.insertAtTop(workstream);
 
     return this.buildDto(workstream.id);
   }
@@ -75,16 +75,25 @@ export class WorkstreamService {
     if (dto.icon !== undefined) {
       workstream.icon = dto.icon;
     }
-    if (dto.groupId !== undefined) {
-      workstream.group = dto.groupId
-        ? await this.findGroupInProject(dto.groupId, workstream.project.id)
-        : null;
-    }
     if (dto.ownerId !== undefined) {
       workstream.owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
     }
 
-    await this.workstreamRepository.save(workstream);
+    const targetGroup =
+      dto.groupId === undefined
+        ? undefined
+        : dto.groupId
+          ? await this.findGroupInProject(dto.groupId, workstream.project.id)
+          : null;
+
+    if (
+      targetGroup !== undefined &&
+      (targetGroup?.id ?? null) !== (workstream.group?.id ?? null)
+    ) {
+      await this.workstreamRepository.saveMovedToGroup(workstream, targetGroup);
+    } else {
+      await this.workstreamRepository.save(workstream);
+    }
 
     return this.buildDto(id);
   }
