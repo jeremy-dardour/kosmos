@@ -490,7 +490,9 @@ and why_; this says _what it does_. Where a rule restates a domain rule from
   - shadow.
 - **Header row**, left to right: drag handle (hover; A14) · icon picker · name ·
   group chip · lifecycle badges · **advance control (A16)** · _(spacer)_ ·
-  deadline badge · owner avatar.
+  deadline badge · owner avatar · delete (bin icon, hover/focus-revealed like
+  the drag handle, opens the existing confirm dialog; settled 2026-08-01 after
+  the detail panel's removal orphaned deletion — not in the prototype).
 - The header row is dimmed (`opacity-65`) when the workstream is Complete.
 - Name is `font-semibold`/foreground when live, `font-medium`/muted when
   Complete.

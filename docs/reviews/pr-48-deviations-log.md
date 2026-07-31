@@ -106,7 +106,10 @@ through as one.
     existing dialogs kept handling it, but the entry point WAS the panel), so
     the agent unwired rather than invent UI. **DECISION NEEDED**: accept the
     gap for V1 or add a minimal card-level delete (recommend: carry into C19
-    with the existing ConfirmDialog).
+    with the existing ConfirmDialog). **RESOLVED 2026-08-01 (user)**: bin icon
+    at the far right of the card header, hover/focus-revealed like the drag
+    handle, opening the existing ConfirmDialog — implemented in C19; handoff
+    A2 amended.
 21. **Ghost steps are a dedicated panel, not `StepEditor` with
     `isPersisted={false}`** (C17). Every StepEditor control mutates a step id
     the server doesn't have; the ghost needs exactly one input. `isPersisted`
