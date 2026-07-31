@@ -118,6 +118,9 @@ export function setupOverviewApi(initialOverview: Overview) {
   let overview = initialOverview;
   let generatedId = 0;
   let lastPipelineInput: UpdateWorkstreamPipelineInput | null = null;
+  let lastGroupOrder: ReorderGroupsInput | null = null;
+  let lastWorkstreamOrder: ReorderWorkstreamsInput | null = null;
+  let overviewFetches = 0;
 
   function findWorkstream(id: string) {
     return overview.workstreams.find((workstream) => workstream.id === id);
@@ -304,6 +307,7 @@ export function setupOverviewApi(initialOverview: Overview) {
       `${API_BASE}/api/projects/:projectId/group-order`,
       async ({ request }) => {
         const input = (await request.json()) as ReorderGroupsInput;
+        lastGroupOrder = input;
         if (
           !isExactMembership(
             input.ids,
@@ -329,6 +333,7 @@ export function setupOverviewApi(initialOverview: Overview) {
       `${API_BASE}/api/projects/:projectId/workstream-order`,
       async ({ request }) => {
         const input = (await request.json()) as ReorderWorkstreamsInput;
+        lastWorkstreamOrder = input;
         const scope = overview.workstreams.filter(
           (workstream) =>
             (workstream.groupId ?? null) === (input.groupId ?? null),
@@ -442,9 +447,10 @@ export function setupOverviewApi(initialOverview: Overview) {
     http.get(`${API_BASE}/api/projects`, () =>
       HttpResponse.json([overview.project]),
     ),
-    http.get(`${API_BASE}/api/projects/:id/overview`, () =>
-      HttpResponse.json(overview),
-    ),
+    http.get(`${API_BASE}/api/projects/:id/overview`, () => {
+      overviewFetches += 1;
+      return HttpResponse.json(overview);
+    }),
     http.get(`${API_BASE}/api/workstreams/:id/notes`, () =>
       HttpResponse.json([]),
     ),
@@ -677,6 +683,19 @@ export function setupOverviewApi(initialOverview: Overview) {
   return {
     getLastPipelineInput() {
       return lastPipelineInput;
+    },
+
+    getLastGroupOrder() {
+      return lastGroupOrder;
+    },
+
+    getLastWorkstreamOrder() {
+      return lastWorkstreamOrder;
+    },
+
+    /** How many times the aggregate has been read — a refetch is observable. */
+    getOverviewFetches() {
+      return overviewFetches;
     },
 
     updateWorkstream(

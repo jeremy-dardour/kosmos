@@ -40,6 +40,9 @@ export interface Translations {
   'overview.header.eventPassed': string;
   'overview.loading': string;
   'overview.ungrouped': string;
+  'overview.completed.title': string;
+  'overview.dnd.reorderGroup': string;
+  'overview.dnd.reorderWorkstream': string;
   'overview.card.notStarted': string;
   'overview.card.complete': string;
   'overview.card.unassigned': string;
