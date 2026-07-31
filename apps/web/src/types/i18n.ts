@@ -45,6 +45,16 @@ export interface Translations {
   'overview.card.unassigned': string;
   'overview.card.noSteps': string;
   'overview.card.openLabel': string;
+  'overview.card.changeIcon': string;
+  'overview.card.renameLabel': string;
+  'overview.card.changeGroup': string;
+  'overview.card.noGroup': string;
+  'overview.card.changeOwner': string;
+  'overview.deadline.late': string;
+  'overview.deadline.today': string;
+  'overview.deadline.tomorrow': string;
+  'overview.deadline.upcoming': string;
+  'overview.deadline.dueTooltip': string;
   'overview.action.start': string;
   'overview.action.starting': string;
   'overview.action.startLabel': string;
