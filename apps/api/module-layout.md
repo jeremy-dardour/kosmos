@@ -21,12 +21,15 @@ src/modules/project/
   overview.service.ts             ← the aggregate read model
   group.controller.ts             ← Group CRUD
   group.service.ts
-  workstream.controller.ts        ← Workstream CRUD + advance
+  workstream.controller.ts        ← Workstream CRUD + advance + step create
   workstream.service.ts           ← CRUD + pipeline transitions (start/advance)
+  step.controller.ts              ← Step field edits + delete
+  step.service.ts                 ← Granular step create / edit / delete
   repositories/
     project.repository.ts         ← Project entity persistence
     group.repository.ts           ← Group entity persistence
     workstream.repository.ts      ← Workstream aggregate persistence
+    step.repository.ts            ← Step persistence under the workstream lock
     overview.repository.ts        ← Consistent overview entity graph
   note.controller.ts              ← Note CRUD (scoped to step)
   note.service.ts

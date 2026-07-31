@@ -1,98 +1,18 @@
 import { Collection } from '@mikro-orm/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ChecklistItem } from '@/database/entities/checklist-item.entity';
-import { Step, StepOutcome } from '@/database/entities/step.entity';
-import { User } from '@/database/entities/user.entity';
-import { Workstream } from '@/database/entities/workstream.entity';
+import { StepOutcome } from '@/database/entities/step.entity';
+import {
+  buildChecklistItem,
+  buildStep,
+  buildUser,
+  buildWorkstream,
+} from '@/modules/project/__tests__/helpers/pipeline-entities';
 import { WorkstreamService } from '@/modules/project/workstream.service';
 
+import type { Workstream } from '@/database/entities/workstream.entity';
 import type { UpdatePipelineDto } from '@/modules/project/dtos/input/update-pipeline.dto';
 import type { LockedWorkstreamChanges } from '@/modules/project/repositories/workstream.repository';
-
-// --- Collection stub backed by a plain array (bypasses MikroORM internals) ---
-
-function stubCollection<T extends object>(items: T[]): Collection<T> {
-  return {
-    getItems: () => [...items],
-    add(incoming: T | T[]) {
-      const arr = Array.isArray(incoming) ? incoming : [incoming];
-      items.push(...arr);
-    },
-    remove(toRemove: T | T[]) {
-      const arr = Array.isArray(toRemove) ? toRemove : [toRemove];
-      for (const item of arr) {
-        const idx = items.indexOf(item);
-        if (idx !== -1) items.splice(idx, 1);
-      }
-    },
-  } as unknown as Collection<T>;
-}
-
-// --- Entity builders ---
-
-function buildUser(id: string): User {
-  const u = new User();
-  u.id = id;
-  u.name = `User ${id}`;
-  u.email = `${id}@test.com`;
-  u.avatarUrl = null;
-  return u;
-}
-
-function buildChecklistItem(id: string, name: string): ChecklistItem {
-  const ci = new ChecklistItem();
-  ci.id = id;
-  ci.name = name;
-  ci.done = false;
-  ci.position = 1;
-  ci.createdAt = new Date('2026-07-01');
-  ci.updatedAt = new Date('2026-07-01');
-  return ci;
-}
-
-function buildStep(overrides: {
-  id?: string;
-  position: number;
-  name?: string;
-  outcome?: StepOutcome | null;
-  checklistItems?: ChecklistItem[];
-}): Step {
-  const s = new Step();
-  s.id = overrides.id ?? `step-${overrides.position}`;
-  s.position = overrides.position;
-  s.name = overrides.name ?? `Step ${overrides.position}`;
-  s.outcome = overrides.outcome ?? null;
-  s.blocked = false;
-  s.deadline = null;
-  s.owner = null;
-  s.createdAt = new Date('2026-07-01');
-  s.updatedAt = new Date('2026-07-01');
-  s.checklistItems = stubCollection(overrides.checklistItems ?? []);
-  return s;
-}
-
-function buildWorkstream(overrides: {
-  startedAt?: Date | null;
-  completedAt?: Date | null;
-  currentStep?: Step | null;
-  steps: Step[];
-  updatedAt?: Date;
-}): Workstream {
-  const ws = new Workstream();
-  ws.id = 'ws-1';
-  ws.name = 'Test';
-  ws.icon = '🔧';
-  ws.startedAt = overrides.startedAt ?? null;
-  ws.completedAt = overrides.completedAt ?? null;
-  ws.currentStep = overrides.currentStep ?? null;
-  ws.updatedAt = overrides.updatedAt ?? new Date('2026-07-01');
-  ws.createdAt = new Date('2026-07-01');
-  ws.steps = stubCollection(overrides.steps);
-  ws.owner = null;
-  ws.group = null;
-  return ws;
-}
 
 // --- Mock repositories ---
 

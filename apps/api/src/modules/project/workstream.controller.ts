@@ -27,11 +27,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@/app/decorators/api-problem-responses.decorator';
 import { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
+import { CreateStepDto } from '@/modules/project/dtos/input/create-step.dto';
 import { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
 import { ReorderWorkstreamsDto } from '@/modules/project/dtos/input/reorder-workstreams.dto';
 import { UpdatePipelineDto } from '@/modules/project/dtos/input/update-pipeline.dto';
 import { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
+import { StepService } from '@/modules/project/step.service';
 import { WorkstreamService } from '@/modules/project/workstream.service';
 
 /**
@@ -46,7 +48,10 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
 @ApiUnauthorizedResponse()
 @ApiNotFoundResponse()
 export class WorkstreamController {
-  constructor(private readonly workstreamService: WorkstreamService) {}
+  constructor(
+    private readonly workstreamService: WorkstreamService,
+    private readonly stepService: StepService,
+  ) {}
 
   @Post('projects/:projectId/workstreams')
   @ApiOperation({ summary: 'Create a workstream' })
@@ -98,6 +103,20 @@ export class WorkstreamController {
     @Body() dto: AdvanceWorkstreamDto,
   ): Promise<WorkstreamDto> {
     return this.workstreamService.progress(id, dto);
+  }
+
+  @Post('workstreams/:id/steps')
+  @ApiOperation({
+    summary: 'Insert a step into the future pipeline',
+    description: 'Shifts the steps at and after `position` down by one.',
+  })
+  @ApiCreatedResponse({ type: WorkstreamDto })
+  @ApiConflictResponse('The position is not in the future zone')
+  async createStep(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateStepDto,
+  ): Promise<WorkstreamDto> {
+    return this.stepService.create(id, dto);
   }
 
   @Put('workstreams/:id/pipeline')

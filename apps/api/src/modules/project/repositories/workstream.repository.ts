@@ -1,4 +1,4 @@
-import { LockMode, raw } from '@mikro-orm/core';
+import { raw } from '@mikro-orm/core';
 import { EntityRepository, SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
@@ -6,6 +6,10 @@ import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 import { lockProjectOrder } from '@/modules/project/repositories/lock-project-order.query';
+import {
+  lockWorkstreamGraph,
+  WORKSTREAM_GRAPH,
+} from '@/modules/project/repositories/lock-workstream-graph.query';
 import { countNotesByStep } from '@/modules/project/repositories/note-count.query';
 
 import type { Group } from '@/database/entities/group.entity';
@@ -16,15 +20,6 @@ export interface LockedWorkstreamChanges {
   removedChecklistItems?: ChecklistItem[];
 }
 
-const WORKSTREAM_POPULATE = [
-  'owner',
-  'group',
-  'currentStep',
-  'steps',
-  'steps.owner',
-  'steps.checklistItems',
-] as const;
-
 @Injectable()
 export class WorkstreamRepository extends EntityRepository<Workstream> {
   constructor(em: SqlEntityManager) {
@@ -34,7 +29,7 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
   async findDetails(id: string): Promise<Workstream> {
     return this.findOneOrFail(
       { id },
-      { populate: [...WORKSTREAM_POPULATE], refresh: true },
+      { populate: [...WORKSTREAM_GRAPH], refresh: true },
     );
   }
 
@@ -118,7 +113,7 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
         Workstream,
         { project: projectId, group: groupId },
         {
-          populate: [...WORKSTREAM_POPULATE],
+          populate: [...WORKSTREAM_GRAPH],
           orderBy: { position: 'asc' },
         },
       );
@@ -152,12 +147,7 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
     ) => LockedWorkstreamChanges | undefined | void,
   ): Promise<Workstream> {
     return this.em.transactional(async (em) => {
-      const workstream = await em.findOneOrFail(
-        Workstream,
-        { id },
-        { lockMode: LockMode.PESSIMISTIC_WRITE },
-      );
-      await em.populate(workstream, [...WORKSTREAM_POPULATE]);
+      const workstream = await lockWorkstreamGraph(em, id);
 
       const changes = apply(workstream);
       if (changes?.removedChecklistItems) {

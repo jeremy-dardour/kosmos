@@ -22,7 +22,10 @@ import { GroupRepository } from '@/modules/project/repositories/group.repository
 import { NoteRepository } from '@/modules/project/repositories/note.repository';
 import { OverviewRepository } from '@/modules/project/repositories/overview.repository';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
+import { StepRepository } from '@/modules/project/repositories/step.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
+import { StepController } from '@/modules/project/step.controller';
+import { StepService } from '@/modules/project/step.service';
 import { WorkstreamController } from '@/modules/project/workstream.controller';
 import { WorkstreamService } from '@/modules/project/workstream.service';
 
@@ -45,6 +48,7 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
     OverviewController,
     GroupController,
     WorkstreamController,
+    StepController,
     ChecklistItemController,
     NoteController,
   ],
@@ -53,12 +57,14 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
     OverviewService,
     GroupService,
     WorkstreamService,
+    StepService,
     ChecklistItemService,
     NoteService,
     ProjectRepository,
     OverviewRepository,
     GroupRepository,
     WorkstreamRepository,
+    StepRepository,
     ChecklistItemRepository,
     NoteRepository,
   ],

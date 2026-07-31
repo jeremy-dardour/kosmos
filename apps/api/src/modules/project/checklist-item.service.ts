@@ -6,6 +6,7 @@ import {
   toChecklistItemDto,
 } from '@/modules/project/dtos/output/checklist-item.dto';
 import { ChecklistItemRepository } from '@/modules/project/repositories/checklist-item.repository';
+import { touchWorkstream } from '@/modules/project/utils/touch-workstream.util';
 import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
 
 @Injectable()
@@ -30,9 +31,7 @@ export class ChecklistItemService {
         }
 
         lockedItem.done = dto.done;
-        workstream.updatedAt = new Date(
-          Math.max(Date.now(), workstream.updatedAt.getTime() + 1),
-        );
+        touchWorkstream(workstream);
       },
     );
 

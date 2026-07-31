@@ -23,6 +23,11 @@ import { GroupRepository } from '@/modules/project/repositories/group.repository
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
 import { isExactMembership } from '@/modules/project/utils/order-membership.util';
+import {
+  assertPipelineMutable,
+  assertStepEditable,
+} from '@/modules/project/utils/step-mutability.util';
+import { touchWorkstream } from '@/modules/project/utils/touch-workstream.util';
 import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
 
 import type { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
@@ -233,7 +238,7 @@ export class WorkstreamService {
       );
     }
 
-    workstream.updatedAt = this.timestampAfter(workstream.updatedAt);
+    touchWorkstream(workstream);
 
     return { removedSteps, removedChecklistItems };
   }
@@ -296,13 +301,7 @@ export class WorkstreamService {
       );
     }
 
-    const lifecycle = workstream.getLifecycle();
-    if (lifecycle === WorkstreamLifecycle.Complete) {
-      this.conflict(
-        'step-frozen',
-        'Completed workstream pipelines cannot be edited',
-      );
-    }
+    assertPipelineMutable(workstream);
 
     const orderedSteps = [...workstream.getSteps()].sort(
       (left, right) => left.position - right.position,
@@ -310,7 +309,7 @@ export class WorkstreamService {
     const pastSteps = orderedSteps.filter((step) => step.outcome != null);
     const editableSteps = orderedSteps.filter((step) => step.outcome == null);
     const editableById = new Map(editableSteps.map((step) => [step.id, step]));
-    const pastIds = new Set(pastSteps.map((step) => step.id));
+    const stepsById = new Map(orderedSteps.map((step) => [step.id, step]));
     const submittedIds = dto.steps.flatMap((step) =>
       step.id ? [step.id] : [],
     );
@@ -319,16 +318,15 @@ export class WorkstreamService {
       this.pipelineMismatch();
     }
     for (const submittedId of submittedIds) {
-      if (pastIds.has(submittedId)) {
-        this.conflict('step-frozen', 'Past steps cannot be edited');
-      }
-      if (!editableById.has(submittedId)) {
+      const submittedStep = stepsById.get(submittedId);
+      if (!submittedStep) {
         this.pipelineMismatch();
       }
+      assertStepEditable(submittedStep);
     }
 
     if (
-      lifecycle === WorkstreamLifecycle.Active &&
+      workstream.getLifecycle() === WorkstreamLifecycle.Active &&
       (!workstream.currentStep ||
         dto.steps[0]?.id !== workstream.currentStep.id)
     ) {
@@ -369,10 +367,6 @@ export class WorkstreamService {
 
   private isComplete(workstream: Workstream): boolean {
     return workstream.getLifecycle() === WorkstreamLifecycle.Complete;
-  }
-
-  private timestampAfter(previous: Date): Date {
-    return new Date(Math.max(Date.now(), previous.getTime() + 1));
   }
 
   private start(workstream: Workstream): void {
