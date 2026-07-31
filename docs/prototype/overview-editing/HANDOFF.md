@@ -7,6 +7,13 @@ This branch contains one throwaway prototype that answers a single question and
 records the answer. It is evidence, not an implementation. The next worker
 rewrites the behaviour through production modules and deletes the prototype.
 
+Tracked by [#40](https://github.com/jeremy-dardour/wedding-planner/issues/40),
+which consolidates #35, #39, #41 and #43.
+
+**Start with §4 if you are estimating** — several shipped capabilities, including
+the product's primary action, have no home in the prototype yet. The exhaustive
+behaviour spec is the appendix at the end.
+
 ---
 
 ## 1. The question and the answer
@@ -18,8 +25,9 @@ rewrites the behaviour through production modules and deletes the prototype.
 **Yes.** Four iterations were run; the winner is a card that _is_ its own
 editor. There is no detail panel, no edit mode, and no Save button.
 
-This **supersedes the two-panel "Pipeline Stack" layout** that the V1 PRD still
-describes (see §5 — the PRD needs updating).
+The V1 PRD and the api-contract PRD have been updated to describe this design,
+and the superseded two-panel wireframe (`docs/prototype/timeline/`) is deleted —
+it is in git history if you need it.
 
 ## 2. How to run it
 
@@ -40,7 +48,7 @@ Two things to know before judging it:
 
 - The dev DB has only two or three active workstreams, so editable states are
   thin. Re-seeding makes the comparison sharper.
-- Loading the page trips the API rate limiter (see §4.1). Reload twice in a
+- Loading the page trips the API rate limiter (see §6.1). Reload twice in a
   minute and you get `ThrottlerException`.
 
 ## 3. Frontend decisions taken
@@ -50,9 +58,9 @@ Two things to know before judging it:
 | Decision                                                                                                           | Why                                                                                                       |
 | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | **No side panel.** Editing happens in the card.                                                                    | Earlier iterations kept a panel; editing felt like it happened _next to_ the overview instead of _in_ it. |
-| **No edit mode, no Save.** Card chrome is live fields; changes commit immediately.                                 | An explicit mode was tried (variant B) and lost — see §4.                                                 |
+| **No edit mode, no Save.** Card chrome is live fields; changes commit immediately.                                 | An explicit mode was tried (variant B) and lost — see §5.                                                 |
 | **One step editor at a time, one card at a time**, opening as a strip anchored under the clicked dot with a caret. | Keeps the list scannable; the caret makes the dot→editor link obvious.                                    |
-| **List capped at `max-w-[110rem]`**, using the width the dropped panel freed.                                      | Open question — see §5.                                                                                   |
+| **List capped at `max-w-[110rem]`**, using the width the dropped panel freed.                                      | Open question — see §9.                                                                                   |
 
 ### 3.2 Deadlines
 
@@ -111,7 +119,55 @@ Two things to know before judging it:
 - Checklist preview shows **unfinished items first** (three fit under a dot).
   The editor's full list keeps authored order so items do not jump as you tick.
 
-## 4. Rejected ideas
+## 4. What the prototype does NOT cover
+
+Read this section before estimating. The prototype answers a **layout and
+interaction** question; several shipped capabilities have no home in it yet.
+
+### 4.1 Advance / Start / Resolve — the product's primary action
+
+**The prototype has no advance affordance at all.** Not a rejected idea — simply
+out of scope for the question being asked, and easy to miss because the cards
+look complete.
+
+This matters more than anything else in this section:
+[project-purpose.md](../../project-purpose.md) says "the primary action is
+'advance' a workstream to its next step", and production already ships it
+(`workstream-card-action.tsx`, Slice 3 / #20): one-click **Advance** on the
+card, **Skip**, a **Resolve** dropdown when the current step is blocked, and
+**Start** for a NotStarted workstream, all with row-local pending state.
+
+The new card must give these a home **without** costing a click. The PRD keeps
+the rule explicit: advancing stays a single click and must never require opening
+an editor first. The obvious candidate is the card's top-right, beside the
+deadline badge — but that area is already carrying the badge and the owner
+avatar, so it needs deliberate design rather than an assumption.
+
+Note the interaction risk: the whole card is now covered in click targets (dots,
+insertion points, note markers, live fields). An Advance button sitting among
+them must be unmistakable and must not be reachable by accident.
+
+### 4.2 Everything else the prototype skips
+
+- **Persistence.** Every edit is a local draft; nothing is written back.
+- **Error handling.** None. No Problem Details, no conflict path, no retry.
+- **i18n.** All copy is hardcoded English.
+- **Mobile.** Never designed. The ghost checklists and the wide dot columns need
+  a narrow-screen answer.
+- **Tests.** None, by design.
+- **Loading and empty states.** The prototype only renders once data has landed;
+  `overview-skeleton.tsx` is untouched.
+- **Workstream create / delete**, group management and project settings — the
+  production dialogs still handle these and render unchanged behind the
+  prototype.
+
+### 4.3 What the prototype _does_ prove about the surrounding app
+
+The prototype renders inside the **real** header, filters and dialogs, so those
+are already known to compose with the new list: owner filter, group filter,
+event countdown, and all four management dialogs work as-is.
+
+## 5. Rejected ideas
 
 Do not re-propose these without new information.
 
@@ -124,16 +180,16 @@ Do not re-propose these without new information.
 | **Deadlines as card badge only** (no per-step signal)                | Too little; the pipeline lost all sense of timing.                                                                            |
 | **Notes as a card footer for the current step only**                 | Cannot reach a past step's thread.                                                                                            |
 | **Notes as a pinned "latest update" line per card**                  | Good for scanning "what happened lately", but duplicated the per-step thread and put an empty bar on every quiet card.        |
-| **A "Bare" chrome applied to every card regardless of lifecycle**    | Live and complete work became indistinguishable. Chrome now follows lifecycle instead.                                        |
+| **"Bare" chrome applied to every card regardless of lifecycle**      | Live and complete work became indistinguishable. Chrome now follows lifecycle instead.                                        |
 | **Framed title pill** (name + group + status in a bordered chip)     | With the card already carrying a frame it was one border too many.                                                            |
 | **"Step after" button in the step editor**                           | Replaced by hover `+` between dots — the insertion point should be the place you are pointing at.                             |
 
-## 5. Backend assumptions and required changes
+## 6. Backend assumptions and required changes
 
 **No backend code was changed on this branch.** Everything below is a
 requirement the production implementation must satisfy.
 
-### 5.1 The overview aggregate carries no note data — blocking
+### 6.1 The overview aggregate carries no note data — blocking
 
 Per-step markers need a note count for **every step of every workstream**. The
 prototype gets this by calling `GET /api/workstreams/:id/notes` once per card.
@@ -151,7 +207,12 @@ Pick one before building:
 2. fetch a thread only when a marker is expanded, and render the marker from a
    count that still has to come from somewhere.
 
-### 5.2 The save model is unresolved — blocking
+Note the knock-on: the web standard says note mutations invalidate the notes
+query only "while the overview contains no note data or counts". Adding
+`noteCount` changes that rule — note mutations would then have to invalidate the
+overview too.
+
+### 6.2 The save model is unresolved — blocking
 
 The prototype autosaves ("Saved as you type") because a local draft is free.
 Production has no such endpoint shape:
@@ -167,52 +228,74 @@ per-field step endpoints; or reintroducing an explicit Save for structural
 changes only while field edits stay immediate. **This choice shapes the whole
 implementation** — settle it first.
 
-### 5.3 Endpoints that already exist and need no change
+Whatever you choose, `useDraft` in the prototype is not a model for it: it
+snapshots the server list on first edit and **never resyncs**, so a refetch
+during editing is silently ignored. Production needs a real answer for server
+data arriving mid-edit — the rule inherited from the old #40 was that an active
+draft must survive an overview refetch without being remounted or reset.
 
-- `PATCH /api/checklist-items/:id` — the ghost checklist ticks in place.
+### 6.3 Endpoints that already exist and need no change
+
+- `PATCH /api/checklist-items/:id` — the ghost checklist ticks in place on the
+  overview, which is a write from the list itself.
 - Note CRUD from #22 — `NoteDto.author.id` already carries what authorship
   rules need.
 - `PATCH /api/workstreams/:id` — inline name / icon / group / owner edits.
+- `POST /workstreams/:id/advance` and the start command — unchanged, but see
+  §4.1 for where they go in the UI.
 
-### 5.4 Not a backend concern but easy to miss
+### 6.4 Not a backend concern but easy to miss
 
 - The theme ships **three** urgency tokens; the five-band scale needs **orange
-  and yellow tokens for light and dark**. The prototype uses Tailwind defaults
-  as a stand-in.
+  and yellow tokens for light and dark** in `apps/web/src/main.css`. The
+  prototype uses Tailwind defaults as a stand-in.
 - Workstream sorting is done client-side; server-side ordering would work too.
 
-## 6. What remains before this can close
+## 7. Bugs found in production while prototyping
+
+Both are **live on `main`** and were only fixed inside the prototype.
+
+1. **`in 0d`.** `overview.badge.upcoming` is `"{{name}} in {{count}}d"`, so a
+   deadline due today renders "Tasting in 0d". The prototype reads `today` /
+   `tomorrow` instead. Fixing this in production means changing the i18n strings
+   in all three locales, which is why it was left alone here.
+2. **Year-less dates.** Date ticks under the dots render `MM/DD`, so a deadline
+   from a previous year reads as a future date — a 2025 deadline displayed as
+   `1 Oct` while the card's badge said `303d late`. The prototype shows the year
+   whenever it is not the current one.
+
+## 8. What remains before this can close
 
 Roughly in order:
 
-1. **Settle §5.2 (save model) and §5.1 (note counts).** Everything else depends
+1. **Settle §6.2 (save model) and §6.1 (note counts).** Everything else depends
    on these.
-2. **Add the two urgency colour tokens** to `apps/web/src/main.css`, light and
+2. **Decide where Advance / Start / Resolve live** (§4.1) — the design is not
+   complete without it.
+3. **Add the two urgency colour tokens** to `apps/web/src/main.css`, light and
    dark.
-3. **Rewrite the prototype through production modules.** It is one ~1900-line
-   file with no component boundaries; `PipelineEditor` is already oversized, so
-   plan the seams before moving code.
-4. **Delete the prototype**: `overview-editing-prototype.tsx` and the
+4. **Rewrite the prototype through production modules** — see the component map
+   in §10. It is one ~2000-line file with no component boundaries, and
+   `PipelineEditor` is already oversized, so plan the seams first.
+5. **Delete the prototype**: `overview-editing-prototype.tsx` and the
    `?variant=A` seam in `overview-page.tsx`.
-5. **i18n** — all copy is hardcoded English.
-6. **Error handling** — the prototype has none. Problem Details, stale-save
-   conflict, and never silently discarding user input.
-7. **Tests** — Testing Library + MSW integration coverage per the web testing
-   standard. No Playwright.
-8. **Accessibility pass** — keyboard reachability of the hover `+`, the note
+6. **i18n** — all copy is hardcoded English.
+7. **Error handling** — Problem Details, stale-save conflict, and never silently
+   discarding user input.
+8. **Tests** — Testing Library + MSW integration coverage per the web testing
+   standard. No Playwright. Expect to rewrite the specs listed in §10.
+9. **Accessibility pass** — keyboard reachability of the hover `+`, the note
    markers and the dot buttons; accessible names; focus management when a step
    editor opens and closes.
-9. **Mobile.** Untouched here. The ghost checklists and the wide dot columns
-   need a narrow-screen answer.
-10. **Update the specs.** [V1 Product PRD](../../specs/v1-product/PRD.md) still
-    describes "a two-panel layout"; the api-contract PRD references the Pipeline
-    Stack. Both need rewording to the single-column inline design.
+10. **Mobile.**
+11. **Fix the two production bugs in §7** while you are in this code.
 
-## 7. Details worth knowing
+## 9. Details worth knowing
 
 - **Keep the page router-free.** An earlier iteration used `useSearchParams` in
   `OverviewPage` and broke 46 web tests — the test harness renders the page
   without a Router. The prototype reads `globalThis.location.search` directly.
+  This also constrains the URL-addressability work carried into #40 from #41.
 - **`DotCaret` mirrors the dot row's column widths**, including whether the
   trailing add-step column exists. Get that wrong and the caret drifts off its
   dot on complete workstreams.
@@ -223,6 +306,10 @@ Roughly in order:
   owner dismisses the editor underneath.
 - **A parent `opacity` cannot be undone by a child.** Dimming must live on the
   parts you want dimmed, never on a container whose children must stay bright.
+- **The clock is read at render** (`new Date()` behind an eslint-disable), in
+  both the prototype and production's `deadline-badge.tsx`. Nothing refreshes at
+  local midnight, so urgency bands can sit stale on a long-lived tab. Worth
+  fixing centrally rather than per component.
 - The prototype **restored future-tail reordering** that only the deleted
   variants B and C had, so the pipeline rules it claims to respect all hold.
 
@@ -237,11 +324,277 @@ tickable in place on the current step, read-only at 40% opacity on the next.
   apart at full width.
 - Should the next step's checklist preview be tickable, or stay read-only?
 
-## 8. File map
+## 10. Component map
 
-| File                                                            | Role                                                                                    |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `apps/web/src/features/overview/overview-editing-prototype.tsx` | The whole prototype. Delete after absorption.                                           |
-| `apps/web/src/features/overview/overview-page.tsx`              | Modified: the `?variant=A` seam. Revert after absorption.                               |
-| `docs/prototype/overview-editing/HANDOFF.md`                    | This document.                                                                          |
-| `docs/prototype/timeline/`                                      | The superseded two-panel wireframe. Kept because the PRDs still link to it — see §6.10. |
+Everything below lives in `apps/web/src/features/overview/`.
+
+**Replaced by the new card** — behaviour moves inline; delete once absorbed:
+
+| File                                                                   | Note                                        |
+| ---------------------------------------------------------------------- | ------------------------------------------- |
+| `detail-panel.tsx`                                                     | The panel itself is gone.                   |
+| `vertical-pipeline.tsx`                                                | Superseded by the horizontal editable dots. |
+| `pipeline-editor.tsx`                                                  | Editing is per-step and inline now.         |
+| `step-checklist.tsx`, `checklist-card.tsx`                             | Fold into the step editor + ghost preview.  |
+| `step-notes.tsx`                                                       | Fold into the step editor + dot markers.    |
+| `workstream-card.tsx`, `workstream-card-list.tsx`, `group-section.tsx` | Replaced by the new card and list.          |
+| `pipeline-dots.tsx`                                                    | Replaced by the interactive dot row.        |
+| `deadline-badge.tsx`                                                   | Replaced by the top-right badge (§3.2).     |
+
+**Keep and extend:**
+
+| File                         | Note                                                             |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `workstream-card-action.tsx` | **Advance / Start / Skip / Resolve — must survive.** See §4.1.   |
+| `urgency.ts`                 | Extend from three bands to five; production `daysUntil` is fine. |
+| `group-workstreams.ts`       | Add the lifecycle tier sort (§3.4).                              |
+
+**Keep unchanged** — already proven to compose with the new list:
+`overview-header.tsx`, `owner-filter.tsx`, `group-filter.tsx`,
+`filter-trigger.tsx`, `event-countdown.tsx`, `owner-avatar.tsx`,
+`is-blocked-now.ts`, `days-until.ts`, `overview-skeleton.tsx`, and all four
+dialogs (`workstream-form-dialog`, `group-manager-dialog`,
+`project-settings-dialog`, `confirm-dialog`).
+
+**Tests that will need rewriting** (in `__tests__/`): `workstream-card.spec`,
+`pipeline-dots.spec`, `vertical-pipeline.spec`, `pipeline-editor.spec`,
+`checklist-card.spec`, `pipeline-editing.integration.spec`,
+`notes-actions.integration.spec`, `overview-integration.spec`. Keep
+`workstream-card-action.spec` passing — if it breaks, the primary action broke.
+
+## 11. File map
+
+| File                                                            | Role                                                      |
+| --------------------------------------------------------------- | --------------------------------------------------------- |
+| `apps/web/src/features/overview/overview-editing-prototype.tsx` | The whole prototype. Delete after absorption.             |
+| `apps/web/src/features/overview/overview-page.tsx`              | Modified: the `?variant=A` seam. Revert after absorption. |
+| `docs/prototype/overview-editing/HANDOFF.md`                    | This document.                                            |
+
+---
+
+# Appendix — complete behaviour specification
+
+Everything the prototype defines, surface by surface. §3 says _what was decided
+and why_; this says _what it does_. Where a rule restates a domain rule from
+[CONTEXT.md](../../../CONTEXT.md), that is noted — those are not new.
+
+## A1. The list
+
+- Single column, centred, capped at `max-w-[110rem]`.
+- Grouped by Group with a section header: colour swatch, group name, workstream
+  count. Empty groups are dropped; ungrouped workstreams form a final
+  "Ungrouped" section.
+- Groups keep the order the API returned (`groupWorkstreams` does not sort;
+  ordering is server-side and alphabetical today). **Within a group, workstreams
+  sort Active → NotStarted → Complete** — a stable sort, so the server's
+  alphabetical order holds inside each tier.
+- The production header, owner filter, group filter and management dialogs
+  render unchanged above it.
+
+## A2. The card
+
+- **Chrome by lifecycle**: live (Active/NotStarted) = border + surface + shadow;
+  Complete = transparent border + no surface, surface appears on hover; any card
+  with an open step editor = accent border + surface + shadow.
+- The idle border is `transparent`, never absent, so nothing shifts when a real
+  border appears.
+- **Header row**, left to right: icon picker · name · group chip · lifecycle
+  badges · _(spacer)_ · deadline badge · owner avatar.
+- The header row is dimmed (`opacity-65`) when the workstream is Complete.
+- Name is `font-semibold`/foreground when live, `font-medium`/muted when
+  Complete.
+
+### Header controls
+
+| Control          | Behaviour                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------- |
+| **Icon**         | Opens a 10-emoji grid; picking one sets the icon.                                                 |
+| **Name**         | Click-to-edit in place. Enter commits, Escape cancels, blur commits. Empty renders "Untitled".    |
+| **Group chip**   | Shows colour swatch + group name, or "No group". Opens a picker listing "No group" + every group. |
+| **Owner avatar** | Opens a picker listing "Unassigned" + every user. Sets the Workstream's default owner.            |
+
+### Lifecycle badges
+
+- **Blocked** — red chip, shown when _any_ step in the pipeline is currently
+  blocked (`isBlockedNow`).
+- **Not started** — filled grey chip, uppercase.
+- **Complete** — plain green text, uppercase, deliberately not a chip.
+
+### Deadline badge (top-right)
+
+- Rendered only when the workstream has a nearest-deadline step that resolves to
+  a step with a deadline.
+- Content: step name (truncated) + countdown.
+- Countdown wording: `Nd late` (overdue) · `today` · `tomorrow` · `in Nd`
+  (under 14 days) · otherwise a plain date.
+- Dates render as `12 Sep`, gaining a 2-digit year (`1 Oct 25`) whenever the
+  year is not the current one.
+- Background/foreground follow the five-band scale (A6).
+- Tooltip: `{step name} due {ISO date}`.
+
+## A3. The pipeline row
+
+Each step occupies an equal-width column containing, top to bottom: the dot, the
+step name, its date, its note marker, its checklist preview.
+
+- **Connector lines** join the dots, half-width either side, `pointer-events-none`.
+  Live pipelines get a darker rail than Complete ones.
+- **Dot size**: 14px normally, 20px for the current step and for any blocked
+  step.
+- **Dot appearance by status** (unchanged from production): Done = filled green ·
+  In Progress = filled blue with glow · Not Started = outlined · Skipped =
+  dashed outline · Blocked = filled red with glow, overriding the others.
+- **Open step**: the dot scales up and takes an accent ring.
+- **Hover**: the dot scales up.
+- **Settled steps** (Done/Skipped) that are not open render at `opacity-55`,
+  returning to full opacity on hover. They stay clickable.
+- **Step name**: truncated, centred. Bold foreground when open or current, muted
+  otherwise, italic "Untitled" when unnamed.
+- The whole dot + label + date is one button carrying `aria-pressed`.
+
+## A4. Per-step deadline signals
+
+- A step with a deadline shows its date under the name.
+- A step **still ahead of the pointer** (In Progress or Not Started) in a
+  **non-Complete** pipeline also gets a ring on its dot.
+- Ring and date share one colour per band, so they always agree.
+- A settled step's date renders muted regardless of urgency — its deadline is
+  history.
+- A Complete pipeline shows dates but no rings.
+- Tooltip on a ringed dot: `{status} · due {ISO date}`.
+
+## A5. Note markers
+
+- A step with one or more notes shows a marker under its date: a speech-bubble
+  icon plus the count.
+- The count includes notes added in this session.
+- A step with no notes shows no marker.
+- Clicking toggles that step's note panel; clicking the same marker again closes
+  it. Only one panel at a time per card.
+- The marker inverts (dark fill) while its panel is open, and carries
+  `aria-pressed` plus an accessible name.
+- Markers appear on **every** step including past ones — this is the only route
+  to a past step's thread.
+
+## A6. The five urgency bands
+
+| Band        | Window    | Dot ring   | Date + badge |
+| ----------- | --------- | ---------- | ------------ |
+| `passed`    | overdue   | 3px red    | bold red     |
+| `week`      | < 7 days  | 2px red    | medium red   |
+| `fortnight` | < 14 days | 2px orange | orange       |
+| `month`     | < 30 days | 2px yellow | yellow       |
+| `far`       | ≥ 30 days | 2px muted  | muted 60%    |
+
+Bands are computed from whole local calendar days (`daysUntil`).
+
+## A7. Checklist preview under the dots
+
+- Shown for the **current** step and the **next Not Started** step, and only
+  while that step's editor is closed.
+- Up to three items, **unfinished first** (stable, so authored order holds
+  within each half), then `+N more`.
+- The current step's items are **tickable in place** — a real write from the
+  overview.
+- The next step's items are read-only at 40% opacity.
+- Done items render struck through and muted.
+
+## A8. Step insertion
+
+- A `+` appears on the connector line between two dots on hover of the pipeline
+  row, and on keyboard focus.
+- A permanent `+` sits at the end of the pipeline.
+- An insertion point at index `i` is offered when **`i > currentIndex`**, where
+  `currentIndex` is `-1` when there is no current step. In practice: every
+  position in a NotStarted workstream, only positions after the current step in
+  an Active one, none in a Complete one. _(Domain rule — CONTEXT.md "Step
+  insertion zone".)_
+- Clicking inserts a new empty step at that position and opens its editor with
+  the name field focused.
+- The insertion control is zero-width and absolutely positioned, so it never
+  shifts the step columns.
+
+## A9. The step editor
+
+Opens beneath the clicked dot, with a caret pointing at it. One step at a time,
+one card at a time.
+
+### Header
+
+`status dot · name · [CURRENT] or [DONE/SKIPPED] · deadline · owner · [blocked toggle]`
+
+- **Editable step** (In Progress or Not Started): name is click-to-edit;
+  deadline opens a date input; owner opens a picker whose "inherit" option
+  clears the explicit owner. _(Domain rule — ownership inheritance.)_
+- **Frozen step** (Done or Skipped): name, deadline and owner render as static
+  text/avatar.
+- The **blocked toggle** appears only on the current step, and is informational —
+  it never gates anything. _(Domain rule.)_
+
+### Checklist
+
+- Shows `done/total` and the full item list.
+- Editable step: toggle, add, and remove items.
+- Frozen step: toggles disabled, no add, no remove — a record, not a working
+  list.
+
+### Notes
+
+- Always visible, expanded by default.
+- Collapsed summary line shows count, latest note, its author and relative time.
+- Adding is allowed on **every** persisted step, including frozen ones.
+- Editing and deleting are allowed only on **your own** entries, and never on a
+  frozen step — a past thread is append-only.
+- A newly inserted, unsaved step shows "Notes available once the step is saved"
+  instead of a thread.
+
+### Footer
+
+| Control              | Availability                                                                |
+| -------------------- | --------------------------------------------------------------------------- |
+| Previous / next step | Navigates the editor along the pipeline; disabled at the ends.              |
+| Move earlier / later | Only when the step **and** its neighbour in that direction are Not Started. |
+| Delete               | Only when the step is Not Started. Closes the editor.                       |
+| Close                | Always.                                                                     |
+| Status text          | "Saved as you type" when editable, "Frozen — notes only" when not.          |
+
+_(Reorder and delete restrictions are the domain's "only the future tail is
+freely mutable" rule.)_
+
+## A10. The note panel (opened from a marker)
+
+- Anchored under its dot with the same caret as the step editor.
+- Header: step name, note count, close button.
+- Same thread and composer as the step editor, with the same authorship and
+  append-only rules.
+- Not rendered when that step's full editor is already open — the editor's own
+  notes block covers it.
+
+## A11. Note threads
+
+- Order: existing notes as the API returns them, then notes added this session.
+- Each entry shows author, relative time, and body.
+- Relative time: `Nm ago` under an hour, `Nh ago` under a day, otherwise
+  `Nd ago`. Notes added this session read "You · just now".
+- Edit and delete controls appear on hover or keyboard focus, only where
+  permitted.
+- Editing is inline: Enter commits, Escape and blur cancel.
+- The composer posts on Enter and clears; Escape closes the thread.
+
+## A12. Opening and closing
+
+- Clicking a dot opens that step's editor; clicking the same dot closes it.
+- Clicking anywhere outside the card closes both the step editor and any open
+  note panel.
+- Clicks inside a portalled popup (`role="menu" | "dialog" | "listbox"`) count as
+  inside the card, so using a picker never dismisses the editor beneath it.
+- Selecting a step in another card closes the first — one open editor across the
+  whole list.
+
+## A13. Draft semantics (prototype-only)
+
+Not a production model — recorded so its behaviour is not mistaken for a
+requirement. Every mutation writes to an in-memory draft and increments a
+counter; step positions are renumbered after any structural change; nothing is
+ever sent to the API; the draft snapshots the server list on first edit and
+never resyncs. See §6.2 for what production must do instead.

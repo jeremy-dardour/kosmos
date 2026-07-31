@@ -23,8 +23,7 @@ Project knowledge — one home per fact. Read these to get oriented:
 | [docs/current-state.md](./docs/current-state.md)                       | The live "where we are" — phase, status, next steps, open questions  |
 | [docs/sessions/](./docs/sessions/)                                     | One dated summary per session (what was done, learnings, status)     |
 | [docs/reviews/](./docs/reviews/)                                       | PR review write-ups, point-in-time; deleted once fully actioned      |
-| [docs/prototype/overview-editing/](./docs/prototype/overview-editing/) | **Current UI direction** — inline overview editing, no detail panel  |
-| [docs/prototype/timeline/](./docs/prototype/timeline/)                 | Original Pipeline Stack wireframe; layout superseded, concepts stand |
+| [docs/prototype/overview-editing/](./docs/prototype/overview-editing/) | UI direction — inline overview editing, decisions and rejected ideas |
 | [docs/entity-schema-design.md](./docs/entity-schema-design.md)         | Concrete MikroORM schema spec (entities, columns, constraints)       |
 | [apps/api/module-layout.md](./apps/api/module-layout.md)               | NestJS module structure and boundary rules                           |
 | [docs/specs/v1-tech-design.md](./docs/specs/v1-tech-design.md)         | V1 technical design — links schema, API, state machine, auth, deploy |

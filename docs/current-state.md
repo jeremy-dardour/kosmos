@@ -20,10 +20,11 @@ of review comments addressed. All feature slices are now built; deployment
 - Domain model defined and agreed — entities, statuses, and rules in
   [CONTEXT.md](../CONTEXT.md); full behavioral spec with rationale in the
   [V1 Product PRD](./specs/v1-product/PRD.md).
-- UI direction chosen: originally the two-panel "Pipeline Stack" wireframe
-  ([docs/prototype/timeline/](./prototype/timeline/), turn 3 / option 3a); its
-  **two-panel layout is now superseded** by inline overview editing with no
-  detail panel ([docs/prototype/overview-editing/](./prototype/overview-editing/)).
+- UI direction chosen: **inline overview editing** — one column, no detail
+  panel, every edit in the card
+  ([docs/prototype/overview-editing/](./prototype/overview-editing/)). This
+  replaced the original two-panel "Pipeline Stack" wireframe, whose files were
+  deleted once the specs were updated.
 - Specified the Workstream **pipeline state machine** end-to-end
   ([ADR 0005](./adr/0005-workstream-pipeline-state-machine.md)).
 - Entity/schema design written

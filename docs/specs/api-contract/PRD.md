@@ -5,7 +5,7 @@ Status: ready-for-agent
 The REST API for V1. Translates the entity schema
 ([entity-schema-design.md](../../entity-schema-design.md)), pipeline state
 machine ([ADR 0005](../../adr/0005-workstream-pipeline-state-machine.md)), and
-the Pipeline Stack UI ([prototype](../../prototype/timeline/README.md)) into
+the overview UI ([design](../../prototype/overview-editing/HANDOFF.md)) into
 endpoints, DTOs, and a read model. Follows the template conventions in
 [apps/api/STANDARDS.md](../../../apps/api/STANDARDS.md).
 
@@ -13,7 +13,7 @@ endpoints, DTOs, and a read model. Follows the template conventions in
 
 ## Design principles
 
-1. **One overview call.** The Pipeline Stack UI loads everything in one GET —
+1. **One overview call.** The overview loads everything in one GET —
    Project with nested Groups, Workstreams, Steps. At 20–50 workstreams × ~10
    steps this is a few KB; no pagination needed.
 2. **Workstream commands own aggregate changes.** `advance` is a named action
@@ -78,7 +78,7 @@ name/eventDate.
 
 Returns the full tree: project + groups + workstreams (with inline steps, derived
 lifecycle, nearest deadline, owner inheritance resolved). This is the only
-endpoint the Pipeline Stack overview calls on load.
+endpoint the overview calls on load.
 
 ### Group
 
@@ -288,7 +288,7 @@ done!: boolean;
 ### OverviewDto (the aggregate read)
 
 The single response for `GET /projects/:projectId/overview`. Contains everything
-the Pipeline Stack needs for first paint.
+the overview needs for first paint.
 
 ```ts
 class OverviewDto {
