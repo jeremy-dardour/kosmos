@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { NoteThread } from '@/features/overview/note-thread';
 import { isStepEditable } from '@/features/overview/step-mutability';
+import { useFocusOnOpen } from '@/features/overview/use-focus-on-open';
 import { useStepNotes } from '@/features/overview/use-step-notes';
 
 import type { Step } from '@/api/hooks/use-overview';
@@ -29,13 +30,16 @@ export const StepNotesPanel = ({
   onClose,
 }: StepNotesPanelProperties) => {
   const { t } = useTranslation();
+  const panelRef = useFocusOnOpen<HTMLElement>();
   const thread = useStepNotes(workstreamId, step.id, projectId, now);
   const stepName = step.name || t('overview.pipeline.untitled');
 
   return (
     <section
+      ref={panelRef}
+      tabIndex={-1}
       aria-label={t('overview.notesPanel.label', { name: stepName })}
-      className="rounded-lg border bg-muted/20 p-2.5"
+      className="rounded-lg border bg-muted/20 p-2.5 outline-hidden focus-visible:ring-2 focus-visible:ring-step-in-progress/50"
     >
       <div className="flex items-center gap-1.5 text-[11px]">
         <MessageSquareIcon

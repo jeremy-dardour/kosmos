@@ -46,6 +46,7 @@ export const OverviewHeader = ({
         variant="ghost"
         size="icon-xs"
         aria-label={t('overview.manage.projectSettings')}
+        title={t('overview.manage.projectSettings')}
         onClick={onProjectSettings}
       >
         <SettingsIcon />

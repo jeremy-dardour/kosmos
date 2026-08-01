@@ -132,6 +132,7 @@ export function setupOverviewApi(initialOverview: Overview) {
   let lastGroupOrder: ReorderGroupsInput | null = null;
   let lastWorkstreamOrder: ReorderWorkstreamsInput | null = null;
   let overviewFetches = 0;
+  const deletedWorkstreamIds: string[] = [];
 
   function findWorkstream(id: string) {
     return overview.workstreams.find((workstream) => workstream.id === id);
@@ -564,6 +565,7 @@ export function setupOverviewApi(initialOverview: Overview) {
       },
     ),
     http.delete(`${API_BASE}/api/workstreams/:id`, ({ params }) => {
+      deletedWorkstreamIds.push(String(params.id));
       overview = {
         ...overview,
         workstreams: overview.workstreams.filter(
@@ -651,6 +653,10 @@ export function setupOverviewApi(initialOverview: Overview) {
     /** How many times the aggregate has been read — a refetch is observable. */
     getOverviewFetches() {
       return overviewFetches;
+    },
+
+    getDeletedWorkstreamIds() {
+      return deletedWorkstreamIds;
     },
 
     updateWorkstream(

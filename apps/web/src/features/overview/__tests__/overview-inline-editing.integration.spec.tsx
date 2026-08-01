@@ -337,4 +337,73 @@ describe('inline overview editing — ghost steps', () => {
       within(cardOf('Catering')).queryByRole('region', { name: 'New step' }),
     ).not.toBeInTheDocument();
   });
+
+  it('hands focus back to the insert point when a ghost is discarded', async () => {
+    const { agent } = renderPage();
+    await screen.findByRole('button', { name: 'Rename Catering' });
+    const card = cardOf('Catering');
+    const insertPoint = within(card).getByRole('button', {
+      name: 'Add a step at the end',
+    });
+
+    const field = await openGhost(agent, card, 'Add a step at the end');
+    await agent.type(field, '{Escape}');
+
+    expect(insertPoint).toHaveFocus();
+  });
+});
+
+describe('inline overview editing — keyboard paths', () => {
+  it('moves focus into a step editor and back to its dot on close', async () => {
+    const { agent } = renderPage();
+    await screen.findByRole('button', { name: 'Rename Catering' });
+    const dot = dotIn(cardOf('Catering'), 'Book caterer', 'Not started');
+
+    await agent.click(dot);
+    const editor = within(cardOf('Catering')).getByRole('region', {
+      name: 'Step Book caterer',
+    });
+    expect(editor).toHaveFocus();
+
+    await agent.click(
+      within(editor).getByRole('button', { name: 'Close step editor' }),
+    );
+
+    expect(dot).toHaveFocus();
+    expect(
+      within(cardOf('Catering')).queryByRole('region', {
+        name: 'Step Book caterer',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('moves focus into a note panel and back to its marker on close', async () => {
+    const api = setupOverviewApi(overviewOf());
+    api.updateWorkstream('w-catering', (item) => ({
+      ...item,
+      steps: item.steps.map((entry) =>
+        entry.id === 's1' ? { ...entry, noteCount: 2 } : entry,
+      ),
+    }));
+    const agent = userEvent.setup();
+    renderWithApp(<OverviewPage />);
+    await screen.findByRole('button', { name: 'Rename Catering' });
+
+    const marker = within(cardOf('Catering')).getByRole('button', {
+      name: 'Show notes for Research options',
+    });
+    await agent.click(marker);
+    const panel = within(cardOf('Catering')).getByRole('region', {
+      name: 'Notes for Research options',
+    });
+    expect(panel).toHaveFocus();
+
+    await agent.click(
+      within(panel).getByRole('button', {
+        name: 'Close notes for Research options',
+      }),
+    );
+
+    expect(marker).toHaveFocus();
+  });
 });

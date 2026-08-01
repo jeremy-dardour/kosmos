@@ -51,6 +51,10 @@ export interface Translations {
   'overview.card.changeGroup': string;
   'overview.card.noGroup': string;
   'overview.card.changeOwner': string;
+  'overview.card.delete': string;
+  'overview.card.deleteTitle': string;
+  'overview.card.deleteDescription': string;
+  'overview.card.deleteConfirm': string;
   'overview.deadline.late': string;
   'overview.deadline.today': string;
   'overview.deadline.tomorrow': string;

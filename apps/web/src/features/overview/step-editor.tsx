@@ -34,6 +34,7 @@ import {
   isStepStructurallyFree,
 } from '@/features/overview/step-mutability';
 import { STEP_STATUS_LABELS } from '@/features/overview/step-status-labels';
+import { useFocusOnOpen } from '@/features/overview/use-focus-on-open';
 import { useStepNotes } from '@/features/overview/use-step-notes';
 import { cn } from '@/lib/utils';
 
@@ -63,6 +64,7 @@ export const StepEditor = ({
   onOpenStep,
 }: StepEditorProperties) => {
   const { t, i18n } = useTranslation();
+  const panelRef = useFocusOnOpen<HTMLElement>();
   const updateStep = useUpdateStep(projectId);
   const deleteStep = useDeleteStep(projectId);
   const reorderSteps = useReorderSteps(projectId);
@@ -110,8 +112,10 @@ export const StepEditor = ({
 
   return (
     <section
+      ref={panelRef}
+      tabIndex={-1}
       aria-label={t('overview.stepEditor.panelLabel', { name })}
-      className="rounded-lg border border-step-in-progress/40 bg-step-in-progress/5 p-2.5"
+      className="rounded-lg border border-step-in-progress/40 bg-step-in-progress/5 p-2.5 outline-hidden focus-visible:ring-2 focus-visible:ring-step-in-progress/50"
     >
       <div className="flex items-center gap-2">
         <StatusDot step={step} />

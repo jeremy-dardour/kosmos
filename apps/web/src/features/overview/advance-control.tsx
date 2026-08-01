@@ -143,6 +143,9 @@ export const AdvanceControl = ({
               aria-label={t('overview.action.moreOptionsLabel', {
                 name: workstream.name,
               })}
+              title={t('overview.action.moreOptionsLabel', {
+                name: workstream.name,
+              })}
             />
           }
         >

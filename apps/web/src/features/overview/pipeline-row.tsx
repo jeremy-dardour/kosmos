@@ -367,6 +367,7 @@ function ChecklistPreview({
             type="button"
             disabled={!isInteractive}
             aria-label={t('overview.pipeline.toggleItem', { name: item.name })}
+            title={t('overview.pipeline.toggleItem', { name: item.name })}
             aria-pressed={item.done}
             onClick={() => onToggle(item.id, !item.done)}
             className="flex w-full items-center gap-1 rounded px-0.5 text-left hover:bg-muted/60"

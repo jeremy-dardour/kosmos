@@ -335,4 +335,66 @@ describe('inlineWorkstreamCard', () => {
     await agent.click(screen.getByRole('button', { name: 'outside' }));
     expect(onCloseEditors).toHaveBeenCalled();
   });
+
+  describe('deletion', () => {
+    it('deletes the workstream once the confirmation is accepted', async () => {
+      const api = setupOverviewApi(overviewOf(catering));
+      const agent = userEvent.setup();
+      renderWithApp(<CardHarness workstreamId="w-catering" />);
+
+      await agent.click(
+        await screen.findByRole('button', { name: 'Delete Catering' }),
+      );
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Delete Catering?',
+      });
+      await agent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('button', { name: 'Rename Catering' }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(api.getDeletedWorkstreamIds()).toEqual(['w-catering']);
+    });
+
+    it('sends nothing when the confirmation is cancelled', async () => {
+      const api = setupOverviewApi(overviewOf(catering));
+      const agent = userEvent.setup();
+      renderWithApp(<CardHarness workstreamId="w-catering" />);
+
+      await agent.click(
+        await screen.findByRole('button', { name: 'Delete Catering' }),
+      );
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Delete Catering?',
+      });
+      await agent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: 'Delete Catering?' }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole('button', { name: 'Rename Catering' }),
+      ).toBeVisible();
+      expect(api.getDeletedWorkstreamIds()).toEqual([]);
+    });
+
+    it('hides the bin until the card is hovered or the button focused', async () => {
+      setupOverviewApi(overviewOf(catering));
+      renderWithApp(<CardHarness workstreamId="w-catering" />);
+
+      const bin = await screen.findByRole('button', {
+        name: 'Delete Catering',
+      });
+      expect(bin).toHaveClass(
+        'opacity-0',
+        'group-hover/card:opacity-100',
+        'focus-visible:opacity-100',
+      );
+      expect(bin).toHaveAttribute('title', 'Delete Catering');
+    });
+  });
 });

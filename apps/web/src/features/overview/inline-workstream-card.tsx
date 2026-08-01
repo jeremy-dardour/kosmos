@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { Trash2Icon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useDeleteWorkstream } from '@/api/hooks/use-delete-workstream';
 import { useUpdateChecklistItem } from '@/api/hooks/use-update-checklist-item';
 import { useUpdateWorkstream } from '@/api/hooks/use-update-workstream';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +15,7 @@ import {
 import { AdvanceControl } from '@/features/overview/advance-control';
 import { canAppendStep } from '@/features/overview/can-append-step';
 import { ClickToEdit } from '@/features/overview/click-to-edit';
+import { ConfirmDialog } from '@/features/overview/confirm-dialog';
 import { daysUntil } from '@/features/overview/days-until';
 import { DotCaret } from '@/features/overview/dot-caret';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
@@ -33,7 +37,7 @@ import type {
 } from '@/api/hooks/use-overview';
 import type { GhostStepDraft } from '@/features/overview/ghost-step';
 import type { UrgencyBand } from '@/features/overview/urgency';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 
 const ICONS = ['🏰', '🍽️', '💐', '📸', '🎵', '💍', '👗', '🚗', '🎂', '✉️'];
 
@@ -92,7 +96,21 @@ export const InlineWorkstreamCard = ({
   const { t } = useTranslation();
   const updateWorkstream = useUpdateWorkstream(projectId);
   const updateChecklistItem = useUpdateChecklistItem(projectId);
+  const deleteWorkstream = useDeleteWorkstream(projectId);
   const cardRef = useRef<HTMLElement>(null);
+  // A panel unmounts when it closes, so the pipeline-row button that opened it
+  // has to be remembered to take focus back. Reading it off the click covers
+  // pointer and keyboard activation alike, with no plumbing through
+  // `PipelineRow`.
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
+  const rememberOpener = (event: MouseEvent<HTMLElement>) => {
+    openerRef.current =
+      event.target instanceof Element ? event.target.closest('button') : null;
+  };
+
+  const returnFocusToOpener = () => openerRef.current?.focus();
 
   const isAnyPanelOpen =
     openStepId !== null || openNotesStepId !== null || ghost !== undefined;
@@ -184,10 +202,21 @@ export const InlineWorkstreamCard = ({
             clearLabel={t('overview.card.unassigned')}
             onSelect={(ownerId) => commit({ ownerId })}
           />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={t('overview.card.delete', { name: workstream.name })}
+            title={t('overview.card.delete', { name: workstream.name })}
+            className="text-muted-foreground/60 opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover/card:opacity-100"
+            onClick={() => setIsConfirmingDelete(true)}
+          >
+            <Trash2Icon />
+          </Button>
         </div>
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3" onClickCapture={rememberOpener}>
         <PipelineRow
           steps={workstream.steps}
           currentStepId={workstream.currentStepId ?? null}
@@ -212,7 +241,17 @@ export const InlineWorkstreamCard = ({
         />
       </div>
 
-      {ghost && <GhostStep ghost={ghost} />}
+      {ghost && (
+        <GhostStep
+          ghost={{
+            ...ghost,
+            onDiscard: () => {
+              ghost.onDiscard();
+              returnFocusToOpener();
+            },
+          }}
+        />
+      )}
 
       {openedStep && (
         <>
@@ -228,7 +267,10 @@ export const InlineWorkstreamCard = ({
             users={users}
             projectId={projectId}
             now={now}
-            onOpenStep={onOpenStep}
+            onOpenStep={(stepId) => {
+              if (stepId === null) returnFocusToOpener();
+              onOpenStep(stepId);
+            }}
           />
         </>
       )}
@@ -246,10 +288,31 @@ export const InlineWorkstreamCard = ({
             step={notesStep}
             projectId={projectId}
             now={now}
-            onClose={() => onOpenNotes(null)}
+            onClose={() => {
+              returnFocusToOpener();
+              onOpenNotes(null);
+            }}
           />
         </>
       )}
+
+      <ConfirmDialog
+        isOpen={isConfirmingDelete}
+        onOpenChange={setIsConfirmingDelete}
+        title={t('overview.card.deleteTitle', { name: workstream.name })}
+        description={t('overview.card.deleteDescription')}
+        confirmLabel={t('overview.card.deleteConfirm')}
+        cancelLabel={t('overview.manage.form.cancel')}
+        isPending={deleteWorkstream.isPending}
+        onConfirm={() =>
+          deleteWorkstream.mutate(
+            { params: { path: { id: workstream.id } } },
+            // The card only goes once the refetch lands; the dialog should not
+            // sit over the list until then.
+            { onSuccess: () => setIsConfirmingDelete(false) },
+          )
+        }
+      />
     </article>
   );
 };

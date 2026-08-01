@@ -79,6 +79,7 @@ const GroupRow = ({
         aria-label={t('overview.manage.groups.deleteLabel', {
           name: group.name,
         })}
+        title={t('overview.manage.groups.deleteLabel', { name: group.name })}
         onClick={() => onDelete(group)}
       >
         <Trash2Icon />

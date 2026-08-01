@@ -374,6 +374,26 @@ describe('pipelineRow', () => {
       expect(onInsertStep).toHaveBeenCalledWith(STEPS.length + 1);
     });
 
+    it('puts the insertion points in the tab order and reveals them on focus', async () => {
+      const onInsertStep = vi.fn();
+      renderRow({
+        steps: STEPS,
+        currentStepId: null,
+        lifecycle: 'not_started',
+        onInsertStep,
+      });
+
+      await userEvent.tab();
+
+      const first = insertPoints()[0]!;
+      expect(first).toHaveFocus();
+      // Hover is the only other way in, so focus has to do the revealing.
+      expect(first).toHaveClass('opacity-0', 'focus-visible:opacity-100');
+
+      await userEvent.keyboard('{Enter}');
+      expect(onInsertStep).toHaveBeenCalledWith(1);
+    });
+
     it('keeps the insertion points out of the column layout', () => {
       renderRow({
         steps: STEPS,
