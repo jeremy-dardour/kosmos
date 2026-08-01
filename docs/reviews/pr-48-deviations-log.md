@@ -28,7 +28,8 @@ through as one.
    invalidation for pre-rework components, the cache seam
    (`src/api/overview-cache.ts`) for inline-overview hooks.
    `apps/web/STANDARDS.md` § API layer amended in the same commit. The legacy
-   half dies in C18.
+   half died in C18 as planned; what survives of invalidation is the dialog
+   model plus the drag-recovery crossover (entry 26).
 5. **`pnpm format:check` joined the per-commit gates** (user instruction,
    session 33) and `tsc -b --force` is required for web typechecks after
    generated-type changes (turbo's incremental buildinfo false-passed once).
@@ -57,7 +58,8 @@ through as one.
 10. **Granular step/checklist ops bump workstream `updatedAt`**
     (`touchWorkstream`, C4–C6) so the legacy whole-tail PUT's
     `expectedUpdatedAt` token notices granular edits. Temporary coupling by
-    design; meaningless after C18 removes the token.
+    design; C18 removed the token and kept the bump as a plain aggregate
+    freshness signal (entry 24 trims the forcing).
 11. **`OverviewPatch` union has 8 variants, not the plan's 2** (C10). The plan
     sketched "StepDto or WorkstreamDto"; C4–C6's real responses include
     `ChecklistItemDto` and 204s, and note counts patch as deltas. A two-shape
@@ -67,10 +69,12 @@ through as one.
     `calm`/`soon`/`late` tokens kept (their consumers die in C18), new
     `fortnight`/`month` tokens added. Full rename deferred to C18 —
     deliberately not done mid-phase to avoid touching four doomed components.
+    Landed in C18: `calm` deleted, `passed`/`week` in place, zero old-token
+    references remain.
 13. **Temporary dual hook exports** (C13, C14): `useAdvanceWorkstreamInline`
     (and the C14 workstream-update equivalent) exist alongside the legacy
     invalidating hooks while old components live; each carries a comment;
-    both collapse in C18.
+    both collapsed in C18 — the seam variant now owns the canonical name.
 14. **New card is `inline-workstream-card.tsx`, not a `workstream-card.tsx`
     rewrite** (C14). The plan's literal filename collides with the old card,
     which must keep rendering until C18. The `inline-` name is final (no
@@ -98,7 +102,7 @@ through as one.
     hook exports from `.tsx` component files; the predicates following the
     established one-predicate-per-module idiom. `note-thread.tsx` carries a
     URL-linkifying `NoteBody` that duplicates the one in the doomed
-    `step-notes.tsx` — C18 must delete the old copy.
+    `step-notes.tsx` — C18 deleted the old copy as required.
 20. **Workstream deletion lost its only UI entry point** (C17). The detail
     panel hosted both "edit workstream" (now redundant — every field is live
     on the card) and "delete workstream" (ConfirmDialog + useDeleteWorkstream).
@@ -113,7 +117,7 @@ through as one.
 21. **Ghost steps are a dedicated panel, not `StepEditor` with
     `isPersisted={false}`** (C17). Every StepEditor control mutates a step id
     the server doesn't have; the ghost needs exactly one input. `isPersisted`
-    is now unused in step-editor.tsx — C18 drops it.
+    was left unused in step-editor.tsx — C18 dropped it.
 22. **Old page-level integration specs deleted with their UI** (C17):
     `overview-workstream-actions` (8 tests — all duplicated in
     `advance-control.spec`), `notes-actions` (5 — ported to `note-thread.spec`
