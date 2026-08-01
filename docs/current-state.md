@@ -5,7 +5,7 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-31 (session 32)_
+_Last updated: 2026-08-01 (session 33)_
 
 ## Phase
 
@@ -180,6 +180,21 @@ of review comments addressed. All feature slices are now built; deployment
   [overview-rework-plan.md](./specs/v1-product/overview-rework-plan.md)
   ([session 32](./sessions/session-32-2026-07-31-prototype-2-and-b-decisions.md)).
 
+- **Widget panel (post-V1) grilled, prototyped and ticketed** — a right-edge
+  rail toggling a split panel of collapsible sections: project stats, month
+  grid, agenda deadline list; whole panel mirrors overview filters with an
+  indicator; widgets are presentational with injected navigation callbacks
+  for future multi-project reuse. Decisions and verdict in
+  [docs/prototype/widget-panel/NOTES.md](./prototype/widget-panel/NOTES.md);
+  build tickets
+  [#49](https://github.com/jeremy-dardour/wedding-planner/issues/49) (rail +
+  shell + stats) and
+  [#50](https://github.com/jeremy-dardour/wedding-planner/issues/50)
+  (calendar, depends on #49), both after #40. A side verdict softens the
+  card's Advance button (secondary + spacing, still after-title) — fold into
+  #40's restyle
+  ([session 33](./sessions/session-33-2026-07-31-widget-panel-prototype.md)).
+
 ## In flight
 
 - **Draft PR #37 (`feat/slice-3`)** — Slice 3: advance + start pipeline actions
@@ -208,3 +223,5 @@ of review comments addressed. All feature slices are now built; deployment
    granular step editing replacing the whole-tail PUT, throttle raise). The
    two production date bugs are Phase B of that plan.
 3. All feature slices built — after #40, deployment (#26) remains.
+4. Post-V1: widget panel tickets #49 (rail + shell + stats) then #50
+   (calendar) — fully specified, blocked on #40.
