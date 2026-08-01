@@ -1,7 +1,7 @@
 import { ChevronDownIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { useAdvanceWorkstreamInline } from '@/api/hooks/use-advance-workstream';
+import { useAdvanceWorkstream } from '@/api/hooks/use-advance-workstream';
 import { useUpdateStep } from '@/api/hooks/use-update-step';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,7 +30,7 @@ export const AdvanceControl = ({
   projectId,
 }: AdvanceControlProperties) => {
   const { t } = useTranslation();
-  const advance = useAdvanceWorkstreamInline(projectId);
+  const advance = useAdvanceWorkstream(projectId);
   const updateStep = useUpdateStep(projectId);
 
   if (workstream.lifecycle === 'complete') return null;

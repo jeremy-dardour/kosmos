@@ -273,7 +273,7 @@ describe('with frozen date', () => {
       renderWithApp(<OverviewPage />);
 
       const badge = await screen.findByTitle('Book caterer due 2026-07-28');
-      expect(badge).toHaveClass('bg-urgency-late');
+      expect(badge).toHaveClass('bg-urgency-passed');
       expect(badge).toHaveTextContent('4d late');
     });
 

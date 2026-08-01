@@ -53,8 +53,8 @@ project, 20–50 workstreams).
 **Boundary rules inside the module:**
 
 - `workstream.service` is the single authority for pipeline transitions
-  and atomic pipeline replacement (ADR 0005). Nothing else writes `startedAt`,
-  `completedAt`, `currentStepId`, or a Step's `outcome` / `outcomeAt`.
+  (ADR 0005). Nothing else writes `startedAt`, `completedAt`, `currentStepId`,
+  or a Step's `outcome` / `outcomeAt`.
 - Repositories are the only classes that use the EntityManager or other
   MikroORM persistence APIs. They accept and return entities, not DTOs.
 - Services instantiate and mutate entities from input DTOs. Services or

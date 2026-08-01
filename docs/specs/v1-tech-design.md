@@ -171,23 +171,27 @@ Full endpoint spec, DTOs, and error codes in the
 | Current |             Frozen             |                  Editable                   |     Yes     |
 | Future  |            Editable            |                  Editable                   |     Yes     |
 
-Enforcement: the Workstream pipeline command locks the aggregate, compares each
-submitted Step with the pointer, and commits the complete editable tail or
-nothing. Violations → 409 `step-frozen`, `step-not-deletable`,
-`pipeline-mismatch`, or `pipeline-stale`.
+Enforcement: each granular step or checklist operation locks the aggregate and
+re-validates the submitted Step against the pointer before committing.
+Violations → 409 `step-frozen`, `step-not-deletable`, or
+`step-insertion-illegal`.
 
 ### Error responses
 
-| Status | When                                    | Type slug                    |
-| ------ | --------------------------------------- | ---------------------------- |
-| 409    | `advance` on Complete                   | `workstream-not-advanceable` |
-| 409    | `advance` on empty workstream           | `workstream-empty`           |
-| 400    | `advance` with outcome on NotStarted    | validation error             |
-| 409    | Mutation on past step                   | `step-frozen`                |
-| 409    | Structural mutation on current step     | `step-not-deletable`         |
-| 409    | Submitted editable tail is inconsistent | `pipeline-mismatch`          |
-| 409    | Pipeline changed since editing began    | `pipeline-stale`             |
-| 403    | Edit/delete note by non-author          | `not-note-author`            |
+The full table lives in the
+[V1 API contract](./v1-product/api-contract.md#error-responses); the
+pipeline-relevant slugs are:
+
+| Status | When                                              | Type slug                    |
+| ------ | ------------------------------------------------- | ---------------------------- |
+| 409    | `advance` on Complete                             | `workstream-not-advanceable` |
+| 409    | `advance` on empty workstream                     | `workstream-empty`           |
+| 400    | `advance` with outcome on NotStarted              | validation error             |
+| 409    | Mutation on past step                             | `step-frozen`                |
+| 409    | Structural mutation on current step               | `step-not-deletable`         |
+| 409    | Step insert at a position outside the future zone | `step-insertion-illegal`     |
+| 409    | Reorder ids do not match current membership       | `order-mismatch`             |
+| 403    | Edit/delete note by non-author                    | `not-note-author`            |
 
 ---
 

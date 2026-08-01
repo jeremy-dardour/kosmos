@@ -199,7 +199,7 @@ describe('stepService.update', () => {
     );
   });
 
-  it('bumps the workstream timestamp so pipeline drafts go stale', async () => {
+  it('bumps the workstream timestamp', async () => {
     const step = buildStep({ id: 's1', position: 1 });
     const workstream = buildWorkstream({ steps: [step] });
     const { service } = createService(workstream);
@@ -306,7 +306,7 @@ describe('stepService.reorder', () => {
     );
   });
 
-  it('bumps the workstream timestamp so pipeline drafts go stale', async () => {
+  it('bumps the workstream timestamp', async () => {
     const workstream = buildActivePipeline();
     const { service } = createService(workstream);
     const before = workstream.updatedAt.getTime();

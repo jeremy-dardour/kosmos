@@ -2,16 +2,13 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useCreateWorkstream } from '@/api/hooks/use-create-workstream';
-import { useUpdateWorkstream } from '@/api/hooks/use-update-workstream';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import type { Group, UserSummary, Workstream } from '@/api/hooks/use-overview';
+import type { Group, UserSummary } from '@/api/hooks/use-overview';
 
 interface WorkstreamFormDialogProperties {
-  mode: 'create' | 'edit';
-  workstream?: Workstream;
   projectId: string;
   groups: Group[];
   users: UserSummary[];
@@ -22,10 +19,11 @@ interface WorkstreamFormDialogProperties {
 const selectClass =
   'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2 text-sm';
 
-/** One dialog for both creating and editing a workstream. */
+/**
+ * Creating a workstream is the one thing the inline card cannot do — every
+ * field of an existing workstream is edited on the card itself.
+ */
 export const WorkstreamFormDialog = ({
-  mode,
-  workstream,
   projectId,
   groups,
   users,
@@ -34,57 +32,41 @@ export const WorkstreamFormDialog = ({
 }: WorkstreamFormDialogProperties) => {
   const { t } = useTranslation();
   const createWorkstream = useCreateWorkstream(projectId);
-  const updateWorkstream = useUpdateWorkstream(projectId);
 
-  const [name, setName] = useState(workstream?.name ?? '');
-  const [icon, setIcon] = useState(workstream?.icon ?? '');
-  const [groupId, setGroupId] = useState(workstream?.groupId ?? '');
-  const [ownerId, setOwnerId] = useState(workstream?.ownerId ?? '');
+  const [name, setName] = useState('');
+  const [icon, setIcon] = useState('');
+  const [groupId, setGroupId] = useState('');
+  const [ownerId, setOwnerId] = useState('');
 
-  const isSaving = createWorkstream.isPending || updateWorkstream.isPending;
+  const isSaving = createWorkstream.isPending;
   const isValid = Boolean(name.trim()) && Boolean(icon.trim());
-
-  const close = () => onOpenChange(false);
 
   const submit = () => {
     if (!isValid || isSaving) return;
-    const body = {
-      name: name.trim(),
-      icon: icon.trim(),
-      groupId: groupId || null,
-      ownerId: ownerId || null,
-    };
 
-    if (mode === 'edit' && workstream) {
-      updateWorkstream.mutate(
-        { params: { path: { id: workstream.id } }, body },
-        { onSuccess: close },
-      );
-    } else {
-      createWorkstream.mutate(
-        { params: { path: { projectId } }, body },
-        { onSuccess: close },
-      );
-    }
+    createWorkstream.mutate(
+      {
+        params: { path: { projectId } },
+        body: {
+          name: name.trim(),
+          icon: icon.trim(),
+          groupId: groupId || null,
+          ownerId: ownerId || null,
+        },
+      },
+      { onSuccess: () => onOpenChange(false) },
+    );
   };
 
   return (
     <FormDialog
-      title={t(
-        mode === 'edit'
-          ? 'overview.manage.form.editTitle'
-          : 'overview.manage.form.createTitle',
-      )}
+      title={t('overview.manage.form.createTitle')}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       onSubmit={submit}
       isValid={isValid}
       isPending={isSaving}
-      submitLabel={t(
-        mode === 'edit'
-          ? 'overview.manage.form.save'
-          : 'overview.manage.form.create',
-      )}
+      submitLabel={t('overview.manage.form.create')}
       pendingLabel={t('overview.manage.form.saving')}
       cancelLabel={t('overview.manage.form.cancel')}
     >

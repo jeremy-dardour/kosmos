@@ -2,8 +2,6 @@ import { raw } from '@mikro-orm/core';
 import { EntityRepository, SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
-import { ChecklistItem } from '@/database/entities/checklist-item.entity';
-import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 import { lockProjectOrder } from '@/modules/project/repositories/lock-project-order.query';
 import {
@@ -14,11 +12,6 @@ import { countNotesByStep } from '@/modules/project/repositories/note-count.quer
 
 import type { Group } from '@/database/entities/group.entity';
 import type { NoteCountsByStep } from '@/modules/project/repositories/note-count.query';
-
-export interface LockedWorkstreamChanges {
-  removedSteps?: Step[];
-  removedChecklistItems?: ChecklistItem[];
-}
 
 @Injectable()
 export class WorkstreamRepository extends EntityRepository<Workstream> {
@@ -142,20 +135,12 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
 
   async updateLockedDetails(
     id: string,
-    apply: (
-      workstream: Workstream,
-    ) => LockedWorkstreamChanges | undefined | void,
+    apply: (workstream: Workstream) => void,
   ): Promise<Workstream> {
     return this.em.transactional(async (em) => {
       const workstream = await lockWorkstreamGraph(em, id);
 
-      const changes = apply(workstream);
-      if (changes?.removedChecklistItems) {
-        em.remove(changes.removedChecklistItems);
-      }
-      if (changes?.removedSteps) {
-        em.remove(changes.removedSteps);
-      }
+      apply(workstream);
       await em.flush();
 
       return workstream;

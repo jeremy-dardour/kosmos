@@ -49,8 +49,6 @@ interface StepEditorProperties {
   users: UserSummary[];
   projectId: string | undefined;
   now: Date;
-  /** A ghost Step has no server row yet, so its notes have nowhere to go. */
-  isPersisted?: boolean;
   /** `null` closes the editor; another id moves it along the pipeline. */
   onOpenStep: (stepId: string | null) => void;
 }
@@ -66,7 +64,6 @@ export const StepEditor = ({
   users,
   projectId,
   now,
-  isPersisted = true,
   onOpenStep,
 }: StepEditorProperties) => {
   const { t, i18n } = useTranslation();
@@ -216,18 +213,12 @@ export const StepEditor = ({
         projectId={projectId}
       />
 
-      {isPersisted ? (
-        <NotesBlock
-          workstreamId={workstream.id}
-          step={step}
-          projectId={projectId}
-          now={now}
-        />
-      ) : (
-        <p className="mt-1 text-[11px] text-muted-foreground/70">
-          {t('overview.stepEditor.notesUnavailable')}
-        </p>
-      )}
+      <NotesBlock
+        workstreamId={workstream.id}
+        step={step}
+        projectId={projectId}
+        now={now}
+      />
 
       <div className="mt-2 flex items-center gap-1 border-t pt-2">
         <Button

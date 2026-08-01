@@ -46,8 +46,8 @@ const STATUS_LABELS = {
  * band drives both the dot's ring and its date — they can never disagree.
  */
 const BAND_COLORS: Record<UrgencyBand, string> = {
-  passed: 'text-urgency-late',
-  week: 'text-urgency-soon-foreground',
+  passed: 'text-urgency-passed',
+  week: 'text-urgency-week-foreground',
   fortnight: 'text-urgency-fortnight-foreground',
   month: 'text-urgency-month-foreground',
   far: 'text-muted-foreground/60',

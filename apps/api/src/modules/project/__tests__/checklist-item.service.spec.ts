@@ -95,7 +95,7 @@ describe('checklistItemService.create', () => {
     );
   });
 
-  it('bumps the workstream timestamp so pipeline drafts go stale', async () => {
+  it('bumps the workstream timestamp', async () => {
     const { service, workstream } = createService(
       buildStep({ id: 's1', position: 1 }),
     );

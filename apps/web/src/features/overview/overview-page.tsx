@@ -6,7 +6,6 @@ import { useProjects } from '@/api/hooks/use-projects';
 import { useAuthState } from '@/auth/auth-context';
 import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
 import { GroupManagerDialog } from '@/features/overview/group-manager-dialog';
-import { OverviewEditingPrototype } from '@/features/overview/overview-editing-prototype';
 import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewList } from '@/features/overview/overview-list';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
@@ -15,16 +14,6 @@ import { useGhostStep } from '@/features/overview/use-ghost-step';
 import { WorkstreamFormDialog } from '@/features/overview/workstream-form-dialog';
 
 import type { Overview, Workstream } from '@/api/hooks/use-overview';
-
-/**
- * PROTOTYPE seam — `?variant=A` swaps the overview body for the inline-editing
- * prototype. Read straight off the URL rather than through the router, so the
- * page keeps rendering outside a <Router> (integration tests do that). Remove
- * with the prototype.
- */
-function isPrototypeRequested(): boolean {
-  return new URLSearchParams(globalThis.location.search).get('variant') === 'A';
-}
 
 function applyOwnerFilter(
   workstreams: Workstream[],
@@ -99,7 +88,6 @@ export const OverviewPage = () => {
     });
   }, []);
 
-  const isPrototype = isPrototypeRequested();
   // One clock read for the whole list, so every countdown, ring and date tick
   // on screen agrees on what "now" is.
   // eslint-disable-next-line @eslint-react/purity -- intentional clock read
@@ -137,15 +125,7 @@ export const OverviewPage = () => {
           </div>
         )}
 
-        {filtered && isPrototype && (
-          <OverviewEditingPrototype
-            groups={filtered.groups}
-            workstreams={filtered.workstreams}
-            users={filtered.users}
-          />
-        )}
-
-        {filtered && !isPrototype && filtered.workstreams.length === 0 && (
+        {filtered && filtered.workstreams.length === 0 && (
           <div className="rounded-lg border border-dashed p-panel text-center">
             <p className="text-sm font-medium">{t('overview.empty.title')}</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -154,7 +134,7 @@ export const OverviewPage = () => {
           </div>
         )}
 
-        {filtered && !isPrototype && filtered.workstreams.length > 0 && (
+        {filtered && filtered.workstreams.length > 0 && (
           <OverviewList
             overview={filtered}
             projectId={projectId}
@@ -168,7 +148,6 @@ export const OverviewPage = () => {
 
       {overview.data && projectId && isCreatingWorkstream && (
         <WorkstreamFormDialog
-          mode="create"
           projectId={projectId}
           groups={overview.data.groups}
           users={overview.data.users}

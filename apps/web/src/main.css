@@ -134,13 +134,11 @@
   --step-blocked: oklch(0.58 0.163 27);
   --step-blocked-glow: oklch(0.58 0.163 27 / 18%);
 
-  /* Deadline urgency bands, red → orange → yellow → grey. */
-  --urgency-calm: oklch(0.96 0.003 285);
-  --urgency-calm-foreground: oklch(0.52 0.004 285);
-  --urgency-soon: oklch(0.95 0.032 27);
-  --urgency-soon-foreground: oklch(0.52 0.163 27);
-  --urgency-late: oklch(0.58 0.163 27);
-  --urgency-late-foreground: oklch(0.99 0 0);
+  /* Deadline urgency bands, red → orange → yellow. `far` uses muted. */
+  --urgency-passed: oklch(0.58 0.163 27);
+  --urgency-passed-foreground: oklch(0.99 0 0);
+  --urgency-week: oklch(0.95 0.032 27);
+  --urgency-week-foreground: oklch(0.52 0.163 27);
   --urgency-fortnight: oklch(0.95 0.04 65);
   --urgency-fortnight-foreground: oklch(0.55 0.145 55);
   --urgency-month: oklch(0.96 0.04 95);
@@ -155,13 +153,10 @@
   --step-skipped: oklch(0.56 0.006 285);
   --step-blocked: oklch(0.71 0.145 27);
   --step-blocked-glow: oklch(0.71 0.145 27 / 24%);
-
-  --urgency-calm: oklch(0.27 0.004 285);
-  --urgency-calm-foreground: oklch(0.72 0.006 285);
-  --urgency-soon: oklch(0.31 0.055 27);
-  --urgency-soon-foreground: oklch(0.79 0.12 27);
-  --urgency-late: oklch(0.63 0.16 27);
-  --urgency-late-foreground: oklch(0.16 0 0);
+  --urgency-passed: oklch(0.63 0.16 27);
+  --urgency-passed-foreground: oklch(0.16 0 0);
+  --urgency-week: oklch(0.31 0.055 27);
+  --urgency-week-foreground: oklch(0.79 0.12 27);
   --urgency-fortnight: oklch(0.32 0.06 60);
   --urgency-fortnight-foreground: oklch(0.81 0.12 60);
   --urgency-month: oklch(0.33 0.055 90);
@@ -174,13 +169,10 @@
   --color-step-not-started: var(--step-not-started);
   --color-step-skipped: var(--step-skipped);
   --color-step-blocked: var(--step-blocked);
-
-  --color-urgency-calm: var(--urgency-calm);
-  --color-urgency-calm-foreground: var(--urgency-calm-foreground);
-  --color-urgency-soon: var(--urgency-soon);
-  --color-urgency-soon-foreground: var(--urgency-soon-foreground);
-  --color-urgency-late: var(--urgency-late);
-  --color-urgency-late-foreground: var(--urgency-late-foreground);
+  --color-urgency-passed: var(--urgency-passed);
+  --color-urgency-passed-foreground: var(--urgency-passed-foreground);
+  --color-urgency-week: var(--urgency-week);
+  --color-urgency-week-foreground: var(--urgency-week-foreground);
   --color-urgency-fortnight: var(--urgency-fortnight);
   --color-urgency-fortnight-foreground: var(--urgency-fortnight-foreground);
   --color-urgency-month: var(--urgency-month);

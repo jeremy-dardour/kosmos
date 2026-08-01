@@ -16,7 +16,6 @@ import type { ReorderStepsInput } from '@/api/hooks/use-reorder-steps';
 import type { ReorderWorkstreamsInput } from '@/api/hooks/use-reorder-workstreams';
 import type { UpdateChecklistItemInput } from '@/api/hooks/use-update-checklist-item';
 import type { UpdateStepInput } from '@/api/hooks/use-update-step';
-import type { UpdateWorkstreamPipelineInput } from '@/api/hooks/use-update-workstream-pipeline';
 import type {
   CreateNoteInput,
   NoteEntry,
@@ -129,7 +128,6 @@ interface AdvanceRequest {
 export function setupOverviewApi(initialOverview: Overview) {
   let overview = initialOverview;
   let generatedId = 0;
-  let lastPipelineInput: UpdateWorkstreamPipelineInput | null = null;
   let lastCreatedStep: CreateStepInput | null = null;
   let lastGroupOrder: ReorderGroupsInput | null = null;
   let lastWorkstreamOrder: ReorderWorkstreamsInput | null = null;
@@ -471,67 +469,6 @@ export function setupOverviewApi(initialOverview: Overview) {
     http.get(`${API_BASE}/api/workstreams/:id/notes`, () =>
       HttpResponse.json([]),
     ),
-    http.put(
-      `${API_BASE}/api/workstreams/:id/pipeline`,
-      async ({ params, request }) => {
-        const input = (await request.json()) as UpdateWorkstreamPipelineInput;
-        lastPipelineInput = input;
-        const workstreamId = String(params.id);
-        const ws = overview.workstreams.find(
-          (item) => item.id === workstreamId,
-        );
-        if (!ws) {
-          return problemResponse(404, problemDetails(404));
-        }
-
-        const pastSteps = ws.steps.filter(
-          (s) => s.status === 'done' || s.status === 'skipped',
-        );
-        const updatedAt = new Date(
-          new Date(ws.updatedAt).getTime() + 1000,
-        ).toISOString();
-        const echoedSteps = input.steps.map((submitted, index) => ({
-          id: submitted.id ?? `mock-step-${++generatedId}`,
-          name: submitted.name,
-          position: pastSteps.length + index + 1,
-          status:
-            ws.lifecycle === 'active' && index === 0
-              ? ('in_progress' as const)
-              : ('not_started' as const),
-          blocked: submitted.blocked,
-          deadline: submitted.deadline,
-          outcome: null,
-          outcomeAt: null,
-          explicitOwnerId: submitted.ownerId,
-          effectiveOwnerId: submitted.ownerId ?? ws.ownerId,
-          checklistItems: submitted.checklistItems.map((item) => ({
-            id: item.id ?? `mock-item-${++generatedId}`,
-            name: item.name,
-            position: 0,
-            done: item.done,
-            createdAt: updatedAt,
-            updatedAt,
-          })),
-          noteCount:
-            ws.steps.find((s) => s.id === submitted.id)?.noteCount ?? 0,
-          createdAt: updatedAt,
-          updatedAt,
-        }));
-        const updatedWorkstream = {
-          ...ws,
-          updatedAt,
-          steps: [...pastSteps, ...echoedSteps],
-        };
-
-        overview = {
-          ...overview,
-          workstreams: overview.workstreams.map((item) =>
-            item.id === ws.id ? updatedWorkstream : item,
-          ),
-        };
-        return HttpResponse.json(updatedWorkstream);
-      },
-    ),
     http.patch(
       `${API_BASE}/api/checklist-items/:id`,
       async ({ params, request }) => {
@@ -698,10 +635,6 @@ export function setupOverviewApi(initialOverview: Overview) {
   );
 
   return {
-    getLastPipelineInput() {
-      return lastPipelineInput;
-    },
-
     /** The body of the last create-step call, rejected ones included. */
     getLastCreatedStep() {
       return lastCreatedStep;
@@ -760,14 +693,6 @@ export function setupOverviewApi(initialOverview: Overview) {
       server.use(
         http.post(`${API_BASE}/api/workstreams/${id}/advance`, () =>
           problemResponse(status, problem),
-        ),
-      );
-    },
-
-    mockPipelineError(id: string, status: number, problem: ProblemOverrides) {
-      server.use(
-        http.put(`${API_BASE}/api/workstreams/${id}/pipeline`, () =>
-          problemResponse(status, problemDetails(status, problem)),
         ),
       );
     },

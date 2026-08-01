@@ -214,14 +214,14 @@ describe('pipelineRow', () => {
       const dot = ringOf('2026-07-20');
 
       expect(dot).toHaveClass('ring-[3px]');
-      expect(dot).toHaveClass('text-urgency-late');
+      expect(dot).toHaveClass('text-urgency-passed');
     });
 
     it('rings a step due within the week in the soon colour', () => {
       const dot = ringOf('2026-08-05');
 
       expect(dot).toHaveClass('ring-2');
-      expect(dot).toHaveClass('text-urgency-soon-foreground');
+      expect(dot).toHaveClass('text-urgency-week-foreground');
     });
 
     it('rings a step due within the fortnight in orange', () => {

@@ -31,7 +31,6 @@ import { CreateStepDto } from '@/modules/project/dtos/input/create-step.dto';
 import { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
 import { ReorderStepsDto } from '@/modules/project/dtos/input/reorder-steps.dto';
 import { ReorderWorkstreamsDto } from '@/modules/project/dtos/input/reorder-workstreams.dto';
-import { UpdatePipelineDto } from '@/modules/project/dtos/input/update-pipeline.dto';
 import { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
 import { StepService } from '@/modules/project/step.service';
@@ -135,19 +134,6 @@ export class WorkstreamController {
     @Body() dto: ReorderStepsDto,
   ): Promise<WorkstreamDto> {
     return this.stepService.reorder(id, dto);
-  }
-
-  @Put('workstreams/:id/pipeline')
-  @ApiOperation({ summary: 'Atomically replace the editable pipeline tail' })
-  @ApiOkResponse({ type: WorkstreamDto })
-  @ApiConflictResponse(
-    'The pipeline is stale, frozen, or does not match the editable tail',
-  )
-  async updatePipeline(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdatePipelineDto,
-  ): Promise<WorkstreamDto> {
-    return this.workstreamService.updatePipeline(id, dto);
   }
 
   @Delete('workstreams/:id')

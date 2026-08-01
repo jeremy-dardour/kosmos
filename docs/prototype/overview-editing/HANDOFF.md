@@ -38,18 +38,11 @@ is recorded in §3.6–§3.8 and the appendix.
 
 ## 2. How to run it
 
-Ports are workspace-specific — read them per [PORTS.md](../../../PORTS.md)
-(`WEB_PORT` in `apps/web/.env`, `PORT` in `apps/api/.env`).
-
-```
-http://localhost:<WEB_PORT>/?variant=A
-```
-
-`?variant=A` is the only seam: it swaps the overview body for the prototype and
-hides the detail panel. Without it the production overview renders untouched.
-
-**Everything you type is a local draft.** Reads are real API data; no write ever
-leaves the browser. The strip at bottom-left counts local edits.
+**The prototype and its `?variant=A` seam were deleted in C18** once the
+inline overview became the production surface — the behaviour it demonstrated
+now runs at the app root. Historically, `?variant=A` swapped the overview body
+for the prototype (a local-draft-only surface: reads were real API data, no
+write ever left the browser).
 
 Two things to know before judging it:
 

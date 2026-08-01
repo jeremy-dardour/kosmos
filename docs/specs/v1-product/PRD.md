@@ -260,9 +260,9 @@ by a structural edit.
 - **Future steps are fully mutable** — add, delete, reorder, edit freely.
 - A step you decide never to do is **deleted** (it's a future step), not
   pre-skipped.
-- Editing happens in one Workstream-level draft. Saving atomically replaces the
-  current/future editable tail, so a multi-step replan either commits in full or
-  leaves the pipeline unchanged.
+- Editing happens inline, one change at a time. Each step or checklist edit
+  commits on blur through its own granular operation, re-validated against the
+  pointer at commit time; last write wins.
 
 ### Manage notes
 

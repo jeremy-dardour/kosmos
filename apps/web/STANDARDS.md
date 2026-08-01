@@ -40,17 +40,21 @@ src/
   each child.
 - Store selected entity IDs, then derive the selected entity from query data;
   do not keep a copied response object that can become stale.
-- Mutations touch only queries whose response can change. Two refresh models
-  coexist while the inline overview rework lands:
-  - **Legacy, per-mutation invalidation** (`useInvalidateOverview`) — the
-    advance, workstream / group / project CRUD and whole-tail pipeline hooks
-    serving the pre-rework components. Leave them as they are; they die with
-    their callers.
-  - **The overview cache seam** (`src/api/overview-cache.ts`) — every hook
-    behind the inline overview merges its response into the cached aggregate
-    with `useOverviewCache` and lets one debounced, focus-deferred trailing
-    invalidate reconcile the server-derived fields. Never add a per-mutation
-    overview invalidation to a hook that commits through the seam.
+- Mutations touch only queries whose response can change, via one of two
+  deliberate refresh models:
+  - **Inline overview mutations commit through the cache seam**
+    (`src/api/overview-cache.ts`): the hook merges its response into the
+    cached aggregate with `useOverviewCache` and one debounced,
+    focus-deferred trailing invalidate reconciles the server-derived fields.
+    Never add a per-mutation overview invalidation to a hook that commits
+    through the seam.
+  - **Dialog mutations invalidate** (`useInvalidateOverview`): workstream
+    create/delete, group CRUD, project settings — flows whose responses are
+    not patchable into the aggregate and where a full refetch after a dialog
+    closes is the right cost.
+  - One sanctioned crossover: reorder mutations commit through the seam but
+    recover from a rejected drag by invalidating in `onError` — the stale
+    optimistic order is forgotten whole and the server's order re-renders.
 - Note mutations patch the cached per-step `noteCount` through the seam and
   invalidate the on-demand notes query.
 
@@ -89,4 +93,3 @@ src/
 - **Browser E2E is deferred.** Do not add Playwright coverage for now. Cover web
   journeys at the integration layer with real providers and MSW; retain the
   existing Playwright setup for when browser tests are resumed.
-- Shared component mocks go in `@/testing/mocks/components.tsx`.

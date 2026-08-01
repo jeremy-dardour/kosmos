@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useUpdateChecklistItem } from '@/api/hooks/use-update-checklist-item';
-import { useUpdateWorkstreamInline } from '@/api/hooks/use-update-workstream';
+import { useUpdateWorkstream } from '@/api/hooks/use-update-workstream';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,8 +41,8 @@ const ICONS = ['🏰', '🍽️', '💐', '📸', '🎵', '💍', '👗', '🚗'
 const COUNTDOWN_HORIZON_DAYS = 14;
 
 const BAND_BADGE_CLASSES: Record<UrgencyBand, string> = {
-  passed: 'bg-urgency-late text-urgency-late-foreground',
-  week: 'bg-urgency-soon text-urgency-soon-foreground',
+  passed: 'bg-urgency-passed text-urgency-passed-foreground',
+  week: 'bg-urgency-week text-urgency-week-foreground',
   fortnight: 'bg-urgency-fortnight text-urgency-fortnight-foreground',
   month: 'bg-urgency-month text-urgency-month-foreground',
   far: 'bg-muted text-muted-foreground',
@@ -88,7 +88,7 @@ export const InlineWorkstreamCard = ({
   dragHandle,
 }: InlineWorkstreamCardProperties) => {
   const { t } = useTranslation();
-  const updateWorkstream = useUpdateWorkstreamInline(projectId);
+  const updateWorkstream = useUpdateWorkstream(projectId);
   const updateChecklistItem = useUpdateChecklistItem(projectId);
   const cardRef = useRef<HTMLElement>(null);
 
