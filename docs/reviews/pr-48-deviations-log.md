@@ -126,3 +126,25 @@ through as one.
     it (session 28's extraction isn't in the tree); the page reads one clock
     at render like the old cards did. The known "stale urgency on a long-lived
     tab" issue (§9) remains — unchanged from production.
+24. **`touchWorkstream` lost its monotonic forcing** (C18, review-driven). The
+    `Math.max(now, updatedAt + 1)` bump existed solely so `updatedAt` worked as
+    the whole-tail PUT's `expectedUpdatedAt` token; with the token deleted,
+    nothing compares the timestamp anymore (web has zero `updatedAt` readers),
+    so the util is a plain `new Date()` now. The unit tests asserting a strict
+    bump stay valid — builders pin `updatedAt` a month in the past.
+25. **C18 deleted slightly beyond its kill list** (all orphaned by the same
+    deletion): `WorkstreamFormDialog`'s dead edit mode (create-only now — every
+    field of an existing workstream is edited on the card), the single-caller
+    `conflict()` helper in `workstream.service.ts` (inlined; the file's other
+    throws were already inline), and the never-implemented
+    `@/testing/mocks/components.tsx` line in the web standards.
+26. **Doc sync beyond the plan's list** (C18): `CONTEXT.md` § Pipeline
+    mutability and PRD § pipeline editing still described the atomic
+    Workstream-level save — both now state the granular commit-on-blur,
+    last-write-wins model; handoff §2 records the prototype/`?variant=A`
+    deletion; the web standards' refresh-model section now names workstream
+    delete (hook dormant until C19) and the one sanctioned crossover — reorder
+    mutations invalidating in `onError` to recover from a rejected drag.
+27. **Template-leftover i18n keys kept** (C18): `items.*`,
+    `app.test.translation`, `auth.landing.action.retry` are unreferenced but
+    predate #40 (template scaffolding) — out of this PR's scope, left alone.
