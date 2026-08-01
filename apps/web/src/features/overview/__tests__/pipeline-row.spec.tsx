@@ -3,6 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PipelineRow } from '@/features/overview/pipeline-row';
+import {
+  checklistItem as buildChecklistItem,
+  step as buildStep,
+} from '@/testing/mock-overview-data';
 
 import type {
   ChecklistItem,
@@ -18,39 +22,17 @@ const USERS = new Map<string, UserSummary>([
   ['user-1', { id: 'user-1', name: 'Ada Lovelace', avatarUrl: null }],
 ]);
 
+/** Shared builders, but with `id: name` so assertions can use bare names. */
 function step(
   name: string,
   status: StepStatus,
   overrides: Partial<Step> = {},
 ): Step {
-  return {
-    id: name,
-    name,
-    position: 1,
-    status,
-    blocked: false,
-    deadline: null,
-    outcome: null,
-    outcomeAt: null,
-    explicitOwnerId: null,
-    effectiveOwnerId: null,
-    checklistItems: [],
-    noteCount: 0,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-    ...overrides,
-  };
+  return buildStep(name, status, { id: name, ...overrides });
 }
 
 function item(name: string, isDone: boolean): ChecklistItem {
-  return {
-    id: name,
-    name,
-    position: 1,
-    done: isDone,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  };
+  return buildChecklistItem(name, isDone, { id: name });
 }
 
 interface RowOverrides {

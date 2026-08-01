@@ -6,6 +6,7 @@ import {
   toChecklistItemDto,
 } from '@/modules/project/dtos/output/checklist-item.dto';
 import { ChecklistItemRepository } from '@/modules/project/repositories/checklist-item.repository';
+import { closePositionGap } from '@/modules/project/utils/position-gap.util';
 import { assertStepEditable } from '@/modules/project/utils/step-mutability.util';
 import { touchWorkstream } from '@/modules/project/utils/touch-workstream.util';
 
@@ -33,11 +34,10 @@ export class ChecklistItemService {
         assertStepEditable(step);
 
         const item = new ChecklistItem();
-        item.step = step;
         item.position = this.nextPosition(step);
         item.name = dto.name;
         item.done = false;
-        step.checklistItems.add(item);
+        step.addChecklistItem(item);
         touchWorkstream(workstream);
 
         return item;
@@ -73,11 +73,7 @@ export class ChecklistItemService {
     await this.checklistItemRepository.removeLocked(id, (item, workstream) => {
       assertStepEditable(item.step);
 
-      for (const sibling of item.step.getChecklistItems()) {
-        if (sibling.position > item.position) {
-          sibling.position -= 1;
-        }
-      }
+      closePositionGap(item.step.getChecklistItems(), item.position);
       touchWorkstream(workstream);
     });
   }

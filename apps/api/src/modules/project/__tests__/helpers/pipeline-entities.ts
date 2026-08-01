@@ -7,7 +7,7 @@ import type { StepOutcome } from '@/database/entities/step.entity';
 import type { Collection } from '@mikro-orm/core';
 
 /** Plain-array Collection, so entity graphs need no EntityManager. */
-export function stubCollection<T extends object>(items: T[]): Collection<T> {
+function stubCollection<T extends object>(items: T[]): Collection<T> {
   return {
     getItems: () => [...items],
     add(incoming: T | T[]) {

@@ -1,5 +1,4 @@
-import { EntityRepository } from '@mikro-orm/core';
-import { SqlEntityManager } from '@mikro-orm/postgresql';
+import { EntityRepository, SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
 import { Group } from '@/database/entities/group.entity';

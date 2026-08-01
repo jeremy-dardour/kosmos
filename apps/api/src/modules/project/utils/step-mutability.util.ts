@@ -1,7 +1,5 @@
-import { HttpStatus } from '@nestjs/common';
-
 import { WorkstreamLifecycle } from '@/database/entities/workstream.entity';
-import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
+import { conflict } from '@/modules/project/utils/conflict.util';
 
 import type { Step } from '@/database/entities/step.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
@@ -12,14 +10,10 @@ import type { Workstream } from '@/database/entities/workstream.entity';
  * but no structural change, future steps are fully mutable.
  */
 
-export function stepConflict(typeSlug: string, detail: string): never {
-  throw new ProblemDetailsException(HttpStatus.CONFLICT, typeSlug, detail);
-}
-
 /** Past steps only accept appended notes. `blocked` stays writable elsewhere. */
 export function assertStepEditable(step: Step): void {
   if (step.outcome != null) {
-    stepConflict('step-frozen', 'Past steps cannot be edited');
+    conflict('step-frozen', 'Past steps cannot be edited');
   }
 }
 
@@ -27,7 +21,7 @@ export function assertStepDeletable(workstream: Workstream, step: Step): void {
   assertStepEditable(step);
 
   if (workstream.currentStep?.id === step.id) {
-    stepConflict(
+    conflict(
       'step-not-deletable',
       'The current step cannot be deleted while it is in progress',
     );
@@ -36,10 +30,7 @@ export function assertStepDeletable(workstream: Workstream, step: Step): void {
 
 export function assertPipelineMutable(workstream: Workstream): void {
   if (workstream.getLifecycle() === WorkstreamLifecycle.Complete) {
-    stepConflict(
-      'step-frozen',
-      'Completed workstream pipelines cannot be edited',
-    );
+    conflict('step-frozen', 'Completed workstream pipelines cannot be edited');
   }
 }
 
@@ -70,7 +61,7 @@ export function assertInsertablePosition(
   const stepCount = workstream.getSteps().length;
 
   if (isComplete || position <= pointerPosition || position > stepCount + 1) {
-    stepConflict(
+    conflict(
       'step-insertion-illegal',
       `Position ${position} is not in this workstream's future zone`,
     );

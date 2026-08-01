@@ -7,12 +7,14 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useInvalidateOverview } from '@/api/hooks/use-invalidate-overview';
 import { useReorderWorkstreams } from '@/api/hooks/use-reorder-workstreams';
 import { DragHandle } from '@/features/overview/drag-handle';
+import {
+  applyOptimisticOrder,
+  useOptimisticReorder,
+} from '@/features/overview/use-optimistic-reorder';
 import { useOverviewDndSensors } from '@/features/overview/use-overview-dnd-sensors';
 import { cn } from '@/lib/utils';
 
@@ -48,8 +50,7 @@ export const SortableGroupSection = ({
   const { t } = useTranslation();
   const sensors = useOverviewDndSensors();
   const reorderWorkstreams = useReorderWorkstreams(projectId);
-  const invalidateOverview = useInvalidateOverview(projectId);
-  const [draggedOrder, setDraggedOrder] = useState<string[] | null>(null);
+  const cardOrder = useOptimisticReorder(projectId);
 
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
@@ -58,7 +59,7 @@ export const SortableGroupSection = ({
       disabled: isDragDisabled || bucket.group === null,
     });
 
-  const workstreams = applyOrder(bucket.workstreams, draggedOrder);
+  const workstreams = applyOptimisticOrder(bucket.workstreams, cardOrder.order);
   // A lone card has nothing to reorder against, so it gets no handle at all.
   const isSortable = !isDragDisabled && workstreams.length > 1;
 
@@ -71,19 +72,13 @@ export const SortableGroupSection = ({
     if (from === -1 || to === -1) return;
 
     const next = arrayMove(ids, from, to);
-    setDraggedOrder(next);
+    cardOrder.begin(next);
     reorderWorkstreams.mutate(
       {
         params: { path: { projectId } },
         body: { groupId: bucket.group?.id ?? null, ids: next },
       },
-      {
-        // The server owns the order. A drag against a stale list is rejected
-        // whole, so the recovery is to forget it and re-render what the
-        // server has; retrying means dragging again on fresh data.
-        onError: () => void invalidateOverview(),
-        onSettled: () => setDraggedOrder(null),
-      },
+      cardOrder.recovery,
     );
   };
 
@@ -223,21 +218,4 @@ function SortableWorkstreamCard({
       )}
     </div>
   );
-}
-
-/** The optimistic order, honoured only while it still describes this bucket. */
-function applyOrder(
-  workstreams: Workstream[],
-  order: string[] | null,
-): Workstream[] {
-  if (order?.length !== workstreams.length) return workstreams;
-
-  const byId = new Map(
-    workstreams.map((workstream) => [workstream.id, workstream]),
-  );
-  const ordered = order.map((id) => byId.get(id));
-
-  return ordered.every((workstream) => workstream !== undefined)
-    ? ordered
-    : workstreams;
 }

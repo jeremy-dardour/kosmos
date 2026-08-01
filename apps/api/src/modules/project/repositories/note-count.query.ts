@@ -2,9 +2,8 @@ import { raw } from '@mikro-orm/core';
 
 import { Note } from '@/database/entities/note.entity';
 
+import type { NoteCountsByStep } from '@/modules/project/types/note-counts.type';
 import type { SqlEntityManager } from '@mikro-orm/postgresql';
-
-export type NoteCountsByStep = ReadonlyMap<string, number>;
 
 interface NoteCountRow {
   step_id: string;

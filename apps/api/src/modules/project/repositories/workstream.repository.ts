@@ -11,7 +11,7 @@ import {
 import { countNotesByStep } from '@/modules/project/repositories/note-count.query';
 
 import type { Group } from '@/database/entities/group.entity';
-import type { NoteCountsByStep } from '@/modules/project/repositories/note-count.query';
+import type { NoteCountsByStep } from '@/modules/project/types/note-counts.type';
 
 @Injectable()
 export class WorkstreamRepository extends EntityRepository<Workstream> {

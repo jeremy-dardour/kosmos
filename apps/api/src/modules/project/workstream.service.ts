@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  HttpStatus,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -21,8 +20,8 @@ import {
 import { GroupRepository } from '@/modules/project/repositories/group.repository';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
+import { conflict } from '@/modules/project/utils/conflict.util';
 import { isExactMembership } from '@/modules/project/utils/order-membership.util';
-import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
 
 import type { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import type { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
@@ -113,8 +112,7 @@ export class WorkstreamService {
         const memberIds = live.map((workstream) => workstream.id);
 
         if (!isExactMembership(dto.ids, memberIds)) {
-          throw new ProblemDetailsException(
-            HttpStatus.CONFLICT,
+          conflict(
             'order-mismatch',
             "The submitted ids do not match the scope's live workstreams",
           );
@@ -162,8 +160,7 @@ export class WorkstreamService {
           return;
         }
 
-        throw new ProblemDetailsException(
-          HttpStatus.CONFLICT,
+        conflict(
           'workstream-not-advanceable',
           'This workstream is already complete',
         );
@@ -186,8 +183,7 @@ export class WorkstreamService {
     )[0];
 
     if (!firstStep) {
-      throw new ProblemDetailsException(
-        HttpStatus.CONFLICT,
+      conflict(
         'workstream-empty',
         'Add at least one step before starting this workstream',
       );

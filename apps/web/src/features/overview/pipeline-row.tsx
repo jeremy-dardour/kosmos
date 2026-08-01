@@ -6,6 +6,7 @@ import { canAppendStep } from '@/features/overview/can-append-step';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
+import { STEP_STATUS_LABELS } from '@/features/overview/step-status-labels';
 import { urgencyBand } from '@/features/overview/urgency';
 import { cn } from '@/lib/utils';
 
@@ -33,13 +34,7 @@ const DOT_CLASSES: Record<StepVisual, string> = {
   skipped: 'size-3.5 border-[1.5px] border-dashed border-step-skipped bg-card',
 };
 
-const STATUS_LABELS = {
-  done: 'overview.stepStatus.done',
-  in_progress: 'overview.stepStatus.inProgress',
-  blocked: 'overview.stepStatus.blocked',
-  not_started: 'overview.stepStatus.notStarted',
-  skipped: 'overview.stepStatus.skipped',
-} as const satisfies Record<StepVisual, string>;
+const STATUS_LABELS = STEP_STATUS_LABELS satisfies Record<StepVisual, string>;
 
 /**
  * Red → orange → yellow → grey. The ring reads `currentColor`, so one class per

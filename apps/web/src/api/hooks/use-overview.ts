@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+
 import { $api } from '@/api/api-client';
 
 import type { dtos } from '@/types/openapi';
@@ -21,10 +23,8 @@ export function overviewQueryOptions(projectId: string) {
 
 /** The whole overview aggregate in one request; idle until the id is known. */
 export function useOverview(projectId: string | undefined) {
-  return $api.useQuery(
-    'get',
-    '/api/projects/{projectId}/overview',
-    { params: { path: { projectId: projectId ?? '' } } },
-    { enabled: Boolean(projectId) },
-  );
+  return useQuery({
+    ...overviewQueryOptions(projectId ?? ''),
+    enabled: Boolean(projectId),
+  });
 }

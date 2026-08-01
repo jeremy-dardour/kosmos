@@ -33,15 +33,11 @@ import {
   isStepEditable,
   isStepStructurallyFree,
 } from '@/features/overview/step-mutability';
+import { STEP_STATUS_LABELS } from '@/features/overview/step-status-labels';
 import { useStepNotes } from '@/features/overview/use-step-notes';
 import { cn } from '@/lib/utils';
 
-import type {
-  ChecklistItem,
-  Step,
-  UserSummary,
-  Workstream,
-} from '@/api/hooks/use-overview';
+import type { Step, UserSummary, Workstream } from '@/api/hooks/use-overview';
 
 interface StepEditorProperties {
   workstream: Workstream;
@@ -314,32 +310,25 @@ export const StepEditor = ({
   );
 };
 
+// Softer sizes than the pipeline's dots: this one annotates the editor footer.
+const FOOTER_DOT_CLASSES = {
+  done: 'size-3 bg-step-done',
+  in_progress: 'size-3.5 bg-step-in-progress',
+  blocked: 'size-3.5 bg-step-blocked',
+  not_started: 'size-3 border-[1.5px] border-step-not-started bg-card',
+  skipped: 'size-3 border-[1.5px] border-dashed border-step-skipped bg-card',
+} as const;
+
 function StatusDot({ step }: { step: Step }) {
   const { t } = useTranslation();
   const visual = isBlockedNow(step) ? 'blocked' : step.status;
 
-  const classes = {
-    done: 'size-3 bg-step-done',
-    in_progress: 'size-3.5 bg-step-in-progress',
-    blocked: 'size-3.5 bg-step-blocked',
-    not_started: 'size-3 border-[1.5px] border-step-not-started bg-card',
-    skipped: 'size-3 border-[1.5px] border-dashed border-step-skipped bg-card',
-  } as const;
-
-  const labels = {
-    done: 'overview.stepStatus.done',
-    in_progress: 'overview.stepStatus.inProgress',
-    blocked: 'overview.stepStatus.blocked',
-    not_started: 'overview.stepStatus.notStarted',
-    skipped: 'overview.stepStatus.skipped',
-  } as const;
-
   return (
     <span
       role="img"
-      aria-label={t(labels[visual])}
-      title={t(labels[visual])}
-      className={cn('shrink-0 rounded-full', classes[visual])}
+      aria-label={t(STEP_STATUS_LABELS[visual])}
+      title={t(STEP_STATUS_LABELS[visual])}
+      className={cn('shrink-0 rounded-full', FOOTER_DOT_CLASSES[visual])}
     />
   );
 }
@@ -363,7 +352,7 @@ function ChecklistBlock({
   const deleteItem = useDeleteChecklistItem(projectId);
   const [isComposing, setIsComposing] = useState(false);
 
-  const items: ChecklistItem[] = step.checklistItems;
+  const items = step.checklistItems;
   const done = items.filter((item) => item.done).length;
 
   return (

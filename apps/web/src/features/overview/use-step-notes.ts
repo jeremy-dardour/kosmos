@@ -14,7 +14,7 @@ import type { NoteEntry } from '@/api/hooks/use-workstream-notes';
 
 type Translate = ReturnType<typeof useTranslation>['t'];
 
-export interface ThreadEntry {
+interface ThreadEntry {
   id: string;
   body: string;
   author: string;

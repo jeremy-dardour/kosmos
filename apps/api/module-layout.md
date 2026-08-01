@@ -22,18 +22,22 @@ src/modules/project/
   group.controller.ts             ← Group CRUD
   group.service.ts
   workstream.controller.ts        ← Workstream CRUD + advance + step create
+                                    + workstream/step reorder
   workstream.service.ts           ← CRUD + pipeline transitions (start/advance)
   step.controller.ts              ← Step field edits + delete
+                                    + checklist item create
   step.service.ts                 ← Granular step create / edit / delete
   repositories/
     project.repository.ts         ← Project entity persistence
     group.repository.ts           ← Group entity persistence
     workstream.repository.ts      ← Workstream aggregate persistence
     step.repository.ts            ← Step persistence under the workstream lock
+    checklist-item.repository.ts  ← Checklist item persistence under the lock
     overview.repository.ts        ← Consistent overview entity graph
+    *.query.ts                    ← em-parameterized shared queries (ADR 0008)
   note.controller.ts              ← Note CRUD (scoped to step)
   note.service.ts
-  checklist-item.controller.ts    ← immediate done/undone toggle
+  checklist-item.controller.ts    ← checklist item rename/toggle + delete
   checklist-item.service.ts
   utils/                          ← cross-entity domain functions
   dtos/

@@ -80,6 +80,7 @@ function CardHarness({
     <InlineWorkstreamCard
       workstream={found}
       groups={data.data.groups}
+      users={data.data.users}
       usersById={new Map(data.data.users.map((each) => [each.id, each]))}
       projectId={PROJECT_ID}
       now={NOW}

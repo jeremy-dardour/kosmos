@@ -4,8 +4,10 @@ import { useCallback } from 'react';
 import { overviewQueryOptions } from '@/api/hooks/use-overview';
 
 /**
- * Per-mutation refresh for the components that predate the inline overview.
- * New mutation hooks go through `useOverviewCache` instead.
+ * The dialog mutations' refresh model: flows whose responses are not patchable
+ * into the aggregate (workstream create/delete, group CRUD, project settings)
+ * refetch it whole. Everything else commits through `useOverviewCache`; the
+ * one crossover is a reorder recovering from a rejected drag.
  */
 export function useInvalidateOverview(projectId: string | undefined) {
   const queryClient = useQueryClient();

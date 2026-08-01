@@ -83,6 +83,11 @@ export class Step {
     return this.checklistItems.getItems();
   }
 
+  addChecklistItem(item: ChecklistItem): void {
+    item.step = this;
+    this.checklistItems.add(item);
+  }
+
   // Outcome wins so complete workstreams (no pointer) still derive correctly.
   getStatus(pointerPosition: number | null): StepStatus {
     if (this.outcome) {

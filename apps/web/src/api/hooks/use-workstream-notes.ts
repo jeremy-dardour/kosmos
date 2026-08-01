@@ -51,12 +51,11 @@ export function useWorkstreamNotes(workstreamId: string | undefined) {
   );
 }
 
-/**
- * `projectId` is what lets a note mutation keep the overview's per-step note
- * markers in step; the pre-rework notes UI has neither markers nor a project
- * id in scope, so it omits it.
- */
-export function useCreateNote(workstreamId: string, projectId?: string) {
+/** `projectId` routes the note-count delta into the cached overview. */
+export function useCreateNote(
+  workstreamId: string,
+  projectId: string | undefined,
+) {
   const queryClient = useQueryClient();
   const invalidateNotes = useInvalidateNotes(workstreamId);
   const patchOverview = useOverviewCache(projectId);
@@ -86,7 +85,10 @@ export function useUpdateNote(workstreamId: string) {
   );
 }
 
-export function useDeleteNote(workstreamId: string, projectId?: string) {
+export function useDeleteNote(
+  workstreamId: string,
+  projectId: string | undefined,
+) {
   const queryClient = useQueryClient();
   const invalidateNotes = useInvalidateNotes(workstreamId);
   const patchOverview = useOverviewCache(projectId);

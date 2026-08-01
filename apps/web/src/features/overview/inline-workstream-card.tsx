@@ -51,6 +51,7 @@ const BAND_BADGE_CLASSES: Record<UrgencyBand, string> = {
 interface InlineWorkstreamCardProperties {
   workstream: Workstream;
   groups: Group[];
+  users: UserSummary[];
   /** Built once by the list, per the one-derived-lookup rule. */
   usersById: Map<string, UserSummary>;
   projectId: string | undefined;
@@ -75,6 +76,7 @@ interface InlineWorkstreamCardProperties {
 export const InlineWorkstreamCard = ({
   workstream,
   groups,
+  users,
   usersById,
   projectId,
   now,
@@ -109,7 +111,6 @@ export const InlineWorkstreamCard = ({
   }, [isAnyPanelOpen, onCloseEditors]);
 
   const isLive = workstream.lifecycle !== 'complete';
-  const users = usersById.values().toArray();
   const deadlineStep = deadlineStepOf(workstream);
   const openedStep =
     workstream.steps.find((step) => step.id === openStepId) ?? null;

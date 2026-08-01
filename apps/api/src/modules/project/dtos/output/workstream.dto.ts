@@ -8,7 +8,7 @@ import {
 } from '@/modules/project/dtos/output/step.dto';
 
 import type { Workstream } from '@/database/entities/workstream.entity';
-import type { NoteCountsByStep } from '@/modules/project/repositories/note-count.query';
+import type { NoteCountsByStep } from '@/modules/project/types/note-counts.type';
 
 export class WorkstreamDto {
   @ApiProperty({ format: 'uuid' })

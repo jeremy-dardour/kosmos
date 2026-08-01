@@ -10,7 +10,7 @@ import { resolveOwner } from '@/modules/project/utils/resolve-owner.util';
 
 import type { Step } from '@/database/entities/step.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
-import type { NoteCountsByStep } from '@/modules/project/repositories/note-count.query';
+import type { NoteCountsByStep } from '@/modules/project/types/note-counts.type';
 
 export type StepParent = Pick<Workstream, 'owner' | 'currentStep'>;
 

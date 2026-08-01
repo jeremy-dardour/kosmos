@@ -7,12 +7,15 @@ import {
 } from '@dnd-kit/sortable';
 import { useMemo, useState } from 'react';
 
-import { useInvalidateOverview } from '@/api/hooks/use-invalidate-overview';
 import { useReorderGroups } from '@/api/hooks/use-reorder-groups';
 import { CompletedSection } from '@/features/overview/completed-section';
 import { groupWorkstreams } from '@/features/overview/group-workstreams';
 import { InlineWorkstreamCard } from '@/features/overview/inline-workstream-card';
 import { SortableGroupSection } from '@/features/overview/sortable-group-section';
+import {
+  applyOptimisticOrder,
+  useOptimisticReorder,
+} from '@/features/overview/use-optimistic-reorder';
 import { useOverviewDndSensors } from '@/features/overview/use-overview-dnd-sensors';
 
 import type { Group, Overview, Workstream } from '@/api/hooks/use-overview';
@@ -57,8 +60,7 @@ export const OverviewList = ({
 }: OverviewListProperties) => {
   const sensors = useOverviewDndSensors();
   const reorderGroups = useReorderGroups(projectId);
-  const invalidateOverview = useInvalidateOverview(projectId);
-  const [draggedOrder, setDraggedOrder] = useState<string[] | null>(null);
+  const groupOrder = useOptimisticReorder(projectId);
   const [openStep, setOpenStep] = useState<Selection | null>(null);
   const [openNotes, setOpenNotes] = useState<Selection | null>(null);
 
@@ -70,8 +72,8 @@ export const OverviewList = ({
   // Mutation responses are patched into the cached aggregate in place, so the
   // array order there goes stale while `position` stays authoritative.
   const groups = useMemo(
-    () => applyOrder(byPosition(overview.groups), draggedOrder),
-    [overview.groups, draggedOrder],
+    () => applyOptimisticOrder(byPosition(overview.groups), groupOrder.order),
+    [overview.groups, groupOrder.order],
   );
   const workstreams = useMemo(
     () => byPosition(overview.workstreams),
@@ -96,15 +98,10 @@ export const OverviewList = ({
     if (from === -1 || to === -1) return;
 
     const next = arrayMove(ids, from, to);
-    setDraggedOrder(next);
+    groupOrder.begin(next);
     reorderGroups.mutate(
       { params: { path: { projectId } }, body: { ids: next } },
-      {
-        // A rejected drag is forgotten whole and the fresh aggregate re-renders
-        // the server's order; retrying means dragging again against it.
-        onError: () => void invalidateOverview(),
-        onSettled: () => setDraggedOrder(null),
-      },
+      groupOrder.recovery,
     );
   };
 
@@ -113,6 +110,7 @@ export const OverviewList = ({
       key={workstream.id}
       workstream={workstream}
       groups={groups}
+      users={overview.users}
       usersById={usersById}
       projectId={projectId}
       now={now}
@@ -194,14 +192,4 @@ function selectedStepId(
 
 function byPosition<T extends { position: number }>(items: T[]): T[] {
   return [...items].sort((left, right) => left.position - right.position);
-}
-
-/** The optimistic group order, honoured only while it still spans every group. */
-function applyOrder(groups: Group[], order: string[] | null): Group[] {
-  if (order?.length !== groups.length) return groups;
-
-  const byId = new Map(groups.map((group) => [group.id, group]));
-  const ordered = order.map((id) => byId.get(id));
-
-  return ordered.every((group) => group !== undefined) ? ordered : groups;
 }

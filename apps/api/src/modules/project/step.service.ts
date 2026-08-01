@@ -9,18 +9,23 @@ import {
 } from '@/modules/project/dtos/output/workstream.dto';
 import { StepRepository } from '@/modules/project/repositories/step.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
+import { conflict } from '@/modules/project/utils/conflict.util';
 import { isExactMembership } from '@/modules/project/utils/order-membership.util';
+import {
+  closePositionGap,
+  openPositionGap,
+} from '@/modules/project/utils/position-gap.util';
 import {
   assertInsertablePosition,
   assertPipelineMutable,
   assertStepDeletable,
   assertStepEditable,
   futureSteps,
-  stepConflict,
 } from '@/modules/project/utils/step-mutability.util';
 import { touchWorkstream } from '@/modules/project/utils/touch-workstream.util';
 
 import type { User } from '@/database/entities/user.entity';
+import type { Workstream } from '@/database/entities/workstream.entity';
 import type { CreateStepDto } from '@/modules/project/dtos/input/create-step.dto';
 import type { ReorderStepsDto } from '@/modules/project/dtos/input/reorder-steps.dto';
 import type { UpdateStepDto } from '@/modules/project/dtos/input/update-step.dto';
@@ -43,31 +48,25 @@ export class StepService {
   ): Promise<WorkstreamDto> {
     const owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
 
-    await this.workstreamRepository.updateLockedDetails(
+    const workstream = await this.workstreamRepository.updateLockedDetails(
       workstreamId,
-      (workstream) => {
-        assertInsertablePosition(workstream, dto.position);
-
-        for (const sibling of workstream.getSteps()) {
-          if (sibling.position >= dto.position) {
-            sibling.position += 1;
-          }
-        }
+      (lockedWorkstream) => {
+        assertInsertablePosition(lockedWorkstream, dto.position);
+        openPositionGap(lockedWorkstream.getSteps(), dto.position);
 
         const step = new Step();
-        step.workstream = workstream;
         step.position = dto.position;
         step.name = dto.name;
         step.deadline = dto.deadline ?? null;
         step.owner = owner;
         step.blocked = false;
-        workstream.steps.add(step);
+        lockedWorkstream.addStep(step);
 
-        touchWorkstream(workstream);
+        touchWorkstream(lockedWorkstream);
       },
     );
 
-    return this.buildWorkstreamDto(workstreamId);
+    return this.buildWorkstreamDto(workstream);
   }
 
   async update(id: string, dto: UpdateStepDto): Promise<StepDto> {
@@ -106,19 +105,19 @@ export class StepService {
     workstreamId: string,
     dto: ReorderStepsDto,
   ): Promise<WorkstreamDto> {
-    await this.workstreamRepository.updateLockedDetails(
+    const workstream = await this.workstreamRepository.updateLockedDetails(
       workstreamId,
-      (workstream) => {
-        assertPipelineMutable(workstream);
+      (lockedWorkstream) => {
+        assertPipelineMutable(lockedWorkstream);
 
-        const future = futureSteps(workstream);
+        const future = futureSteps(lockedWorkstream);
         if (
           !isExactMembership(
             dto.ids,
             future.map((step) => step.id),
           )
         ) {
-          stepConflict(
+          conflict(
             'order-mismatch',
             "The submitted ids do not match the workstream's future steps",
           );
@@ -133,11 +132,11 @@ export class StepService {
           byId.get(id)!.position = slots[index]!;
         }
 
-        touchWorkstream(workstream);
+        touchWorkstream(lockedWorkstream);
       },
     );
 
-    return this.buildWorkstreamDto(workstreamId);
+    return this.buildWorkstreamDto(workstream);
   }
 
   async remove(id: string): Promise<WorkstreamDto> {
@@ -145,23 +144,18 @@ export class StepService {
       id,
       (step, lockedWorkstream) => {
         assertStepDeletable(lockedWorkstream, step);
-
-        for (const sibling of lockedWorkstream.getSteps()) {
-          if (sibling.position > step.position) {
-            sibling.position -= 1;
-          }
-        }
-
+        closePositionGap(lockedWorkstream.getSteps(), step.position);
         touchWorkstream(lockedWorkstream);
       },
     );
 
-    return this.buildWorkstreamDto(workstream.id);
+    return this.buildWorkstreamDto(workstream);
   }
 
-  private async buildWorkstreamDto(id: string): Promise<WorkstreamDto> {
-    const workstream = await this.workstreamRepository.findDetails(id);
-
+  /** The locked mutation already returns the loaded graph — no re-fetch. */
+  private async buildWorkstreamDto(
+    workstream: Workstream,
+  ): Promise<WorkstreamDto> {
     return toWorkstreamDto(
       workstream,
       await this.workstreamRepository.countNotesByStep([workstream]),

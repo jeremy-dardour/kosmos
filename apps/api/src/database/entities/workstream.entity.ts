@@ -89,6 +89,11 @@ export class Workstream {
     return this.steps.getItems();
   }
 
+  addStep(step: Step): void {
+    step.workstream = this;
+    this.steps.add(step);
+  }
+
   nearestDeadlineStep(): Step | null {
     const [nearest] = this.getSteps()
       .filter((step) => step.deadline && !step.outcome)

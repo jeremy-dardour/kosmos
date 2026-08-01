@@ -1,10 +1,10 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { Group } from '@/database/entities/group.entity';
 import { GroupRepository } from '@/modules/project/repositories/group.repository';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
+import { conflict } from '@/modules/project/utils/conflict.util';
 import { isExactMembership } from '@/modules/project/utils/order-membership.util';
-import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exception';
 
 import type { CreateGroupDto } from '@/modules/project/dtos/input/create-group.dto';
 import type { ReorderGroupsDto } from '@/modules/project/dtos/input/reorder-groups.dto';
@@ -57,8 +57,7 @@ export class GroupService {
       const memberIds = groups.map((group) => group.id);
 
       if (!isExactMembership(dto.ids, memberIds)) {
-        throw new ProblemDetailsException(
-          HttpStatus.CONFLICT,
+        conflict(
           'order-mismatch',
           "The submitted ids do not match the project's groups",
         );
