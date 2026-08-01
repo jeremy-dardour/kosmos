@@ -125,7 +125,7 @@ export const OverviewPage = () => {
           </div>
         )}
 
-        {filtered && filtered.workstreams.length === 0 && (
+        {filtered?.workstreams.length === 0 && (
           <div className="rounded-lg border border-dashed p-panel text-center">
             <p className="text-sm font-medium">{t('overview.empty.title')}</p>
             <p className="mt-1 text-xs text-muted-foreground">
