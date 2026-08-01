@@ -13,11 +13,15 @@ interface GhostPosition {
 }
 
 /**
- * The one unsaved step the overview may hold. It lives above the list so that
+ * The one unsaved step the overview may hold. It lives above the cards so that
  * opening an insert point anywhere replaces it — a second ghost would be a
- * second place to type a step nobody asked for (handoff A8).
+ * second place to type a step nobody asked for (handoff A8). A committed name
+ * flows straight into the created step's editor via `onCreated`.
  */
-export function useGhostStep(projectId: string | undefined): {
+export function useGhostStep(
+  projectId: string | undefined,
+  onCreated: (workstreamId: string, stepId: string) => void,
+): {
   draft: GhostStepDraft | null;
   insertAt: (workstreamId: string, position: number) => void;
 } {
@@ -44,7 +48,15 @@ export function useGhostStep(projectId: string | undefined): {
         body: { name, position: ghost.position },
       },
       {
-        onSuccess: () => setGhost(null),
+        onSuccess: (workstream) => {
+          setGhost(null);
+          // The response is the whole renumbered workstream; the new step is
+          // the one holding the position the ghost claimed.
+          const created = workstream.steps.find(
+            (step) => step.position === ghost.position,
+          );
+          if (created) onCreated(ghost.workstreamId, created.id);
+        },
         onError: (error) => {
           // The position stopped being insertable — somebody advanced the
           // pipeline meanwhile — so the ghost has nowhere left to land. Every

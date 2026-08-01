@@ -12,6 +12,7 @@ import { CompletedSection } from '@/features/overview/completed-section';
 import { groupWorkstreams } from '@/features/overview/group-workstreams';
 import { InlineWorkstreamCard } from '@/features/overview/inline-workstream-card';
 import { SortableGroupSection } from '@/features/overview/sortable-group-section';
+import { useGhostStep } from '@/features/overview/use-ghost-step';
 import {
   applyOptimisticOrder,
   useOptimisticReorder,
@@ -19,7 +20,6 @@ import {
 import { useOverviewDndSensors } from '@/features/overview/use-overview-dnd-sensors';
 
 import type { Group, Overview, Workstream } from '@/api/hooks/use-overview';
-import type { GhostStepDraft } from '@/features/overview/ghost-step';
 import type { DragEndEvent } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
 
@@ -36,10 +36,6 @@ interface OverviewListProperties {
   overview: Overview;
   projectId: string | undefined;
   now: Date;
-  /** Opens the ghost step the page owns, at that position in that workstream. */
-  onInsertStep: (workstreamId: string, position: number) => void;
-  /** The page's single unsaved step, rendered by the card it belongs to. */
-  ghost?: GhostStepDraft | null;
   /** Filtering hides cards, so a partial list has no unambiguous order to drag. */
   isDragDisabled?: boolean;
 }
@@ -47,15 +43,13 @@ interface OverviewListProperties {
 /**
  * The overview body: every workstream inline, grouped, manually ordered at both
  * levels, with finished work collapsed into the Completed section at the end.
- * It owns the one-open-editor-across-the-list rule — selecting a step in
- * another card closes the first.
+ * It owns the one-open-panel-across-the-list rule for step editors, note
+ * panels and the ghost alike — opening any of them closes the others.
  */
 export const OverviewList = ({
   overview,
   projectId,
   now,
-  onInsertStep,
-  ghost,
   isDragDisabled = false,
 }: OverviewListProperties) => {
   const sensors = useOverviewDndSensors();
@@ -63,6 +57,10 @@ export const OverviewList = ({
   const groupOrder = useOptimisticReorder(projectId);
   const [openStep, setOpenStep] = useState<Selection | null>(null);
   const [openNotes, setOpenNotes] = useState<Selection | null>(null);
+  // A committed ghost hands its place to the created step's editor (A8).
+  const ghostStep = useGhostStep(projectId, (workstreamId, stepId) => {
+    setOpenStep({ workstreamId, stepId });
+  });
 
   const usersById = useMemo(
     () => new Map(overview.users.map((user) => [user.id, user])),
@@ -117,7 +115,11 @@ export const OverviewList = ({
       dragHandle={dragHandle}
       openStepId={selectedStepId(openStep, workstream.id)}
       openNotesStepId={selectedStepId(openNotes, workstream.id)}
-      ghost={ghost?.workstreamId === workstream.id ? ghost : undefined}
+      ghost={
+        ghostStep.draft?.workstreamId === workstream.id
+          ? ghostStep.draft
+          : undefined
+      }
       onOpenStep={(stepId) =>
         setOpenStep(stepId ? { workstreamId: workstream.id, stepId } : null)
       }
@@ -133,7 +135,7 @@ export const OverviewList = ({
         // covers it too.
         setOpenStep(null);
         setOpenNotes(null);
-        onInsertStep(workstream.id, position);
+        ghostStep.insertAt(workstream.id, position);
       }}
     />
   );

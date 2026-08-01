@@ -264,6 +264,12 @@ describe('inline overview editing — ghost steps', () => {
     expect(
       within(cardOf('Catering')).queryByRole('region', { name: 'New step' }),
     ).not.toBeInTheDocument();
+    // The ghost hands off to the created step's editor, keeping the flow open.
+    expect(
+      await within(cardOf('Catering')).findByRole('region', {
+        name: 'Step Tasting',
+      }),
+    ).toBeVisible();
   });
 
   it('discards silently on Escape and on an empty commit', async () => {

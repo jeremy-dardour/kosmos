@@ -277,7 +277,9 @@ the decisions in short:
   ~120/min).
 - **New steps**: a clicked insert point opens a local ghost; the `POST` fires
   on the first non-empty name commit; empty names are rejected server-side;
-  an illegal-by-then position 409s and discards the ghost with a message.
+  an illegal-by-then position 409s and discards the ghost with a message. A
+  successful commit opens the created step's editor in place — the flow stays
+  in the panel instead of closing it (settled 2026-08-01, after C18).
 
 `useDraft` in the prototype is not a model for any of this — it snapshots the
 server list on first edit and never resyncs. With commit-on-blur there are no

@@ -10,7 +10,6 @@ import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewList } from '@/features/overview/overview-list';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
 import { ProjectSettingsDialog } from '@/features/overview/project-settings-dialog';
-import { useGhostStep } from '@/features/overview/use-ghost-step';
 import { WorkstreamFormDialog } from '@/features/overview/workstream-form-dialog';
 
 import type { Overview, Workstream } from '@/api/hooks/use-overview';
@@ -48,7 +47,6 @@ export const OverviewPage = () => {
   const projectId = projects.data?.[0]?.id;
   const overview = useOverview(projectId);
   const authState = useAuthState();
-  const ghostStep = useGhostStep(projectId);
 
   const [ownerFilter, setOwnerFilter] = useState(OWNER_FILTER_ALL);
   const [hiddenGroupIds, setHiddenGroupIds] = useState<ReadonlySet<string>>(
@@ -139,8 +137,6 @@ export const OverviewPage = () => {
             overview={filtered}
             projectId={projectId}
             now={now}
-            onInsertStep={ghostStep.insertAt}
-            ghost={ghostStep.draft}
             isDragDisabled={isFiltered}
           />
         )}

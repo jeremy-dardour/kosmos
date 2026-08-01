@@ -152,3 +152,24 @@ through as one.
 27. **Template-leftover i18n keys kept** (C18): `items.*`,
     `app.test.translation`, `auth.landing.action.retry` are unreferenced but
     predate #40 (template scaffolding) — out of this PR's scope, left alone.
+28. **Whole-branch review applied between C18 and C19** (user-requested):
+    six read-only agents (standards, security, reuse, simplification,
+    efficiency, altitude) swept `main...HEAD`; the fixes landed as one
+    refactor commit. Notables: step create/reorder/delete no longer re-fetch
+    the graph their locked mutation already returned; services stopped
+    calling MikroORM `Collection.add` via new neutral `addStep` /
+    `addChecklistItem` entity accessors; both drag levels share
+    `useOptimisticReorder`. Deliberately **skipped**: a generic
+    `useOverviewMutation` wrapper (its openapi-typed signature would outweigh
+    the eleven 4-line hooks it replaces), a shared reorder query for
+    `reorderScope`/`reorderProject` (same shape, but generic MikroORM typing
+    costs more than the 15 duplicated lines), `React.memo` on the card list
+    (invisible at 20–50 cards; `dragHandle`/`now` props defeat memoization
+    anyway), a shared commit-on-blur hook (the two implementations differ
+    materially), and the `.integration.` filename convention (not codified).
+29. **Ghost commit opens the created step's editor** (post-C18,
+    user-decided 2026-08-01): committing a ghost's name used to close the
+    panel; it now hands off to the new step's editor (handoff §6.2 amended).
+    `useGhostStep` moved from the page into `OverviewList`, which already
+    owned the editor selection — the altitude review independently flagged
+    the split ownership as the boundary's thinnest point.

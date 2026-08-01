@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { useOverview } from '@/api/hooks/use-overview';
 import { OverviewList } from '@/features/overview/overview-list';
@@ -82,8 +82,6 @@ function overviewOf(
   };
 }
 
-const noop = vi.fn();
-
 function ListHarness({ isDragDisabled = false }: { isDragDisabled?: boolean }) {
   const overview = useOverview(PROJECT_ID);
   if (!overview.data) return null;
@@ -93,7 +91,6 @@ function ListHarness({ isDragDisabled = false }: { isDragDisabled?: boolean }) {
       overview={overview.data}
       projectId={PROJECT_ID}
       now={NOW}
-      onInsertStep={noop}
       isDragDisabled={isDragDisabled}
     />
   );
