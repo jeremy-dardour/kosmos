@@ -14,12 +14,18 @@ import { OverviewEditingPrototype } from '@/features/overview/overview-editing-p
 import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
 import { ProjectSettingsDialog } from '@/features/overview/project-settings-dialog';
+import { WidgetSidebarPrototype } from '@/features/overview/widget-panel-prototype';
+import {
+  PROTOTYPE_OPEN_STEP_EVENT,
+  prototypeCardDomId,
+} from '@/features/overview/widget-panel-prototype-shared';
 import { WorkstreamCardList } from '@/features/overview/workstream-card-list';
 import { WorkstreamFormDialog } from '@/features/overview/workstream-form-dialog';
 import { cn } from '@/lib/utils';
 
 import type { AdvanceOutcome } from '@/api/hooks/use-advance-workstream';
 import type { UserSummary, Workstream } from '@/api/hooks/use-overview';
+import type { DeadlineEntry } from '@/features/overview/widget-panel-prototype-shared';
 
 type WorkstreamForm =
   | { mode: 'create' }
@@ -131,11 +137,58 @@ export const OverviewPage = () => {
 
   const isPrototype = isPrototypeRequested();
 
+  // PROTOTYPE — describes the mirrored filters inside the widget panel.
+  const filterNote = useMemo(() => {
+    const parts: string[] = [];
+    if (ownerFilter !== OWNER_FILTER_ALL) {
+      parts.push(`owner ${usersById.get(ownerFilter)?.name ?? 'unknown'}`);
+    }
+    if (hiddenGroupIds.size > 0) {
+      parts.push(
+        `${hiddenGroupIds.size} group${hiddenGroupIds.size === 1 ? '' : 's'} hidden`,
+      );
+    }
+    return parts.length > 0 ? parts.join(' · ') : null;
+  }, [ownerFilter, usersById, hiddenGroupIds]);
+
+  // PROTOTYPE — the navigation injected into the widgets: this page owns how a
+  // deadline entry reaches its card; the widgets stay reusable elsewhere.
+  const prototypeCrossLink = useMemo(
+    () => ({
+      onEntryClick: (entry: DeadlineEntry) => {
+        document.dispatchEvent(
+          new CustomEvent(PROTOTYPE_OPEN_STEP_EVENT, {
+            detail: {
+              workstreamId: entry.workstreamId,
+              stepId: entry.stepId,
+            },
+          }),
+        );
+      },
+      onEntryHover: (workstreamId: string | null) => {
+        for (const element of document.querySelectorAll<HTMLElement>(
+          '[data-proto-highlight]',
+        )) {
+          element.classList.remove('ring-2', 'ring-step-in-progress/50');
+          delete element.dataset.protoHighlight;
+        }
+        if (!workstreamId) return;
+        const card = document.querySelector<HTMLElement>(
+          `#${prototypeCardDomId(workstreamId)}`,
+        );
+        card?.classList.add('ring-2', 'ring-step-in-progress/50');
+        if (card) card.dataset.protoHighlight = '';
+      },
+    }),
+    [],
+  );
+
   return (
     <div
       className={cn(
         'grid h-full min-h-0 grid-cols-1 gap-4',
         !isPrototype && 'lg:grid-cols-[58fr_42fr]',
+        isPrototype && 'grid-cols-[minmax(0,1fr)_auto]',
       )}
     >
       <div className="flex min-h-0 flex-col">
@@ -190,6 +243,14 @@ export const OverviewPage = () => {
           )}
         </div>
       </div>
+
+      {isPrototype && overview.data && (
+        <WidgetSidebarPrototype
+          workstreams={filteredWorkstreams}
+          filterNote={filterNote}
+          crossLink={prototypeCrossLink}
+        />
+      )}
 
       {!isPrototype && (
         <DetailPanel

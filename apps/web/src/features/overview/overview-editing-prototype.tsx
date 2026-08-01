@@ -61,6 +61,10 @@ import { daysUntil } from '@/features/overview/days-until';
 import { groupWorkstreams } from '@/features/overview/group-workstreams';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
+import {
+  PROTOTYPE_OPEN_STEP_EVENT,
+  prototypeCardDomId,
+} from '@/features/overview/widget-panel-prototype-shared';
 import { cn } from '@/lib/utils';
 
 import type {
@@ -71,6 +75,7 @@ import type {
 } from '@/api/hooks/use-overview';
 import type { NoteEntry } from '@/api/hooks/use-workstream-notes';
 import type { WorkstreamGroup } from '@/features/overview/group-workstreams';
+import type { PrototypeOpenStepDetail } from '@/features/overview/widget-panel-prototype-shared';
 import type { DragEndEvent } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
 
@@ -1271,6 +1276,26 @@ function LiveFieldList({
     stepId: string;
   } | null>(null);
 
+  // PROTOTYPE cross-link: the widget panel opens a step from a deadline entry.
+  useEffect(() => {
+    let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+    const onOpenRequest = (event: Event) => {
+      const detail = (event as CustomEvent<PrototypeOpenStepDetail>).detail;
+      setOpenStep(detail);
+      // Let the editor mount first so the scroll centres the grown card.
+      scrollTimer = setTimeout(() => {
+        document
+          .querySelector(`#${prototypeCardDomId(detail.workstreamId)}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 60);
+    };
+    document.addEventListener(PROTOTYPE_OPEN_STEP_EVENT, onOpenRequest);
+    return () => {
+      clearTimeout(scrollTimer);
+      document.removeEventListener(PROTOTYPE_OPEN_STEP_EVENT, onOpenRequest);
+    };
+  }, []);
+
   const live = workstreams.filter(
     (workstream) => workstream.lifecycle !== 'complete',
   );
@@ -1411,8 +1436,9 @@ function AdvanceControl({
       <Button
         type="button"
         size="xs"
+        variant="secondary"
         title={`Mark ${current.name || 'the current step'} done and move on`}
-        className="rounded-r-none"
+        className="rounded-r-none border border-r-0 shadow-xs"
         onClick={() => draft.advanceWorkstream(workstream.id, 'done')}
       >
         Advance
@@ -1423,8 +1449,9 @@ function AdvanceControl({
             <Button
               type="button"
               size="xs"
+              variant="secondary"
               aria-label="More advance options"
-              className="rounded-l-none border-l border-l-background/30 px-1"
+              className="rounded-l-none border px-1 shadow-xs"
             />
           }
         >
@@ -1529,6 +1556,7 @@ function LiveFieldCard({
   return (
     <article
       ref={cardRef}
+      id={prototypeCardDomId(workstream.id)}
       className={cn(
         'group/card rounded-lg border p-card transition-colors',
         cardChromeClass(isLive, Boolean(openedStep)),
@@ -1565,7 +1593,11 @@ function LiveFieldCard({
         />
         <LifecycleBadges workstream={workstream} />
         {advancePlacement === 'after-title' && (
-          <AdvanceControl workstream={workstream} draft={draft} />
+          // Extra air between the badge cluster and the action keeps the
+          // button readable as "the card's action", not another badge.
+          <span className="ml-1.5 inline-flex">
+            <AdvanceControl workstream={workstream} draft={draft} />
+          </span>
         )}
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
