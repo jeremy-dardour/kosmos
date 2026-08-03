@@ -27,7 +27,7 @@ export const DragHandle = ({
       title={label}
       {...dragProperties}
       className={cn(
-        'shrink-0 cursor-grab touch-none rounded text-muted-foreground/60 opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 active:cursor-grabbing',
+        'shrink-0 cursor-grab touch-none rounded text-muted-foreground/60 opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 active:cursor-grabbing pointer-coarse:opacity-100',
         className,
       )}
     >

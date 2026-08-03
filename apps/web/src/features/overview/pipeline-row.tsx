@@ -321,7 +321,7 @@ function InsertStepPoint({
         onClick={onClick}
         // `top-0` + `size-5` matches the dot row's height, so the button lands
         // centred on the connector line; the row has no height of its own.
-        className="absolute left-1/2 top-0 flex size-5 -translate-x-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground opacity-0 shadow-xs transition-opacity hover:border-foreground/30 hover:text-foreground focus-visible:opacity-100 group-hover/dots:opacity-100"
+        className="absolute left-1/2 top-0 flex size-5 -translate-x-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground opacity-0 shadow-xs transition-opacity hover:border-foreground/30 hover:text-foreground focus-visible:opacity-100 group-hover/dots:opacity-100 pointer-coarse:opacity-100"
       >
         <PlusIcon aria-hidden className="size-3" />
       </button>

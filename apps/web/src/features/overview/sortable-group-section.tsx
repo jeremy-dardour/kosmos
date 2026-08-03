@@ -101,7 +101,7 @@ export const SortableGroupSection = ({
               label={t('overview.dnd.reorderGroup', {
                 name: bucket.group.name,
               })}
-              className="-ml-5 group-hover/section:opacity-100"
+              className="-ml-4 group-hover/section:opacity-100"
               {...attributes}
               {...listeners}
             />

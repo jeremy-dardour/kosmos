@@ -163,7 +163,12 @@ export const InlineWorkstreamCard = ({
     >
       {/* The dimming lives on the header rather than the card root, because a
           parent `opacity` cannot be undone by the parts that must stay bright. */}
-      <div className={cn('flex items-center gap-2', !isLive && 'opacity-65')}>
+      <div
+        className={cn(
+          'flex flex-wrap items-center gap-2',
+          !isLive && 'opacity-65',
+        )}
+      >
         {dragHandle}
         <IconPicker
           value={workstream.icon}
@@ -208,7 +213,7 @@ export const InlineWorkstreamCard = ({
             size="icon-xs"
             aria-label={t('overview.card.delete', { name: workstream.name })}
             title={t('overview.card.delete', { name: workstream.name })}
-            className="text-muted-foreground/60 opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover/card:opacity-100"
+            className="text-muted-foreground/60 opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover/card:opacity-100 pointer-coarse:opacity-100"
             onClick={() => setIsConfirmingDelete(true)}
           >
             <Trash2Icon />

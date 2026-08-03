@@ -117,7 +117,7 @@ export const StepEditor = ({
       aria-label={t('overview.stepEditor.panelLabel', { name })}
       className="rounded-lg border border-step-in-progress/40 bg-step-in-progress/5 p-2.5 outline-hidden focus-visible:ring-2 focus-visible:ring-step-in-progress/50"
     >
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <StatusDot step={step} />
         {isEditable ? (
           <ClickToEdit
@@ -418,7 +418,7 @@ function ChecklistBlock({
                     onClick={() =>
                       deleteItem.mutate({ params: { path: { id: item.id } } })
                     }
-                    className="shrink-0 text-muted-foreground opacity-0 group-focus-within/item:opacity-100 group-hover/item:opacity-100"
+                    className="shrink-0 text-muted-foreground opacity-0 group-focus-within/item:opacity-100 group-hover/item:opacity-100 pointer-coarse:opacity-100"
                   >
                     <XIcon aria-hidden className="size-3" />
                   </button>
