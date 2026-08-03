@@ -6,28 +6,21 @@ import { useDeleteWorkstream } from '@/api/hooks/use-delete-workstream';
 import { useUpdateChecklistItem } from '@/api/hooks/use-update-checklist-item';
 import { useUpdateWorkstream } from '@/api/hooks/use-update-workstream';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { AdvanceControl } from '@/features/overview/advance-control';
 import { canAppendStep } from '@/features/overview/can-append-step';
 import { ClickToEdit } from '@/features/overview/click-to-edit';
 import { ConfirmDialog } from '@/features/overview/confirm-dialog';
-import { daysUntil } from '@/features/overview/days-until';
 import { DotCaret } from '@/features/overview/dot-caret';
-import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
 import { GhostStep } from '@/features/overview/ghost-step';
 import { HOVER_REVEAL } from '@/features/overview/hover-reveal';
-import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { isInsideCard } from '@/features/overview/is-inside-card';
 import { OwnerPicker } from '@/features/overview/owner-picker';
-import { PipelineRow } from '@/features/overview/pipeline-row';
-import { StepEditor } from '@/features/overview/step-editor';
+import { PipelineRow } from '@/features/overview/pipeline-row/pipeline-row';
+import { StepEditor } from '@/features/overview/step-editor/step-editor';
 import { StepNotesPanel } from '@/features/overview/step-notes-panel';
-import { urgencyBand } from '@/features/overview/urgency';
+import { DeadlineBadge } from '@/features/overview/workstream-card/deadline-badge';
+import { GroupChip } from '@/features/overview/workstream-card/group-chip';
+import { LifecycleBadges } from '@/features/overview/workstream-card/lifecycle-badges';
 import { cn } from '@/lib/utils';
 
 import type {
@@ -37,23 +30,9 @@ import type {
   Workstream,
 } from '@/api/hooks/use-overview';
 import type { GhostStepDraft } from '@/features/overview/ghost-step';
-import type { UrgencyBand } from '@/features/overview/urgency';
 import type { MouseEvent, ReactNode } from 'react';
 
-const ICONS = ['🏰', '🍽️', '💐', '📸', '🎵', '💍', '👗', '🚗', '🎂', '✉️'];
-
-/** Under this horizon the badge counts days; beyond it, a plain date reads better. */
-const COUNTDOWN_HORIZON_DAYS = 14;
-
-const BAND_BADGE_CLASSES: Record<UrgencyBand, string> = {
-  passed: 'bg-urgency-passed text-urgency-passed-foreground',
-  week: 'bg-urgency-week text-urgency-week-foreground',
-  fortnight: 'bg-urgency-fortnight text-urgency-fortnight-foreground',
-  month: 'bg-urgency-month text-urgency-month-foreground',
-  far: 'bg-muted text-muted-foreground',
-};
-
-interface InlineWorkstreamCardProperties {
+interface WorkstreamCardProperties {
   workstream: Workstream;
   groups: Group[];
   users: UserSummary[];
@@ -75,10 +54,11 @@ interface InlineWorkstreamCardProperties {
 }
 
 /**
- * One workstream's inline card: the chrome is live fields, every change
- * commits immediately through the cache seam — no edit mode, no Save button.
+ * One workstream's inline card: every part of it is a live field, and every
+ * change commits immediately through the cache seam — no edit mode, no Save
+ * button.
  */
-export const InlineWorkstreamCard = ({
+export const WorkstreamCard = ({
   workstream,
   groups,
   users,
@@ -93,7 +73,7 @@ export const InlineWorkstreamCard = ({
   onCloseEditors,
   onInsertStep,
   dragHandle,
-}: InlineWorkstreamCardProperties) => {
+}: WorkstreamCardProperties) => {
   const { t } = useTranslation();
   const updateWorkstream = useUpdateWorkstream(projectId);
   const updateChecklistItem = useUpdateChecklistItem(projectId);
@@ -159,7 +139,7 @@ export const InlineWorkstreamCard = ({
       ref={cardRef}
       className={cn(
         'group/card rounded-lg border p-4 transition-colors',
-        cardChromeClass(isLive, isAnyPanelOpen),
+        cardFrameClass(isLive, isAnyPanelOpen),
       )}
     >
       {/* The dimming lives on the header rather than the card root, because a
@@ -171,10 +151,17 @@ export const InlineWorkstreamCard = ({
         )}
       >
         {dragHandle}
-        <IconPicker
+        <ClickToEdit
           value={workstream.icon}
           label={t('overview.card.changeIcon', { name: workstream.name })}
-          onChange={(icon) => commit({ icon })}
+          placeholder={workstream.icon}
+          className="w-8 shrink-0 text-center text-base leading-none"
+          onCommit={(value) => {
+            // The API rejects an empty icon, so an emptied field reverts
+            // instead of committing.
+            const icon = value.trim();
+            if (icon) commit({ icon });
+          }}
         />
         <ClickToEdit
           value={workstream.name}
@@ -327,11 +314,11 @@ export const InlineWorkstreamCard = ({
 };
 
 /**
- * Chrome follows lifecycle: live work is a framed card with a surface;
+ * The frame follows lifecycle: live work is a bordered card with a surface;
  * finished work keeps only a light frame so it stays findable in the
  * Completed section without competing. Anything open restores the full frame.
  */
-function cardChromeClass(isLive: boolean, isOpen: boolean): string {
+function cardFrameClass(isLive: boolean, isOpen: boolean): string {
   if (isOpen) return 'border-step-in-progress/60 bg-card shadow-xs';
   return isLive
     ? 'border-border bg-card shadow-xs hover:border-muted-foreground/30'
@@ -344,157 +331,5 @@ function deadlineStepOf(workstream: Workstream): Step | null {
     workstream.steps.find(
       (step) => step.id === workstream.nearestDeadlineStepId,
     ) ?? null
-  );
-}
-
-function IconPicker({
-  value,
-  label,
-  onChange,
-}: {
-  value: string;
-  label: string;
-  onChange: (icon: string) => void;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <button
-            type="button"
-            aria-label={label}
-            title={label}
-            className="shrink-0 rounded px-0.5 text-base leading-none hover:bg-muted"
-          />
-        }
-      >
-        {value}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="grid grid-cols-5 gap-1 p-1">
-        {ICONS.map((icon) => (
-          <DropdownMenuItem
-            key={icon}
-            className="justify-center text-base"
-            onClick={() => onChange(icon)}
-          >
-            {icon}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-function GroupChip({
-  groups,
-  groupId,
-  label,
-  onSelect,
-}: {
-  groups: Group[];
-  groupId: string | null;
-  label: string;
-  onSelect: (groupId: string | null) => void;
-}) {
-  const { t } = useTranslation();
-  const group = groups.find((candidate) => candidate.id === groupId) ?? null;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <button
-            type="button"
-            aria-label={label}
-            title={label}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground"
-          />
-        }
-      >
-        <span
-          aria-hidden
-          className="size-1.5 rounded-[2px] border"
-          style={{ backgroundColor: group?.color ?? 'transparent' }}
-        />
-        {group?.name ?? t('overview.card.noGroup')}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuItem onClick={() => onSelect(null)}>
-          {t('overview.card.noGroup')}
-        </DropdownMenuItem>
-        {groups.map((candidate) => (
-          <DropdownMenuItem
-            key={candidate.id}
-            onClick={() => onSelect(candidate.id)}
-          >
-            <span
-              aria-hidden
-              className="mr-1.5 inline-block size-2 rounded-[2px]"
-              style={{ backgroundColor: candidate.color }}
-            />
-            {candidate.name}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-function LifecycleBadges({ workstream }: { workstream: Workstream }) {
-  const { t } = useTranslation();
-  const isBlocked = workstream.steps.some((step) => isBlockedNow(step));
-
-  return (
-    <>
-      {isBlocked && (
-        <span className="shrink-0 rounded-sm bg-step-blocked/12 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-step-blocked">
-          {t('overview.stepStatus.blocked')}
-        </span>
-      )}
-      {workstream.lifecycle === 'not_started' && (
-        <span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
-          {t('overview.card.notStarted')}
-        </span>
-      )}
-      {/* Complete stays plain text: it is the state that should recede. */}
-      {workstream.lifecycle === 'complete' && (
-        <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-step-done">
-          {t('overview.card.complete')}
-        </span>
-      )}
-    </>
-  );
-}
-
-function DeadlineBadge({ step, now }: { step: Step; now: Date }) {
-  const { t, i18n } = useTranslation();
-  if (!step.deadline) return null;
-
-  const days = daysUntil(step.deadline, now);
-  const label =
-    days < 0
-      ? t('overview.deadline.late', { count: -days })
-      : days === 0
-        ? t('overview.deadline.today')
-        : days === 1
-          ? t('overview.deadline.tomorrow')
-          : days < COUNTDOWN_HORIZON_DAYS
-            ? t('overview.deadline.upcoming', { count: days })
-            : formatDeadlineDate(step.deadline, now, i18n.language);
-
-  return (
-    <span
-      title={t('overview.deadline.dueTooltip', {
-        name: step.name,
-        date: step.deadline,
-      })}
-      className={cn(
-        'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] leading-tight',
-        BAND_BADGE_CLASSES[urgencyBand(step.deadline, now)],
-      )}
-    >
-      <span className="max-w-32 truncate opacity-80">{step.name}</span>
-      <span className="font-semibold tabular-nums">{label}</span>
-    </span>
   );
 }

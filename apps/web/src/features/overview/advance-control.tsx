@@ -45,7 +45,7 @@ export const AdvanceControl = ({
   };
 
   if (workstream.lifecycle === 'not_started') {
-    // Nothing to start: the pipeline has no first step yet.
+    // A16: Start is hidden (not disabled) while the pipeline is empty.
     if (workstream.steps.length === 0) return null;
 
     return (

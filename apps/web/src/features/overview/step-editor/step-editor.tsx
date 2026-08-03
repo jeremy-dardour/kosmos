@@ -1,42 +1,30 @@
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
-  CheckIcon,
-  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ListChecksIcon,
-  MessageSquareIcon,
-  MessageSquarePlusIcon,
-  PlusIcon,
   Trash2Icon,
   XIcon,
 } from 'lucide-react';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useCreateChecklistItem } from '@/api/hooks/use-create-checklist-item';
-import { useDeleteChecklistItem } from '@/api/hooks/use-delete-checklist-item';
 import { useDeleteStep } from '@/api/hooks/use-delete-step';
 import { useReorderSteps } from '@/api/hooks/use-reorder-steps';
-import { useUpdateChecklistItem } from '@/api/hooks/use-update-checklist-item';
 import { useUpdateStep } from '@/api/hooks/use-update-step';
 import { Button } from '@/components/ui/button';
 import { ClickToEdit } from '@/features/overview/click-to-edit';
 import { DeadlineField } from '@/features/overview/deadline-field';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
-import { HOVER_REVEAL } from '@/features/overview/hover-reveal';
-import { isBlockedNow } from '@/features/overview/is-blocked-now';
-import { NoteThread } from '@/features/overview/note-thread';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
 import { OwnerPicker } from '@/features/overview/owner-picker';
+import { ChecklistBlock } from '@/features/overview/step-editor/checklist-block';
+import { NotesBlock } from '@/features/overview/step-editor/notes-block';
+import { StatusDot } from '@/features/overview/step-editor/status-dot';
 import {
   isStepEditable,
   isStepStructurallyFree,
 } from '@/features/overview/step-mutability';
-import { STEP_STATUS_LABELS } from '@/features/overview/step-status-labels';
 import { useFocusOnOpen } from '@/features/overview/use-focus-on-open';
-import { useStepNotes } from '@/features/overview/use-step-notes';
 import { cn } from '@/lib/utils';
 
 import type { Step, UserSummary, Workstream } from '@/api/hooks/use-overview';
@@ -314,250 +302,3 @@ export const StepEditor = ({
     </section>
   );
 };
-
-// Softer sizes than the pipeline's dots: this one annotates the editor footer.
-const FOOTER_DOT_CLASSES = {
-  done: 'size-3 bg-step-done',
-  in_progress: 'size-3.5 bg-step-in-progress',
-  blocked: 'size-3.5 bg-step-blocked',
-  not_started: 'size-3 border-[1.5px] border-step-not-started bg-card',
-  skipped: 'size-3 border-[1.5px] border-dashed border-step-skipped bg-card',
-} as const;
-
-function StatusDot({ step }: { step: Step }) {
-  const { t } = useTranslation();
-  const visual = isBlockedNow(step) ? 'blocked' : step.status;
-
-  return (
-    <span
-      role="img"
-      aria-label={t(STEP_STATUS_LABELS[visual])}
-      title={t(STEP_STATUS_LABELS[visual])}
-      className={cn('shrink-0 rounded-full', FOOTER_DOT_CLASSES[visual])}
-    />
-  );
-}
-
-/**
- * The Step's sub-items in authored order. Progress here is informational — it
- * never gates advancing — and a frozen Step keeps the list as a record.
- */
-function ChecklistBlock({
-  step,
-  isFrozen,
-  projectId,
-}: {
-  step: Step;
-  isFrozen: boolean;
-  projectId: string | undefined;
-}) {
-  const { t } = useTranslation();
-  const createItem = useCreateChecklistItem(projectId);
-  const updateItem = useUpdateChecklistItem(projectId);
-  const deleteItem = useDeleteChecklistItem(projectId);
-  const [isComposing, setIsComposing] = useState(false);
-
-  const items = step.checklistItems;
-  const done = items.filter((item) => item.done).length;
-
-  return (
-    <div className="mt-1.5">
-      {items.length > 0 && (
-        <>
-          <div className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            <ListChecksIcon aria-hidden className="size-3" />
-            {t('overview.stepEditor.checklistProgress', {
-              done,
-              total: items.length,
-            })}
-          </div>
-          <ul className="mt-1 space-y-0.5">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                className="group/item flex items-center gap-1.5"
-              >
-                <button
-                  type="button"
-                  disabled={isFrozen}
-                  aria-label={t('overview.pipeline.toggleItem', {
-                    name: item.name,
-                  })}
-                  title={t('overview.pipeline.toggleItem', { name: item.name })}
-                  aria-pressed={item.done}
-                  onClick={() =>
-                    updateItem.mutate({
-                      params: { path: { id: item.id } },
-                      body: { done: !item.done },
-                    })
-                  }
-                  className={cn(
-                    'flex size-3.5 shrink-0 items-center justify-center rounded-[3px] border',
-                    item.done && 'border-step-done bg-step-done text-white',
-                    isFrozen && 'cursor-default opacity-70',
-                  )}
-                >
-                  {item.done && <CheckIcon aria-hidden className="size-2.5" />}
-                </button>
-                <span
-                  className={cn(
-                    'min-w-0 flex-1 truncate text-[11px]',
-                    item.done && 'text-muted-foreground line-through',
-                  )}
-                >
-                  {item.name}
-                </span>
-                {!isFrozen && (
-                  <button
-                    type="button"
-                    aria-label={t('overview.stepEditor.removeItem', {
-                      name: item.name,
-                    })}
-                    title={t('overview.stepEditor.removeItem', {
-                      name: item.name,
-                    })}
-                    onClick={() =>
-                      deleteItem.mutate({ params: { path: { id: item.id } } })
-                    }
-                    className={cn(
-                      HOVER_REVEAL,
-                      'shrink-0 text-muted-foreground group-focus-within/item:opacity-100 group-hover/item:opacity-100',
-                    )}
-                  >
-                    <XIcon aria-hidden className="size-3" />
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {isFrozen ? null : isComposing ? (
-        <input
-          // eslint-disable-next-line jsx-a11y/no-autofocus -- the click already moved focus here
-          autoFocus
-          aria-label={t('overview.stepEditor.newItemLabel')}
-          placeholder={t('overview.stepEditor.newItemPlaceholder')}
-          className="mt-1 h-6 w-full rounded-md border bg-background px-1.5 text-[11px]"
-          onBlur={() => setIsComposing(false)}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') event.currentTarget.blur();
-            if (event.key !== 'Enter') return;
-
-            const name = event.currentTarget.value.trim();
-            if (!name) {
-              event.currentTarget.blur();
-              return;
-            }
-
-            createItem.mutate({
-              params: { path: { stepId: step.id } },
-              body: { name },
-            });
-            event.currentTarget.value = '';
-          }}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setIsComposing(true)}
-          className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-        >
-          <PlusIcon aria-hidden className="size-3" />
-          {t(
-            items.length > 0
-              ? 'overview.stepEditor.addItem'
-              : 'overview.stepEditor.addChecklist',
-          )}
-        </button>
-      )}
-    </div>
-  );
-}
-
-/**
- * A frozen Step still takes new notes — the one thing the pipeline rules keep
- * open on a past step — so this block never disappears with the rest of the
- * editing affordances.
- */
-function NotesBlock({
-  workstreamId,
-  step,
-  projectId,
-  now,
-}: {
-  workstreamId: string;
-  step: Step;
-  projectId: string | undefined;
-  now: Date;
-}) {
-  const { t } = useTranslation();
-  const thread = useStepNotes(workstreamId, step.id, projectId, now);
-  const [isOpen, setIsOpen] = useState(true);
-  const stepName = step.name || t('overview.pipeline.untitled');
-  const latest = thread.entries.at(-1);
-
-  if (!latest && !isOpen) {
-    return (
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-      >
-        <MessageSquarePlusIcon aria-hidden className="size-3" />
-        {t('overview.stepEditor.addNote')}
-      </button>
-    );
-  }
-
-  return (
-    <div className="mt-1.5">
-      {latest && (
-        <button
-          type="button"
-          aria-expanded={isOpen}
-          aria-label={t(
-            isOpen
-              ? 'overview.notes.hideForStep'
-              : 'overview.notes.showForStep',
-            { name: stepName },
-          )}
-          onClick={() => setIsOpen((open) => !open)}
-          className="flex w-full items-center gap-1.5 rounded-md bg-muted/55 px-2 py-1 text-left text-[11px] hover:bg-muted"
-        >
-          <MessageSquareIcon
-            aria-hidden
-            className="size-3 shrink-0 text-muted-foreground"
-          />
-          <span className="shrink-0 font-medium">
-            {t('overview.thread.title')}
-            <span className="ml-1 tabular-nums">{thread.entries.length}</span>
-          </span>
-          <span className="min-w-0 flex-1 truncate text-muted-foreground">
-            {latest.body}
-          </span>
-          <span className="shrink-0 text-muted-foreground/70">
-            {latest.author} · {latest.when}
-          </span>
-          <ChevronDownIcon
-            aria-hidden
-            className={cn(
-              'size-3 shrink-0 text-muted-foreground transition-transform',
-              isOpen && 'rotate-180',
-            )}
-          />
-        </button>
-      )}
-
-      {isOpen && (
-        <NoteThread
-          stepName={stepName}
-          thread={thread}
-          isAppendOnly={!isStepEditable(step)}
-          onEscape={() => setIsOpen(false)}
-        />
-      )}
-    </div>
-  );
-}

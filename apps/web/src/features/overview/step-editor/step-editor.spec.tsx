@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { useOverview } from '@/api/hooks/use-overview';
-import { InlineWorkstreamCard } from '@/features/overview/inline-workstream-card';
+import { WorkstreamCard } from '@/features/overview/workstream-card/workstream-card';
 import { server, setupOverviewApi } from '@/testing/mock-api';
 import {
   checklistItem,
@@ -85,7 +85,7 @@ function CardHarness({
   if (!overview.data || !found) return null;
 
   return (
-    <InlineWorkstreamCard
+    <WorkstreamCard
       workstream={found}
       groups={overview.data.groups}
       users={overview.data.users}

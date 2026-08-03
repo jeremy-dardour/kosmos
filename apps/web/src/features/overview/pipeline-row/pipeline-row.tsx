@@ -1,18 +1,18 @@
-import { CheckIcon, MessageSquareIcon, PlusIcon } from 'lucide-react';
+import { MessageSquareIcon, PlusIcon } from 'lucide-react';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { canAppendStep } from '@/features/overview/can-append-step';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
-import { HOVER_REVEAL } from '@/features/overview/hover-reveal';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
+import { ChecklistPreview } from '@/features/overview/pipeline-row/checklist-preview';
+import { InsertStepPoint } from '@/features/overview/pipeline-row/insert-step-point';
 import { STEP_STATUS_LABELS } from '@/features/overview/step-status-labels';
 import { urgencyBand } from '@/features/overview/urgency';
 import { cn } from '@/lib/utils';
 
 import type {
-  ChecklistItem,
   Step,
   StepStatus,
   UserSummary,
@@ -299,110 +299,3 @@ export const PipelineRow = ({
     </ol>
   );
 };
-
-/**
- * A `+` sitting on the line between two dots, revealed on hover of the row and
- * on keyboard focus. The list item is zero-width and the button absolutely
- * positioned, so insertion points never shift the step columns — `DotCaret`
- * mirrors those widths.
- */
-function InsertStepPoint({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <li className="relative z-10 w-0 shrink-0">
-      <button
-        type="button"
-        aria-label={label}
-        title={label}
-        onClick={onClick}
-        // `top-0` + `size-5` matches the dot row's height, so the button lands
-        // centred on the connector line; the row has no height of its own.
-        className={cn(
-          HOVER_REVEAL,
-          'absolute left-1/2 top-0 flex size-5 -translate-x-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-xs hover:border-foreground/30 hover:text-foreground group-hover/dots:opacity-100',
-        )}
-      >
-        <PlusIcon aria-hidden className="size-3" />
-      </button>
-    </li>
-  );
-}
-
-/**
- * Ghosted checklist under a step dot: readable at a glance on the current and
- * next steps, tickable in place on the current one.
- */
-function ChecklistPreview({
-  items,
-  isInteractive,
-  onToggle,
-}: {
-  items: ChecklistItem[];
-  isInteractive: boolean;
-  onToggle: (itemId: string, isDone: boolean) => void;
-}) {
-  const { t } = useTranslation();
-
-  if (items.length === 0) return null;
-
-  // Only three items fit, so they should be the ones still needing doing —
-  // a stable sort keeps the authored order within each half.
-  const byRemaining = [...items].sort(
-    (a, b) => Number(a.done) - Number(b.done),
-  );
-  const shown = byRemaining.slice(0, 3);
-  const hidden = items.length - shown.length;
-
-  return (
-    <ul
-      className={cn(
-        'mx-auto mt-1.5 w-full max-w-44 space-y-0.5 px-1',
-        isInteractive ? 'opacity-80' : 'pointer-events-none opacity-40',
-      )}
-    >
-      {shown.map((item) => (
-        <li key={item.id}>
-          <button
-            type="button"
-            disabled={!isInteractive}
-            aria-label={t('overview.pipeline.toggleItem', { name: item.name })}
-            title={t('overview.pipeline.toggleItem', { name: item.name })}
-            aria-pressed={item.done}
-            onClick={() => onToggle(item.id, !item.done)}
-            className="flex w-full items-center gap-1 rounded px-0.5 text-left hover:bg-muted/60"
-          >
-            <span
-              aria-hidden
-              className={cn(
-                'flex size-2.5 shrink-0 items-center justify-center rounded-[2px] border',
-                item.done && 'border-step-done bg-step-done text-white',
-              )}
-            >
-              {item.done && <CheckIcon className="size-2" />}
-            </span>
-            <span
-              className={cn(
-                'min-w-0 flex-1 truncate text-[10px] leading-tight',
-                item.done
-                  ? 'text-muted-foreground line-through'
-                  : 'text-foreground/80',
-              )}
-            >
-              {item.name}
-            </span>
-          </button>
-        </li>
-      ))}
-      {hidden > 0 && (
-        <li className="px-0.5 text-[10px] leading-tight text-muted-foreground/70">
-          {t('overview.pipeline.moreItems', { count: hidden })}
-        </li>
-      )}
-    </ul>
-  );
-}

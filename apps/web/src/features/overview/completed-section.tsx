@@ -2,8 +2,8 @@ import { CheckIcon, ChevronRightIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { GroupHeader } from '@/features/overview/group-header';
 import { groupWorkstreams } from '@/features/overview/group-workstreams';
-import { GroupHeader } from '@/features/overview/sortable-group-section';
 import { cn } from '@/lib/utils';
 
 import type { Group, Workstream } from '@/api/hooks/use-overview';

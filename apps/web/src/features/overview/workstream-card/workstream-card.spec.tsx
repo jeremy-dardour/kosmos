@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
 import { useOverview } from '@/api/hooks/use-overview';
-import { InlineWorkstreamCard } from '@/features/overview/inline-workstream-card';
+import { WorkstreamCard } from '@/features/overview/workstream-card/workstream-card';
 import { server, setupOverviewApi } from '@/testing/mock-api';
 import {
   group,
@@ -79,7 +79,7 @@ function CardHarness({
   if (!overview.data || !found) return null;
 
   return (
-    <InlineWorkstreamCard
+    <WorkstreamCard
       workstream={found}
       groups={overview.data.groups}
       users={overview.data.users}
@@ -108,7 +108,7 @@ function capturePatch(respondWith: Workstream) {
   return bodies;
 }
 
-describe('inlineWorkstreamCard', () => {
+describe('workstreamCard', () => {
   it('commits a rename on blur and renders the patched response without refetch', async () => {
     setupOverviewApi(overviewOf(catering));
     const bodies = capturePatch({ ...catering, name: 'Feasts' });
@@ -150,7 +150,7 @@ describe('inlineWorkstreamCard', () => {
     expect(bodies).toEqual([]);
   });
 
-  it('commits an icon pick', async () => {
+  it('commits a typed icon on blur', async () => {
     setupOverviewApi(overviewOf(catering));
     const bodies = capturePatch({ ...catering, icon: '💐' });
     const agent = userEvent.setup();
@@ -159,9 +159,36 @@ describe('inlineWorkstreamCard', () => {
     await agent.click(
       await screen.findByRole('button', { name: 'Change icon of Catering' }),
     );
-    await agent.click(await screen.findByRole('menuitem', { name: '💐' }));
+    const field = screen.getByRole('textbox', {
+      name: 'Change icon of Catering',
+    });
+    await agent.clear(field);
+    await agent.type(field, '💐');
+    await agent.tab();
 
     await waitFor(() => expect(bodies).toEqual([{ icon: '💐' }]));
+  });
+
+  it('reverts an emptied icon field without committing', async () => {
+    setupOverviewApi(overviewOf(catering));
+    const bodies = capturePatch(catering);
+    const agent = userEvent.setup();
+    renderWithApp(<CardHarness workstreamId="w-catering" />);
+
+    await agent.click(
+      await screen.findByRole('button', { name: 'Change icon of Catering' }),
+    );
+    await agent.clear(
+      screen.getByRole('textbox', { name: 'Change icon of Catering' }),
+    );
+    await agent.tab();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Change icon of Catering' }),
+      ).toHaveTextContent('🍽️'),
+    );
+    expect(bodies).toEqual([]);
   });
 
   it('commits a group change and an ungrouping', async () => {

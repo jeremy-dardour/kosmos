@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { PipelineRow } from '@/features/overview/pipeline-row';
+import { PipelineRow } from '@/features/overview/pipeline-row/pipeline-row';
 import {
   checklistItem as buildChecklistItem,
   step as buildStep,

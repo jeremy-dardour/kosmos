@@ -10,7 +10,6 @@ import { useMemo, useState } from 'react';
 import { useReorderGroups } from '@/api/hooks/use-reorder-groups';
 import { CompletedSection } from '@/features/overview/completed-section';
 import { groupWorkstreams } from '@/features/overview/group-workstreams';
-import { InlineWorkstreamCard } from '@/features/overview/inline-workstream-card';
 import { SortableGroupSection } from '@/features/overview/sortable-group-section';
 import { useGhostStep } from '@/features/overview/use-ghost-step';
 import {
@@ -18,6 +17,7 @@ import {
   useOptimisticReorder,
 } from '@/features/overview/use-optimistic-reorder';
 import { useOverviewDndSensors } from '@/features/overview/use-overview-dnd-sensors';
+import { WorkstreamCard } from '@/features/overview/workstream-card/workstream-card';
 
 import type { Group, Overview, Workstream } from '@/api/hooks/use-overview';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -104,7 +104,7 @@ export const OverviewList = ({
   };
 
   const renderCard = (workstream: Workstream, dragHandle?: ReactNode) => (
-    <InlineWorkstreamCard
+    <WorkstreamCard
       key={workstream.id}
       workstream={workstream}
       groups={groups}
