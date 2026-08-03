@@ -24,7 +24,7 @@ import { ProjectRepository } from '@/modules/project/repositories/project.reposi
 import { StepRepository } from '@/modules/project/repositories/step.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
 import { StepController } from '@/modules/project/step.controller';
-import { WorkstreamPipelineService } from '@/modules/project/workstream-pipeline.service';
+import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 import { WorkstreamController } from '@/modules/project/workstream.controller';
 import { WorkstreamService } from '@/modules/project/workstream.service';
 
@@ -56,7 +56,7 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
     OverviewService,
     GroupService,
     WorkstreamService,
-    WorkstreamPipelineService,
+    WorkstreamStructureService,
     NoteService,
     ProjectRepository,
     OverviewRepository,

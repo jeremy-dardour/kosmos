@@ -86,8 +86,9 @@ Controller → Service → Repository → EntityManager
   endpoints never accept or expose ordering writes beyond what the parent
   operation decides. A workstream's _scope_ is the set of the project's
   workstreams sharing one group (ungrouped is its own scope); positions are
-  contiguous from 0 within each scope, and likewise for steps within a
-  workstream and checklist items within a step.
+  contiguous from 0 within each scope. Steps within a workstream and
+  checklist items within a step are contiguous from **1** — several guards
+  rely on 0 being an impossible step position, so keep the bases as they are.
 - Reorder operations use the **order-callback idiom**: the repository method
   (`reorder`, `reorderScope`) locks the ordering root (project or workstream
   row), loads the scope in current order, and hands it to a service-supplied

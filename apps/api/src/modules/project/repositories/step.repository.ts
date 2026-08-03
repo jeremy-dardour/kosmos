@@ -14,7 +14,11 @@ export class StepRepository extends EntityRepository<Step> {
     super(em, Step);
   }
 
-  /** Applies `apply` to the step and its sibling graph, workstream row locked. */
+  /**
+   * Applies `apply` to the step and its sibling graph, workstream row locked.
+   * Every locked write touches the root — a child edit alone would leave the
+   * aggregate's `updatedAt` stale.
+   */
   async updateLocked(
     id: string,
     apply: ApplyToStep,
@@ -23,6 +27,7 @@ export class StepRepository extends EntityRepository<Step> {
       const located = await lockWorkstreamGraphOfStep(em, id);
 
       apply(located.step, located.workstream);
+      located.workstream.touch();
       await em.flush();
 
       return located;
@@ -35,6 +40,7 @@ export class StepRepository extends EntityRepository<Step> {
       const { workstream, step } = await lockWorkstreamGraphOfStep(em, id);
 
       apply(step, workstream);
+      workstream.touch();
       em.remove(step);
       await em.flush();
 

@@ -24,7 +24,7 @@ src/modules/project/
   workstream.controller.ts        ← Workstream CRUD + advance + step create
                                     + workstream/step reorder
   workstream.service.ts           ← CRUD + pipeline transitions (start/advance)
-  workstream-pipeline.service.ts  ← Structural mutation inside the aggregate:
+  workstream-structure.service.ts  ← Structural mutation inside the aggregate:
                                     step + checklist item create/edit/delete/
                                     reorder (ADR 0009)
   step.controller.ts              ← Step field edits + delete

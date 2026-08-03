@@ -42,7 +42,7 @@ import type { UpdateStepDto } from '@/modules/project/dtos/input/update-step.dto
  * items. Lifecycle transitions stay in WorkstreamService.
  */
 @Injectable()
-export class WorkstreamPipelineService {
+export class WorkstreamStructureService {
   constructor(
     private readonly stepRepository: StepRepository,
     private readonly checklistItemRepository: ChecklistItemRepository,
@@ -69,8 +69,6 @@ export class WorkstreamPipelineService {
         step.owner = owner;
         step.blocked = false;
         lockedWorkstream.addStep(step);
-
-        lockedWorkstream.touch();
       },
     );
 
@@ -82,7 +80,7 @@ export class WorkstreamPipelineService {
 
     const { workstream, step } = await this.stepRepository.updateLocked(
       id,
-      (lockedStep, lockedWorkstream) => {
+      (lockedStep) => {
         assertStepEditable(lockedStep);
 
         if (dto.name !== undefined) {
@@ -97,8 +95,6 @@ export class WorkstreamPipelineService {
         if (dto.blocked !== undefined) {
           lockedStep.blocked = dto.blocked;
         }
-
-        lockedWorkstream.touch();
       },
     );
 
@@ -139,8 +135,6 @@ export class WorkstreamPipelineService {
         for (const [index, id] of dto.ids.entries()) {
           byId.get(id)!.position = slots[index]!;
         }
-
-        lockedWorkstream.touch();
       },
     );
 
@@ -153,7 +147,6 @@ export class WorkstreamPipelineService {
       (step, lockedWorkstream) => {
         assertStepDeletable(lockedWorkstream, step);
         closePositionGap(lockedWorkstream.getSteps(), step.position);
-        lockedWorkstream.touch();
       },
     );
 
@@ -166,7 +159,7 @@ export class WorkstreamPipelineService {
   ): Promise<ChecklistItemDto> {
     const created = await this.checklistItemRepository.createLocked(
       stepId,
-      (step, workstream) => {
+      (step) => {
         assertStepEditable(step);
 
         const item = new ChecklistItem();
@@ -174,7 +167,6 @@ export class WorkstreamPipelineService {
         item.name = dto.name;
         item.done = false;
         step.addChecklistItem(item);
-        workstream.touch();
 
         return item;
       },
@@ -189,7 +181,7 @@ export class WorkstreamPipelineService {
   ): Promise<ChecklistItemDto> {
     const item = await this.checklistItemRepository.updateLocked(
       id,
-      (lockedItem, workstream) => {
+      (lockedItem) => {
         assertStepEditable(lockedItem.step);
 
         if (dto.name !== undefined) {
@@ -198,7 +190,6 @@ export class WorkstreamPipelineService {
         if (dto.done !== undefined) {
           lockedItem.done = dto.done;
         }
-        workstream.touch();
       },
     );
 
@@ -206,11 +197,10 @@ export class WorkstreamPipelineService {
   }
 
   async removeChecklistItem(id: string): Promise<void> {
-    await this.checklistItemRepository.removeLocked(id, (item, workstream) => {
+    await this.checklistItemRepository.removeLocked(id, (item) => {
       assertStepEditable(item.step);
 
       closePositionGap(item.step.getChecklistItems(), item.position);
-      workstream.touch();
     });
   }
 
@@ -228,7 +218,6 @@ export class WorkstreamPipelineService {
     return this.userRepository.findOneOrFail(userId);
   }
 
-  /** Deletion leaves holes, so a count could collide with a surviving position. */
   private nextChecklistPosition(step: Step): number {
     const positions = step.getChecklistItems().map((item) => item.position);
 

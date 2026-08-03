@@ -20,7 +20,11 @@ export class ChecklistItemRepository extends EntityRepository<ChecklistItem> {
     super(em, ChecklistItem);
   }
 
-  /** `build` returns the new item, appended to the locked step. */
+  /**
+   * `build` returns the new item, appended to the locked step. Every locked
+   * write touches the root — a child edit alone would leave the aggregate's
+   * `updatedAt` stale.
+   */
   async createLocked(
     stepId: string,
     build: (step: Step, workstream: Workstream) => ChecklistItem,
@@ -29,6 +33,7 @@ export class ChecklistItemRepository extends EntityRepository<ChecklistItem> {
       const { workstream, step } = await lockWorkstreamGraphOfStep(em, stepId);
 
       const item = build(step, workstream);
+      workstream.touch();
       em.persist(item);
       await em.flush();
 
@@ -41,6 +46,7 @@ export class ChecklistItemRepository extends EntityRepository<ChecklistItem> {
       const { workstream, item } = await this.lockGraphOf(em, id);
 
       apply(item, workstream);
+      workstream.touch();
       await em.flush();
 
       return item;
@@ -53,6 +59,7 @@ export class ChecklistItemRepository extends EntityRepository<ChecklistItem> {
       const { workstream, item } = await this.lockGraphOf(em, id);
 
       apply(item, workstream);
+      workstream.touch();
       em.remove(item);
       await em.flush();
     });

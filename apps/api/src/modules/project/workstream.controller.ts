@@ -33,7 +33,7 @@ import { ReorderStepsDto } from '@/modules/project/dtos/input/reorder-steps.dto'
 import { ReorderWorkstreamsDto } from '@/modules/project/dtos/input/reorder-workstreams.dto';
 import { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
-import { WorkstreamPipelineService } from '@/modules/project/workstream-pipeline.service';
+import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 import { WorkstreamService } from '@/modules/project/workstream.service';
 
 /**
@@ -50,7 +50,7 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
 export class WorkstreamController {
   constructor(
     private readonly workstreamService: WorkstreamService,
-    private readonly workstreamPipelineService: WorkstreamPipelineService,
+    private readonly workstreamStructureService: WorkstreamStructureService,
   ) {}
 
   @Post('projects/:projectId/workstreams')
@@ -116,7 +116,7 @@ export class WorkstreamController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateStepDto,
   ): Promise<WorkstreamDto> {
-    return this.workstreamPipelineService.createStep(id, dto);
+    return this.workstreamStructureService.createStep(id, dto);
   }
 
   @Put('workstreams/:id/step-order')
@@ -133,7 +133,7 @@ export class WorkstreamController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReorderStepsDto,
   ): Promise<WorkstreamDto> {
-    return this.workstreamPipelineService.reorderSteps(id, dto);
+    return this.workstreamStructureService.reorderSteps(id, dto);
   }
 
   @Delete('workstreams/:id')

@@ -138,6 +138,10 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
     );
   }
 
+  /**
+   * Every locked write touches the root — a child edit alone would leave the
+   * aggregate's `updatedAt` stale.
+   */
   async updateLockedDetails(
     id: string,
     apply: (workstream: Workstream) => void,
@@ -146,6 +150,7 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
       const workstream = await lockWorkstreamGraph(em, id);
 
       apply(workstream);
+      workstream.touch();
       await em.flush();
 
       return workstream;

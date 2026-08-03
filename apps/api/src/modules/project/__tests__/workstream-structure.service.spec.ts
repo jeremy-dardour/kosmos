@@ -8,7 +8,7 @@ import {
   buildUser,
   buildWorkstream,
 } from '@/modules/project/__tests__/helpers/pipeline-entities';
-import { WorkstreamPipelineService } from '@/modules/project/workstream-pipeline.service';
+import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 
 import type { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import type { Step } from '@/database/entities/step.entity';
@@ -50,7 +50,7 @@ function createStepService(workstream: Workstream) {
   const userRepository = { findOneOrFail: vi.fn() };
 
   return {
-    service: new WorkstreamPipelineService(
+    service: new WorkstreamStructureService(
       stepRepository as never,
       {} as never,
       workstreamRepository as never,
@@ -88,7 +88,7 @@ function createChecklistItemService(step: Step) {
   };
 
   return {
-    service: new WorkstreamPipelineService(
+    service: new WorkstreamStructureService(
       {} as never,
       checklistItemRepository as never,
       {} as never,
@@ -121,7 +121,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('workstreamPipelineService.createStep', () => {
+describe('workstreamStructureService.createStep', () => {
   it('inserts at the position and shifts the following steps down', async () => {
     const { service, positions } = createStepService(
       buildWorkstream({
@@ -190,7 +190,7 @@ describe('workstreamPipelineService.createStep', () => {
   });
 });
 
-describe('workstreamPipelineService.updateStep', () => {
+describe('workstreamStructureService.updateStep', () => {
   it('applies only the submitted fields', async () => {
     const step = buildStep({
       id: 's1',
@@ -249,17 +249,6 @@ describe('workstreamPipelineService.updateStep', () => {
       service.updateStep('past', { name: 'Rewrite' }),
     ).rejects.toThrow('Past steps cannot be edited');
   });
-
-  it('bumps the workstream timestamp', async () => {
-    const step = buildStep({ id: 's1', position: 1 });
-    const workstream = buildWorkstream({ steps: [step] });
-    const { service } = createStepService(workstream);
-    const before = workstream.updatedAt.getTime();
-
-    await service.updateStep('s1', { name: 'Renamed' });
-
-    expect(workstream.updatedAt.getTime()).toBeGreaterThan(before);
-  });
 });
 
 /** past (done), current, then two future steps. */
@@ -281,7 +270,7 @@ function buildActivePipeline(): Workstream {
   });
 }
 
-describe('workstreamPipelineService.reorderSteps', () => {
+describe('workstreamStructureService.reorderSteps', () => {
   it('reorders the future tail without moving past or current steps', async () => {
     const { service, positions } = createStepService(buildActivePipeline());
 
@@ -356,19 +345,9 @@ describe('workstreamPipelineService.reorderSteps', () => {
       'Completed workstream pipelines cannot be edited',
     );
   });
-
-  it('bumps the workstream timestamp', async () => {
-    const workstream = buildActivePipeline();
-    const { service } = createStepService(workstream);
-    const before = workstream.updatedAt.getTime();
-
-    await service.reorderSteps('ws-1', { ids: ['f2', 'f1'] });
-
-    expect(workstream.updatedAt.getTime()).toBeGreaterThan(before);
-  });
 });
 
-describe('workstreamPipelineService.removeStep', () => {
+describe('workstreamStructureService.removeStep', () => {
   it('renumbers the steps after the deleted one', async () => {
     const { service, positions } = createStepService(
       buildWorkstream({
@@ -417,7 +396,7 @@ describe('workstreamPipelineService.removeStep', () => {
   });
 });
 
-describe('workstreamPipelineService.createChecklistItem', () => {
+describe('workstreamStructureService.createChecklistItem', () => {
   it('appends past the highest position, ignoring holes left by deletions', async () => {
     const { service, positions } = createChecklistItemService(
       buildStep({
@@ -456,20 +435,9 @@ describe('workstreamPipelineService.createChecklistItem', () => {
       service.createChecklistItem('past', { name: 'Too late' }),
     ).rejects.toThrow('Past steps cannot be edited');
   });
-
-  it('bumps the workstream timestamp', async () => {
-    const { service, workstream } = createChecklistItemService(
-      buildStep({ id: 's1', position: 1 }),
-    );
-    const before = workstream.updatedAt.getTime();
-
-    await service.createChecklistItem('s1', { name: 'Added' });
-
-    expect(workstream.updatedAt.getTime()).toBeGreaterThan(before);
-  });
 });
 
-describe('workstreamPipelineService.updateChecklistItem', () => {
+describe('workstreamStructureService.updateChecklistItem', () => {
   it('applies only the submitted fields', async () => {
     const item = buildChecklistItem('ci1', 'Original');
     const { service } = createChecklistItemService(
@@ -494,7 +462,7 @@ describe('workstreamPipelineService.updateChecklistItem', () => {
   });
 });
 
-describe('workstreamPipelineService.removeChecklistItem', () => {
+describe('workstreamStructureService.removeChecklistItem', () => {
   it('renumbers the items after the deleted one', async () => {
     const { service, positions } = createChecklistItemService(
       buildStep({

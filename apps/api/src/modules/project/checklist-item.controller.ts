@@ -24,7 +24,7 @@ import {
 } from '@/app/decorators/api-problem-responses.decorator';
 import { UpdateChecklistItemDto } from '@/modules/project/dtos/input/update-checklist-item.dto';
 import { ChecklistItemDto } from '@/modules/project/dtos/output/checklist-item.dto';
-import { WorkstreamPipelineService } from '@/modules/project/workstream-pipeline.service';
+import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 
 @Controller()
 @ApiTags('checklist items')
@@ -34,7 +34,7 @@ import { WorkstreamPipelineService } from '@/modules/project/workstream-pipeline
 @ApiNotFoundResponse()
 export class ChecklistItemController {
   constructor(
-    private readonly workstreamPipelineService: WorkstreamPipelineService,
+    private readonly workstreamStructureService: WorkstreamStructureService,
   ) {}
 
   @Patch('checklist-items/:id')
@@ -45,7 +45,7 @@ export class ChecklistItemController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateChecklistItemDto,
   ): Promise<ChecklistItemDto> {
-    return this.workstreamPipelineService.updateChecklistItem(id, dto);
+    return this.workstreamStructureService.updateChecklistItem(id, dto);
   }
 
   @Delete('checklist-items/:id')
@@ -57,6 +57,6 @@ export class ChecklistItemController {
   @ApiNoContentResponse()
   @ApiConflictResponse('The checklist item belongs to a frozen past step')
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    await this.workstreamPipelineService.removeChecklistItem(id);
+    await this.workstreamStructureService.removeChecklistItem(id);
   }
 }

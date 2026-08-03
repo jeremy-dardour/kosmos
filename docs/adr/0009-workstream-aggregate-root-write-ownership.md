@@ -23,7 +23,7 @@ The Workstream is the **write-side aggregate root** for itself, its Steps and
 their ChecklistItems:
 
 - Only workstream-owned services (`workstream.service.ts` for lifecycle,
-  CRUD and workstream ordering; `workstream-pipeline.service.ts` for
+  CRUD and workstream ordering; `workstream-structure.service.ts` for
   structural mutation of steps and checklist items) mutate anything inside
   the aggregate. Services below the root never mutate upward.
 - Child routes keep their flat URLs (`PATCH /steps/:id`,

@@ -39,6 +39,8 @@ export function assertPipelineMutable(workstream: Workstream): void {
  * step is future; a Complete one has none.
  */
 export function futureSteps(workstream: Workstream): Step[] {
+  // Steps are 1-based, so 0 as the no-pointer sentinel keeps every step ahead
+  // of it; a 0-based step would silently drop out of the future zone.
   const pointerPosition = workstream.currentStep?.position ?? 0;
 
   return workstream

@@ -26,7 +26,7 @@ import { UpdateStepDto } from '@/modules/project/dtos/input/update-step.dto';
 import { ChecklistItemDto } from '@/modules/project/dtos/output/checklist-item.dto';
 import { StepDto } from '@/modules/project/dtos/output/step.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
-import { WorkstreamPipelineService } from '@/modules/project/workstream-pipeline.service';
+import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 
 @Controller()
 @ApiTags('steps')
@@ -36,7 +36,7 @@ import { WorkstreamPipelineService } from '@/modules/project/workstream-pipeline
 @ApiNotFoundResponse()
 export class StepController {
   constructor(
-    private readonly workstreamPipelineService: WorkstreamPipelineService,
+    private readonly workstreamStructureService: WorkstreamStructureService,
   ) {}
 
   @Patch('steps/:id')
@@ -51,7 +51,7 @@ export class StepController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateStepDto,
   ): Promise<StepDto> {
-    return this.workstreamPipelineService.updateStep(id, dto);
+    return this.workstreamStructureService.updateStep(id, dto);
   }
 
   @Delete('steps/:id')
@@ -62,7 +62,7 @@ export class StepController {
   @ApiOkResponse({ type: WorkstreamDto })
   @ApiConflictResponse('The step is the current step or a frozen past step')
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<WorkstreamDto> {
-    return this.workstreamPipelineService.removeStep(id);
+    return this.workstreamStructureService.removeStep(id);
   }
 
   @Post('steps/:stepId/checklist-items')
@@ -76,6 +76,6 @@ export class StepController {
     @Param('stepId', ParseUUIDPipe) stepId: string,
     @Body() dto: CreateChecklistItemDto,
   ): Promise<ChecklistItemDto> {
-    return this.workstreamPipelineService.createChecklistItem(stepId, dto);
+    return this.workstreamStructureService.createChecklistItem(stepId, dto);
   }
 }
