@@ -24,9 +24,11 @@ src/modules/project/
   workstream.controller.ts        ← Workstream CRUD + advance + step create
                                     + workstream/step reorder
   workstream.service.ts           ← CRUD + pipeline transitions (start/advance)
+  workstream-pipeline.service.ts  ← Structural mutation inside the aggregate:
+                                    step + checklist item create/edit/delete/
+                                    reorder (ADR 0009)
   step.controller.ts              ← Step field edits + delete
                                     + checklist item create
-  step.service.ts                 ← Granular step create / edit / delete
   repositories/
     project.repository.ts         ← Project entity persistence
     group.repository.ts           ← Group entity persistence
@@ -38,7 +40,6 @@ src/modules/project/
   note.controller.ts              ← Note CRUD (scoped to step)
   note.service.ts
   checklist-item.controller.ts    ← checklist item rename/toggle + delete
-  checklist-item.service.ts
   utils/                          ← cross-entity domain functions
   dtos/
     input/                        ← Create/Update DTOs (class-validator)
@@ -56,6 +57,12 @@ project, 20–50 workstreams).
 
 **Boundary rules inside the module:**
 
+- The Workstream is the **write-side aggregate root**
+  ([ADR 0009](../../docs/adr/0009-workstream-aggregate-root-write-ownership.md)):
+  only the `workstream-*` services mutate the workstream row, its Steps, or
+  their ChecklistItems. Child-route controllers (`step.controller`,
+  `checklist-item.controller`) keep their flat URLs and delegate to those
+  services; every aggregate mutation resolves and locks the root first.
 - `workstream.service` is the single authority for pipeline transitions
   (ADR 0005). Nothing else writes `startedAt`, `completedAt`, `currentStepId`,
   or a Step's `outcome` / `outcomeAt`.

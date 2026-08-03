@@ -1,12 +1,18 @@
 import { Injectable } from '@nestjs/common';
 
+import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { Step } from '@/database/entities/step.entity';
 import { UserRepository } from '@/database/repositories/user.repository';
+import {
+  ChecklistItemDto,
+  toChecklistItemDto,
+} from '@/modules/project/dtos/output/checklist-item.dto';
 import { StepDto, toStepDto } from '@/modules/project/dtos/output/step.dto';
 import {
   toWorkstreamDto,
   WorkstreamDto,
 } from '@/modules/project/dtos/output/workstream.dto';
+import { ChecklistItemRepository } from '@/modules/project/repositories/checklist-item.repository';
 import { StepRepository } from '@/modules/project/repositories/step.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
 import { conflict } from '@/modules/project/utils/conflict.util';
@@ -25,23 +31,26 @@ import {
 
 import type { User } from '@/database/entities/user.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
+import type { CreateChecklistItemDto } from '@/modules/project/dtos/input/create-checklist-item.dto';
 import type { CreateStepDto } from '@/modules/project/dtos/input/create-step.dto';
 import type { ReorderStepsDto } from '@/modules/project/dtos/input/reorder-steps.dto';
+import type { UpdateChecklistItemDto } from '@/modules/project/dtos/input/update-checklist-item.dto';
 import type { UpdateStepDto } from '@/modules/project/dtos/input/update-step.dto';
 
 /**
- * Granular step editing. Structural operations answer with the whole
- * workstream because they renumber siblings; field edits answer with the step.
+ * Structural mutation inside the workstream aggregate — steps and checklist
+ * items. Lifecycle transitions stay in WorkstreamService.
  */
 @Injectable()
-export class StepService {
+export class WorkstreamPipelineService {
   constructor(
     private readonly stepRepository: StepRepository,
+    private readonly checklistItemRepository: ChecklistItemRepository,
     private readonly workstreamRepository: WorkstreamRepository,
     private readonly userRepository: UserRepository,
   ) {}
 
-  async create(
+  async createStep(
     workstreamId: string,
     dto: CreateStepDto,
   ): Promise<WorkstreamDto> {
@@ -68,7 +77,7 @@ export class StepService {
     return this.buildWorkstreamDto(workstream);
   }
 
-  async update(id: string, dto: UpdateStepDto): Promise<StepDto> {
+  async updateStep(id: string, dto: UpdateStepDto): Promise<StepDto> {
     const owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
 
     const { workstream, step } = await this.stepRepository.updateLocked(
@@ -100,7 +109,7 @@ export class StepService {
     );
   }
 
-  async reorder(
+  async reorderSteps(
     workstreamId: string,
     dto: ReorderStepsDto,
   ): Promise<WorkstreamDto> {
@@ -138,7 +147,7 @@ export class StepService {
     return this.buildWorkstreamDto(workstream);
   }
 
-  async remove(id: string): Promise<WorkstreamDto> {
+  async removeStep(id: string): Promise<WorkstreamDto> {
     const workstream = await this.stepRepository.removeLocked(
       id,
       (step, lockedWorkstream) => {
@@ -149,6 +158,60 @@ export class StepService {
     );
 
     return this.buildWorkstreamDto(workstream);
+  }
+
+  async createChecklistItem(
+    stepId: string,
+    dto: CreateChecklistItemDto,
+  ): Promise<ChecklistItemDto> {
+    const created = await this.checklistItemRepository.createLocked(
+      stepId,
+      (step, workstream) => {
+        assertStepEditable(step);
+
+        const item = new ChecklistItem();
+        item.position = this.nextChecklistPosition(step);
+        item.name = dto.name;
+        item.done = false;
+        step.addChecklistItem(item);
+        workstream.touch();
+
+        return item;
+      },
+    );
+
+    return toChecklistItemDto(created);
+  }
+
+  async updateChecklistItem(
+    id: string,
+    dto: UpdateChecklistItemDto,
+  ): Promise<ChecklistItemDto> {
+    const item = await this.checklistItemRepository.updateLocked(
+      id,
+      (lockedItem, workstream) => {
+        assertStepEditable(lockedItem.step);
+
+        if (dto.name !== undefined) {
+          lockedItem.name = dto.name;
+        }
+        if (dto.done !== undefined) {
+          lockedItem.done = dto.done;
+        }
+        workstream.touch();
+      },
+    );
+
+    return toChecklistItemDto(item);
+  }
+
+  async removeChecklistItem(id: string): Promise<void> {
+    await this.checklistItemRepository.removeLocked(id, (item, workstream) => {
+      assertStepEditable(item.step);
+
+      closePositionGap(item.step.getChecklistItems(), item.position);
+      workstream.touch();
+    });
   }
 
   /** The locked mutation already returns the loaded graph — no re-fetch. */
@@ -163,5 +226,12 @@ export class StepService {
 
   private async findUser(userId: string): Promise<User> {
     return this.userRepository.findOneOrFail(userId);
+  }
+
+  /** Deletion leaves holes, so a count could collide with a surviving position. */
+  private nextChecklistPosition(step: Step): number {
+    const positions = step.getChecklistItems().map((item) => item.position);
+
+    return Math.max(0, ...positions) + 1;
   }
 }

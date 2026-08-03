@@ -21,13 +21,12 @@ import {
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
 } from '@/app/decorators/api-problem-responses.decorator';
-import { ChecklistItemService } from '@/modules/project/checklist-item.service';
 import { CreateChecklistItemDto } from '@/modules/project/dtos/input/create-checklist-item.dto';
 import { UpdateStepDto } from '@/modules/project/dtos/input/update-step.dto';
 import { ChecklistItemDto } from '@/modules/project/dtos/output/checklist-item.dto';
 import { StepDto } from '@/modules/project/dtos/output/step.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
-import { StepService } from '@/modules/project/step.service';
+import { WorkstreamPipelineService } from '@/modules/project/workstream-pipeline.service';
 
 @Controller()
 @ApiTags('steps')
@@ -37,8 +36,7 @@ import { StepService } from '@/modules/project/step.service';
 @ApiNotFoundResponse()
 export class StepController {
   constructor(
-    private readonly stepService: StepService,
-    private readonly checklistItemService: ChecklistItemService,
+    private readonly workstreamPipelineService: WorkstreamPipelineService,
   ) {}
 
   @Patch('steps/:id')
@@ -53,7 +51,7 @@ export class StepController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateStepDto,
   ): Promise<StepDto> {
-    return this.stepService.update(id, dto);
+    return this.workstreamPipelineService.updateStep(id, dto);
   }
 
   @Delete('steps/:id')
@@ -64,7 +62,7 @@ export class StepController {
   @ApiOkResponse({ type: WorkstreamDto })
   @ApiConflictResponse('The step is the current step or a frozen past step')
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<WorkstreamDto> {
-    return this.stepService.remove(id);
+    return this.workstreamPipelineService.removeStep(id);
   }
 
   @Post('steps/:stepId/checklist-items')
@@ -78,6 +76,6 @@ export class StepController {
     @Param('stepId', ParseUUIDPipe) stepId: string,
     @Body() dto: CreateChecklistItemDto,
   ): Promise<ChecklistItemDto> {
-    return this.checklistItemService.create(stepId, dto);
+    return this.workstreamPipelineService.createChecklistItem(stepId, dto);
   }
 }
