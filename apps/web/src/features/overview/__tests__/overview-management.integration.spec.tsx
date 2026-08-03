@@ -44,50 +44,6 @@ describe('workstream management', () => {
     });
     expect(within(region).getByText('Cake')).toBeVisible();
   });
-
-  it('edits a workstream name from the detail panel', async () => {
-    const agent = await openManagementReady();
-
-    await agent.click(screen.getByRole('button', { name: 'View Catering' }));
-    await agent.click(
-      screen.getByRole('button', { name: 'More actions for Catering' }),
-    );
-    await agent.click(
-      await screen.findByRole('menuitem', { name: 'Edit details' }),
-    );
-
-    const dialog = await screen.findByRole('dialog');
-    const name = within(dialog).getByLabelText('Name');
-    await agent.clear(name);
-    await agent.type(name, 'Catering & Bar');
-    await agent.click(within(dialog).getByRole('button', { name: 'Save' }));
-
-    expect(
-      await screen.findByRole('button', { name: 'View Catering & Bar' }),
-    ).toBeVisible();
-  });
-
-  it('deletes a workstream and closes the detail panel', async () => {
-    const agent = await openManagementReady();
-
-    await agent.click(screen.getByRole('button', { name: 'View Flowers' }));
-    await agent.click(
-      screen.getByRole('button', { name: 'More actions for Flowers' }),
-    );
-    await agent.click(
-      await screen.findByRole('menuitem', { name: 'Delete workstream' }),
-    );
-    await agent.click(await screen.findByRole('button', { name: 'Delete' }));
-
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: 'View Flowers' }),
-      ).not.toBeInTheDocument(),
-    );
-    expect(
-      screen.getByRole('complementary', { name: 'Select a workstream' }),
-    ).toBeVisible();
-  });
 });
 
 describe('group management', () => {

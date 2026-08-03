@@ -5,6 +5,7 @@ import {
   OneToMany,
   PrimaryKey,
   Property,
+  Unique,
 } from '@mikro-orm/decorators/legacy';
 
 import { Group } from '@/database/entities/group.entity';
@@ -21,9 +22,24 @@ export enum WorkstreamLifecycle {
 }
 
 @Entity()
+// Ungrouped workstreams share one scope per project, but Postgres treats null
+// group ids as distinct, so only grouped scopes are constraint-enforced.
+@Unique({
+  properties: ['group', 'position'],
+  deferMode: 'deferred',
+})
 export class Workstream {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: Opt<string>;
+
+  /**
+   * Manual order within the workstream's *scope* — the set of the project's
+   * workstreams sharing one group, with ungrouped forming its own scope.
+   * Positions are contiguous from 0 within each scope; every renumbering runs
+   * single-phase in one locked transaction under the deferred constraint.
+   */
+  @Property()
+  position!: number;
 
   @Property()
   name!: string;
@@ -74,8 +90,25 @@ export class Workstream {
       : WorkstreamLifecycle.Active;
   }
 
+  isComplete(): boolean {
+    return this.getLifecycle() === WorkstreamLifecycle.Complete;
+  }
+
+  /**
+   * Marks the aggregate changed after a child edit MikroORM's own change
+   * tracking would not see on this row.
+   */
+  touch(): void {
+    this.updatedAt = new Date();
+  }
+
   getSteps(): readonly Step[] {
     return this.steps.getItems();
+  }
+
+  addStep(step: Step): void {
+    step.workstream = this;
+    this.steps.add(step);
   }
 
   nearestDeadlineStep(): Step | null {

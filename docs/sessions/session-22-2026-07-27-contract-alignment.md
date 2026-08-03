@@ -7,7 +7,7 @@
   and [#26](https://github.com/jeremy-dardour/wedding-planner/issues/26)
   against merged auth v1.1 and Slice 1.
 - Aligned the
-  [API contract](../specs/api-contract/PRD.md),
+  [API contract](../specs/v1-product/api-contract.md),
   [V1 tech design](../specs/v1-tech-design.md), API/web/entity standards,
   [module layout](../../apps/api/module-layout.md), and
   [current state](../current-state.md).
@@ -19,7 +19,7 @@
 
 - Canonical entity DTO reuse, detail loading, query invalidation, user reuse,
   and reorder behavior are recorded in the
-  [API contract](../specs/api-contract/PRD.md).
+  [API contract](../specs/v1-product/api-contract.md).
 - Repository ownership of persistence and the threshold for specialized entity
   DTOs are recorded in the
   [API standards](../../apps/api/STANDARDS.md).

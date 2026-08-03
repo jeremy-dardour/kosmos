@@ -6,8 +6,12 @@ Inherits: [Global standards](../../STANDARDS.md)
 
 ```
 src/
-  features/       → Feature folders by domain (flat, no nesting)
-    <feature>/    → Page component + sub-components
+  features/       → Feature folders by domain
+    <feature>/    → Page component + components, one file each, flat —
+                    except that a composite component and its subcomponents
+                    share one folder named after the composite. A component
+                    used by several parents is shared, not a subcomponent:
+                    it stays at the feature root. No barrel/index files.
   components/ui/  → shadcn/ui primitives
   app/components/ → App-level components (layout, error boundaries)
   api/            → API client and hooks
@@ -20,6 +24,9 @@ src/
 - Function components with named exports
 - UI primitives in `src/components/ui/` (shadcn/ui)
 - App-level components in `src/app/components/`
+- `react-refresh/only-export-components` forbids non-component exports from
+  component files — hooks, predicates, and constants shared with a component
+  get their own module rather than an eslint-disable
 
 ## API layer
 
@@ -40,10 +47,23 @@ src/
   each child.
 - Store selected entity IDs, then derive the selected entity from query data;
   do not keep a copied response object that can become stale.
-- Mutations invalidate only queries whose response can change. Workstream,
-  step, checklist, group, project, and pipeline mutations invalidate the
-  overview. Note mutations invalidate the on-demand notes query only while the
-  overview contains no note data or counts.
+- Mutations touch only queries whose response can change, via one of two
+  deliberate refresh models:
+  - **Inline overview mutations commit through the cache seam**
+    (`src/api/overview-cache.ts`): the hook merges its response into the
+    cached aggregate with `useOverviewCache` and one debounced,
+    focus-deferred trailing invalidate reconciles the server-derived fields.
+    Never add a per-mutation overview invalidation to a hook that commits
+    through the seam.
+  - **Dialog mutations invalidate** (`useInvalidateOverview`): workstream
+    create/delete, group CRUD, project settings — flows whose responses are
+    not patchable into the aggregate and where a full refetch after a dialog
+    closes is the right cost.
+  - One sanctioned crossover: reorder mutations commit through the seam but
+    recover from a rejected drag by invalidating in `onError` — the stale
+    optimistic order is forgotten whole and the server's order re-renders.
+- Note mutations patch the cached per-step `noteCount` through the seam and
+  invalidate the on-demand notes query.
 
 ## Auth
 
@@ -80,4 +100,3 @@ src/
 - **Browser E2E is deferred.** Do not add Playwright coverage for now. Cover web
   journeys at the integration layer with real providers and MSW; retain the
   existing Playwright setup for when browser tests are resumed.
-- Shared component mocks go in `@/testing/mocks/components.tsx`.

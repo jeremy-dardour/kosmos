@@ -27,10 +27,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@/app/decorators/api-problem-responses.decorator';
 import { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
+import { CreateStepDto } from '@/modules/project/dtos/input/create-step.dto';
 import { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
-import { UpdatePipelineDto } from '@/modules/project/dtos/input/update-pipeline.dto';
+import { ReorderStepsDto } from '@/modules/project/dtos/input/reorder-steps.dto';
+import { ReorderWorkstreamsDto } from '@/modules/project/dtos/input/reorder-workstreams.dto';
 import { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstream.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
+import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 import { WorkstreamService } from '@/modules/project/workstream.service';
 
 /**
@@ -45,7 +48,10 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
 @ApiUnauthorizedResponse()
 @ApiNotFoundResponse()
 export class WorkstreamController {
-  constructor(private readonly workstreamService: WorkstreamService) {}
+  constructor(
+    private readonly workstreamService: WorkstreamService,
+    private readonly workstreamStructureService: WorkstreamStructureService,
+  ) {}
 
   @Post('projects/:projectId/workstreams')
   @ApiOperation({ summary: 'Create a workstream' })
@@ -55,6 +61,23 @@ export class WorkstreamController {
     @Body() dto: CreateWorkstreamDto,
   ): Promise<WorkstreamDto> {
     return this.workstreamService.create(projectId, dto);
+  }
+
+  @Put('projects/:projectId/workstream-order')
+  @ApiOperation({
+    summary: "Reorder one group scope's workstreams",
+    description:
+      "The ids must be exactly the scope's live workstreams, in the new order. Complete workstreams trail them and are not returned.",
+  })
+  @ApiOkResponse({ type: [WorkstreamDto] })
+  @ApiConflictResponse(
+    "The submitted ids do not match the scope's live workstreams",
+  )
+  async reorder(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() dto: ReorderWorkstreamsDto,
+  ): Promise<WorkstreamDto[]> {
+    return this.workstreamService.reorderWithinGroup(projectId, dto);
   }
 
   @Patch('workstreams/:id')
@@ -82,17 +105,35 @@ export class WorkstreamController {
     return this.workstreamService.progress(id, dto);
   }
 
-  @Put('workstreams/:id/pipeline')
-  @ApiOperation({ summary: 'Atomically replace the editable pipeline tail' })
+  @Post('workstreams/:id/steps')
+  @ApiOperation({
+    summary: 'Insert a step into the future pipeline',
+    description: 'Shifts the steps at and after `position` down by one.',
+  })
+  @ApiCreatedResponse({ type: WorkstreamDto })
+  @ApiConflictResponse('The position is not in the future zone')
+  async createStep(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateStepDto,
+  ): Promise<WorkstreamDto> {
+    return this.workstreamStructureService.createStep(id, dto);
+  }
+
+  @Put('workstreams/:id/step-order')
+  @ApiOperation({
+    summary: "Reorder the workstream's future steps",
+    description:
+      'The ids must be exactly the steps after the pointer, in the new order. Past and current steps never move.',
+  })
   @ApiOkResponse({ type: WorkstreamDto })
   @ApiConflictResponse(
-    'The pipeline is stale, frozen, or does not match the editable tail',
+    "The submitted ids do not match the workstream's future steps",
   )
-  async updatePipeline(
+  async reorderSteps(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdatePipelineDto,
+    @Body() dto: ReorderStepsDto,
   ): Promise<WorkstreamDto> {
-    return this.workstreamService.updatePipeline(id, dto);
+    return this.workstreamStructureService.reorderSteps(id, dto);
   }
 
   @Delete('workstreams/:id')

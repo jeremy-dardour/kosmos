@@ -21,17 +21,25 @@ src/modules/project/
   overview.service.ts             ← the aggregate read model
   group.controller.ts             ← Group CRUD
   group.service.ts
-  workstream.controller.ts        ← Workstream CRUD + advance
+  workstream.controller.ts        ← Workstream CRUD + advance + step create
+                                    + workstream/step reorder
   workstream.service.ts           ← CRUD + pipeline transitions (start/advance)
+  workstream-structure.service.ts  ← Structural mutation inside the aggregate:
+                                    step + checklist item create/edit/delete/
+                                    reorder (ADR 0009)
+  step.controller.ts              ← Step field edits + delete
+                                    + checklist item create
   repositories/
     project.repository.ts         ← Project entity persistence
     group.repository.ts           ← Group entity persistence
     workstream.repository.ts      ← Workstream aggregate persistence
+    step.repository.ts            ← Step persistence under the workstream lock
+    checklist-item.repository.ts  ← Checklist item persistence under the lock
     overview.repository.ts        ← Consistent overview entity graph
+    *.query.ts                    ← em-parameterized shared queries (ADR 0008)
   note.controller.ts              ← Note CRUD (scoped to step)
   note.service.ts
-  checklist-item.controller.ts    ← immediate done/undone toggle
-  checklist-item.service.ts
+  checklist-item.controller.ts    ← checklist item rename/toggle + delete
   utils/                          ← cross-entity domain functions
   dtos/
     input/                        ← Create/Update DTOs (class-validator)
@@ -49,9 +57,15 @@ project, 20–50 workstreams).
 
 **Boundary rules inside the module:**
 
+- The Workstream is the **write-side aggregate root**
+  ([ADR 0009](../../docs/adr/0009-workstream-aggregate-root-write-ownership.md)):
+  only the `workstream-*` services mutate the workstream row, its Steps, or
+  their ChecklistItems. Child-route controllers (`step.controller`,
+  `checklist-item.controller`) keep their flat URLs and delegate to those
+  services; every aggregate mutation resolves and locks the root first.
 - `workstream.service` is the single authority for pipeline transitions
-  and atomic pipeline replacement (ADR 0005). Nothing else writes `startedAt`,
-  `completedAt`, `currentStepId`, or a Step's `outcome` / `outcomeAt`.
+  (ADR 0005). Nothing else writes `startedAt`, `completedAt`, `currentStepId`,
+  or a Step's `outcome` / `outcomeAt`.
 - Repositories are the only classes that use the EntityManager or other
   MikroORM persistence APIs. They accept and return entities, not DTOs.
 - Services instantiate and mutate entities from input DTOs. Services or
@@ -80,6 +94,6 @@ project, 20–50 workstreams).
 Earlier drafts of this document split `project`, `group`, `workstream` and
 `user` into four modules. That was reversed during slice 1 (#18) in favour of
 the single-module layout the
-[API contract PRD](../../docs/specs/api-contract/PRD.md#module-structure) had
+[API contract PRD](../../docs/specs/v1-product/api-contract.md#module-structure) had
 specified;
 the `user` module was kept.

@@ -33,6 +33,7 @@ export function user(overrides: Partial<UserSummary> = {}): UserSummary {
 export function group(overrides: Partial<Group> = {}): Group {
   return {
     id: 'g1',
+    position: 0,
     name: 'Venue & Catering',
     color: '#5a9e6f',
     createdAt: TS,
@@ -58,6 +59,7 @@ export function step(
     explicitOwnerId: null,
     effectiveOwnerId: null,
     checklistItems: [],
+    noteCount: 0,
     createdAt: TS,
     updatedAt: TS,
     ...overrides,
@@ -83,6 +85,7 @@ export function checklistItem(
 export function workstream(overrides: Partial<Workstream> = {}): Workstream {
   return {
     id: 'w1',
+    position: 0,
     name: 'Catering',
     icon: '🍽️',
     groupId: null,

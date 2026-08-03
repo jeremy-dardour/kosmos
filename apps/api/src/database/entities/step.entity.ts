@@ -83,6 +83,16 @@ export class Step {
     return this.checklistItems.getItems();
   }
 
+  /** A step with a recorded outcome is past, and past steps are frozen. */
+  isFrozen(): boolean {
+    return this.outcome != null;
+  }
+
+  addChecklistItem(item: ChecklistItem): void {
+    item.step = this;
+    this.checklistItems.add(item);
+  }
+
   // Outcome wins so complete workstreams (no pointer) still derive correctly.
   getStatus(pointerPosition: number | null): StepStatus {
     if (this.outcome) {

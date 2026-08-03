@@ -38,7 +38,7 @@ export const OverviewHeader = ({
   const { t } = useTranslation();
 
   return (
-    <header className="mb-3 flex items-center gap-2">
+    <header className="mb-3 flex flex-wrap items-center gap-2">
       <h1 className="truncate text-[15px] font-semibold">{project.name}</h1>
       <EventCountdown eventDate={project.eventDate} />
       <Button
@@ -46,12 +46,13 @@ export const OverviewHeader = ({
         variant="ghost"
         size="icon-xs"
         aria-label={t('overview.manage.projectSettings')}
+        title={t('overview.manage.projectSettings')}
         onClick={onProjectSettings}
       >
         <SettingsIcon />
       </Button>
 
-      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
         <OwnerFilter
           users={users}
           currentUserId={currentUserId}

@@ -10,21 +10,23 @@ import type { OverviewDto } from '@/modules/project/dtos/output/overview.dto';
 
 /**
  * The overview read model: one aggregate response, every derived status
- * computed here rather than stored (ADR 0005). Notes are excluded — the detail
- * panel loads those per workstream.
+ * computed here rather than stored (ADR 0005). Note bodies stay out — the
+ * aggregate carries only per-step counts.
  */
 @Injectable()
 export class OverviewService {
   constructor(private readonly overviewRepository: OverviewRepository) {}
 
   async getOverview(projectId: string): Promise<OverviewDto> {
-    const { project, groups, workstreams, users } =
+    const { project, groups, workstreams, users, noteCounts } =
       await this.overviewRepository.load(projectId);
 
     return {
       project: toProjectDto(project),
       groups: groups.map((group) => toGroupDto(group)),
-      workstreams: workstreams.map((workstream) => toWorkstreamDto(workstream)),
+      workstreams: workstreams.map((workstream) =>
+        toWorkstreamDto(workstream, noteCounts),
+      ),
       users: users.map((user) => toUserSummaryDto(user)),
     };
   }

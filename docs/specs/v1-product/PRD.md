@@ -6,8 +6,8 @@ and why each choice was made.
 
 Implementation PRDs (the per-increment build specs) reference this document for
 the full behavioral contract. For the domain glossary see
-[CONTEXT.md](../../../CONTEXT.md); for the UI wireframe see
-[docs/prototype/timeline/](../../prototype/timeline/).
+[CONTEXT.md](../../../CONTEXT.md); for the UI design and the reasoning behind it
+see [docs/prototype/overview-editing/](../../prototype/overview-editing/).
 
 ---
 
@@ -260,9 +260,9 @@ by a structural edit.
 - **Future steps are fully mutable** — add, delete, reorder, edit freely.
 - A step you decide never to do is **deleted** (it's a future step), not
   pre-skipped.
-- Editing happens in one Workstream-level draft. Saving atomically replaces the
-  current/future editable tail, so a multi-step replan either commits in full or
-  leaves the pipeline unchanged.
+- Editing happens inline, one change at a time. Each step or checklist edit
+  commits on blur through its own granular operation, re-validated against the
+  pointer at commit time; last write wins.
 
 ### Manage notes
 
@@ -309,14 +309,44 @@ infrastructure for a handful of users.
 
 ## The overview — the only screen
 
-V1 has a single screen: the **Pipeline Stack overview.** A two-panel layout
-chosen over alternatives in the wireframe prototype. The overview shows each
-Workstream as its full pipeline, color-coded by status — all work and its status
-at a glance.
+V1 has a single screen: a **single-column overview** where each Workstream card
+shows its full pipeline, color-coded by status — all work and its status at a
+glance — and where **every edit happens inline in the card**. There is no detail
+panel, no edit mode and no Save button: the card is its own editor.
 
-### Left panel — workstream card list
+A two-panel layout with a slide-over detail panel was built and rejected —
+editing read as happening _beside_ the overview rather than _in_ it. See
+[docs/prototype/overview-editing/](../../prototype/overview-editing/) for the
+alternatives tried and why each lost.
+
+### The card list
 
 A scrollable list of Workstream cards, grouped by Group with section headers.
+
+**Ordering is manual.** Workstreams are reordered by **drag & drop within
+their group** (a grip handle at the card's top-left, shown on hover), and
+whole groups are reordered the same way from their section header. Position
+the user authored is stable — starting or advancing other workstreams never
+reshuffles it, so a NotStarted card may sit above an Active one if that's
+where it was put. Rules:
+
+- A card cannot be dragged into another group — changing group stays a
+  deliberate edit on the card's group field.
+- The Ungrouped section is pinned after the real groups and is not draggable;
+  cards inside it reorder normally.
+- A workstream alone in its group shows no drag handle.
+- A newly created workstream lands at the **top of its group**.
+- Dragging is **disabled while any filter is active** — reordering a list with
+  hidden cards is ambiguous.
+
+**Completed workstreams leave their group** and sink into a single
+**Completed section** at the bottom of the page — the overview's job is what
+still needs doing. The section is **collapsed by default** behind a
+`✓ Completed (n)` header (the count carries the progress-feel); expanded, its
+cards cluster under small group headers in the same group order as the live
+list. Cards there stay fully interactive (open steps, read notes, append
+notes) but are never draggable. A group whose workstreams are all complete
+disappears from the live area.
 
 **Header bar:**
 
@@ -330,71 +360,117 @@ A scrollable list of Workstream cards, grouped by Group with section headers.
 **Each Workstream card shows:**
 
 - Icon + name + owner avatar.
-- **Deadline countdown badge**: the nearest upcoming deadline for that
-  workstream, shown as "{step name} in {N}d". Deadlines surface as a per-card
-  countdown badge plus date-ticks under the relevant step dots — not on a
-  shared time axis (a shared axis didn't scale to 20–50 rows; per-card
-  countdown reads clearer).
-  - **Comfortable** (≥ 7 days): grey badge.
-  - **Urgent** (< 7 days): red badge with warning.
-  - **Overdue**: solid red badge, "{step name} {N}d overdue."
+- **Deadline badge**, pinned to the card's top-right: the nearest upcoming
+  deadline for that workstream, naming its step. Deadlines surface as a per-card
+  badge plus per-step signals — not on a shared time axis (a shared axis didn't
+  scale to 20–50 rows; per-card countdown reads clearer).
+  - Reads `{step} 3d late` / `today` / `tomorrow` / `in 5d`, and falls back to a
+    plain date (`{step} 12 Sep`) beyond a fortnight, where a countdown stops
+    being useful. The year is shown whenever it is not the current one.
   - No upcoming deadlines: badge hidden.
 - **Pipeline dots**: a horizontal row of circles representing each step,
   color-coded by status (green = Done, blue = In Progress, grey outline = Not
-  Started, dashed = Skipped, red = Blocked). Steps with deadlines show the date
-  below the dot.
-- **Advance button**: one-click advance directly from the card — the most
-  frequent action kept to one click. For blocked steps, this becomes a "Resolve"
-  dropdown offering "Mark Done" / "Mark Skipped." Richer edits (notes, owner,
-  deadline) live in the detail panel.
+  Started, dashed = Skipped, red = Blocked). Clicking a dot opens that step's
+  editor.
+- **Per-step deadline signals**: a dated step shows its date under the dot, and
+  a step still ahead of the pointer also gets a ring on the dot itself. Both use
+  one **five-band urgency scale** — overdue, < 7 days, < 14 days, < 30 days,
+  ≥ 30 days — shading red → orange → yellow → grey. A three-band scale was too
+  coarse: a step due tomorrow and one due in five months both read as "not
+  late". A settled step's deadline is history and stays muted; a Complete
+  Workstream gets no rings.
+- **Checklist preview**: the current and next steps show up to three checklist
+  items under their dot, unfinished first. The current step's are tickable in
+  place; the next step's are read-only.
+- **Note markers**: a step with notes shows a count under its dot, opening that
+  step's thread anchored beneath it — including for past steps.
+- **Step names** render at near-body size (13px) so the pipeline row scans
+  without leaning in; the current/open step's name is emphasized.
+- **Owner-override marker**: a small avatar under a step's name, shown **only
+  when the step has an explicit owner** — inherited owners stay invisible in
+  the row, so an avatar under a dot always means an override of the
+  workstream's owner.
+
+**Card chrome follows lifecycle.** Active and NotStarted Workstreams are framed
+cards with a surface; Complete ones keep only a **light half-strength frame**
+(no surface), so live work carries the visual weight while finished cards stay
+findable. Selecting any card restores its full frame.
+
+- **Advance button**: sits in the card's header row, **immediately right of the
+  status badges**, and is the card's only solid button — unmistakable among
+  the quieter click targets. It is a split button: one click advances with
+  outcome Done; a chevron menu offers "Skip". For blocked steps it becomes a
+  "Resolve" dropdown offering "Mark Done" / "Mark Skipped" / "Unblock". A
+  NotStarted Workstream shows "Start" instead (hidden while its pipeline is
+  empty). A Complete one shows nothing. Richer edits (notes, owner, deadline)
+  live in the step editor. Advancing must stay a single click that never
+  requires opening an editor first.
 
 **Card visual states:**
 
-- Default: neutral border.
-- Selected (detail panel open): blue border, light blue background.
+- Default: neutral border (Complete: light half-strength border, no surface).
+- Selected (a step editor open): blue border, light blue background.
 - Blocked: red border, light red background, "BLOCKED" badge.
 - Overdue: red border, light red background.
+- Settled steps within any card recede, so a card reads as "here and ahead"
+  rather than a wall of green. A selected Complete Workstream stays recessive —
+  only its frame, the opened step and the editor come forward.
 
 **NotStarted Workstreams** are visible on the overview (not hidden).
 
-### Right panel — detail slide-over
+### The step editor
 
-Opens when a card is clicked (not on the Advance button). Shows full detail for
-one Workstream. A slide-over panel (not a separate page or inline expand) keeps
-overview context visible while drilling into one Workstream.
+Clicking a pipeline dot opens that step's editor as a strip inside the same
+card, anchored beneath the dot it belongs to. One step at a time, one card at a
+time; clicking away closes it. Editing the Workstream's own fields — icon, name,
+group, owner — happens directly in the card header, with no editor at all.
 
-Contains:
+The editor contains:
 
-- **Vertical step pipeline**: each step as a vertical list item with connecting
-  lines. Done steps show strike-through + completion date. Current step is
-  highlighted with a "CURRENT" badge. Steps with deadlines show the date and
-  relative countdown.
-- **Checklists by step**: the current checklist is expanded with interactive
-  checkboxes; future checklists are compact and expandable; past checklists
-  remain visible but greyed and read-only. Each shows a completion count
-  ("2/4").
-- **Edit pipeline mode**: a compact normal view expands into one Workstream-level
-  editor for the current and future Steps. One Save applies Step attributes,
-  structure, ordering, and checklist management atomically.
-- **Note log**: reverse-chronological thread of timestamped entries. "+ Add
-  note" action.
-- Close button dismisses the panel; clicking another card swaps.
+- **Step fields**: name, deadline, explicit owner override, and a blocked toggle
+  on the current step.
+- **Checklist**: completion toggles plus add / rename / delete.
+- **Note thread**: expanded by default, with add, and edit/delete on the
+  author's own entries.
+- **Navigation** to the previous/next step, and reorder controls where the step
+  is structurally free.
+
+**Frozen past steps.** A Done or Skipped step's name, deadline, owner and
+checklist are read-only, and it offers no reorder, delete or insertion. Its note
+thread remains **append-only**: new notes are allowed, edits and deletions are
+not. This is the one thing that stays open on a past step.
+
+**Adding steps.** New steps are inserted from the pipeline itself: an insertion
+point appears between two dots on hover, plus a permanent one at the end. Only
+positions after the current step are offered, which is exactly the rule that a
+new Step may only land in the future part of the pipeline — in a NotStarted
+Workstream that means every position, in a Complete one none.
 
 ### Interactions summary
 
-| Action                       | Where                   | Behavior                                                      |
-| ---------------------------- | ----------------------- | ------------------------------------------------------------- |
-| Advance a workstream         | Card (Advance button)   | Records outcome, moves pointer. One click for Done            |
-| Resolve a blocked workstream | Card (Resolve dropdown) | Choose Done or Skipped, then advances                         |
-| Start a workstream           | Card or detail panel    | Transitions from NotStarted to Active                         |
-| View workstream detail       | Click card body         | Opens slide-over panel on the right                           |
-| Add a note                   | Detail panel            | Appends to the step's note thread                             |
-| Edit/delete own note         | Detail panel            | Inline on the author's entries                                |
-| Toggle checklist sub-item    | Detail panel            | Marks sub-item done/undone (informational)                    |
-| Filter by owner              | Header dropdown         | Filters card list to matching workstreams                     |
-| Filter by group              | Header dropdown         | Shows/hides groups                                            |
-| Edit pipeline                | Detail panel            | One atomic Save for current attributes and the future tail    |
-| Manage checklist sub-items   | Pipeline editor         | Add, rename, delete, reorder, and toggle current/future items |
+| Action                                | Where                                        | Behavior                                             |
+| ------------------------------------- | -------------------------------------------- | ---------------------------------------------------- |
+| Advance a workstream                  | Card (Advance button)                        | Records outcome, moves pointer. One click for Done   |
+| Resolve a blocked workstream          | Card (Resolve dropdown)                      | Choose Done or Skipped, then advances                |
+| Start a workstream                    | Card (Start button)                          | Transitions from NotStarted to Active                |
+| Open a step                           | Click its pipeline dot                       | Opens that step's editor inside the card             |
+| Edit workstream icon/name/group/owner | Card header                                  | Edited in place; no editor to open                   |
+| Edit a step                           | Step editor                                  | Name, deadline, owner override, blocked flag         |
+| Add a note                            | Step editor, or its dot's note marker        | Appends to that step's thread; allowed on past steps |
+| Edit/delete own note                  | Step editor                                  | Author's own entries only, and never on a past step  |
+| Toggle checklist sub-item             | Step editor, or under the current step's dot | Marks sub-item done/undone (informational)           |
+| Add a step                            | Insertion point between dots                 | Only after the current step                          |
+| Reorder / delete a step               | Step editor                                  | Future tail only                                     |
+| Filter by owner                       | Header dropdown                              | Filters card list to matching workstreams            |
+| Filter by group                       | Header dropdown                              | Shows/hides groups                                   |
+| Manage checklist sub-items            | Step editor                                  | Add, rename, delete, and toggle current/future items |
+| Reorder workstreams                   | Drag handle, card top-left                   | Within its group only; disabled while filtered       |
+| Reorder groups                        | Drag handle, group header                    | Whole sections; Ungrouped stays pinned last          |
+| Browse completed workstreams          | Completed section, page bottom               | Collapsed by default; expands to per-group clusters  |
+
+Icon-only controls (add-step `+`, drag handles, note markers, icon picker, the
+advance cluster) each carry a tooltip naming the action — at minimum the native
+`title` mirroring the accessible name.
 
 ---
 
@@ -470,8 +546,10 @@ step (un-records its outcome, moves the pointer back).
 
 ### Creating and editing Workstreams and Groups
 
-Workstreams and Groups can be created, edited, and deleted. The detail panel (or
-a settings/management view — V1 does not prescribe where) supports:
+Workstreams and Groups can be created, edited, and deleted. A Workstream's icon,
+name, group and default owner are edited in place in its card header; creation,
+deletion and Group/Project management use dialogs reached from the header bar.
+Between them they support:
 
 - Creating a Workstream: name, icon, optional group, optional default owner.
 - Editing a Workstream: name, icon, group, default owner.

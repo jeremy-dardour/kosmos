@@ -1,12 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import { $api } from '@/api/api-client';
+import { overviewQueryOptions } from '@/api/hooks/use-overview';
 
 /**
- * The overview aggregate is the one read that every workstream, group, and
- * project mutation can change. This hook hides its query key behind a single
- * callback so callers never reconstruct it.
+ * The dialog mutations' refresh model: flows whose responses are not patchable
+ * into the aggregate (workstream create/delete, group CRUD, project settings)
+ * refetch it whole. Everything else commits through `useOverviewCache`; the
+ * one crossover is a reorder recovering from a rejected drag.
  */
 export function useInvalidateOverview(projectId: string | undefined) {
   const queryClient = useQueryClient();
@@ -14,11 +15,8 @@ export function useInvalidateOverview(projectId: string | undefined) {
   return useCallback(async () => {
     if (!projectId) return;
 
-    const overview = $api.queryOptions(
-      'get',
-      '/api/projects/{projectId}/overview',
-      { params: { path: { projectId } } },
-    );
-    await queryClient.invalidateQueries({ queryKey: overview.queryKey });
+    await queryClient.invalidateQueries({
+      queryKey: overviewQueryOptions(projectId).queryKey,
+    });
   }, [projectId, queryClient]);
 }

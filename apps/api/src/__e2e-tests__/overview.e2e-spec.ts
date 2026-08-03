@@ -8,6 +8,7 @@ import {
 } from '@/__e2e-tests__/helpers/reset-database.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
 import { Group } from '@/database/entities/group.entity';
+import { Note } from '@/database/entities/note.entity';
 import { Project } from '@/database/entities/project.entity';
 import { Step, StepOutcome } from '@/database/entities/step.entity';
 import { User } from '@/database/entities/user.entity';
@@ -39,6 +40,8 @@ describe('Overview E2E Tests', () => {
   let stepOwnerId: string;
   let activeDeadlineStepId: string;
   let notStartedDeadlineStepId: string;
+  let annotatedStepId: string;
+  let unannotatedStepId: string;
 
   beforeAll(async () => {
     await mockOidc.setup();
@@ -78,12 +81,14 @@ describe('Overview E2E Tests', () => {
 
     const group = em.create(Group, {
       project,
+      position: 0,
       name: 'Vendors',
       color: '#5a9e6f',
     });
 
     const completed = em.create(Workstream, {
       project,
+      position: 0,
       group,
       owner: workstreamOwner,
       name: 'Venue',
@@ -109,12 +114,13 @@ describe('Overview E2E Tests', () => {
 
     const active = em.create(Workstream, {
       project,
+      position: 0,
       owner: workstreamOwner,
       name: 'Catering',
       icon: '🍽️',
       startedAt: instantAt(-30),
     });
-    em.create(Step, {
+    const annotatedStep = em.create(Step, {
       workstream: active,
       position: 1,
       name: 'Define menu style',
@@ -133,15 +139,29 @@ describe('Overview E2E Tests', () => {
         { position: 1, name: 'Green Fig Kitchen', done: true },
       ],
     });
-    em.create(Step, {
+    const unannotatedStep = em.create(Step, {
       workstream: active,
       position: 3,
       name: 'Choose caterer',
       deadline: calendarDay(8),
     });
 
+    for (const content of ['Vegetarian option', 'Wine pairing', 'Budget cap']) {
+      em.create(Note, {
+        step: annotatedStep,
+        author: workstreamOwner,
+        content,
+      });
+    }
+    em.create(Note, {
+      step: currentStep,
+      author: stepOwner,
+      content: 'Two tastings booked',
+    });
+
     const notStarted = em.create(Workstream, {
       project,
+      position: 1,
       name: 'Flowers',
       icon: '💐',
     });
@@ -165,6 +185,8 @@ describe('Overview E2E Tests', () => {
     stepOwnerId = stepOwner.id;
     activeDeadlineStepId = currentStep.id;
     notStartedDeadlineStepId = notStartedDeadlineStep.id;
+    annotatedStepId = annotatedStep.id;
+    unannotatedStepId = unannotatedStep.id;
   }
 
   async function fetchOverview(): Promise<OverviewDto> {
@@ -174,6 +196,14 @@ describe('Overview E2E Tests', () => {
       .expect(200);
 
     return response.body as OverviewDto;
+  }
+
+  async function fetchNoteCount(stepId: string): Promise<number | undefined> {
+    const overview = await fetchOverview();
+
+    return overview.workstreams
+      .flatMap((workstream) => workstream.steps)
+      .find((step) => step.id === stepId)?.noteCount;
   }
 
   describe('GET /projects/:projectId/overview', () => {
@@ -199,13 +229,13 @@ describe('Overview E2E Tests', () => {
       });
     });
 
-    it('returns every workstream, ordered by name', async () => {
+    it('returns every workstream, ordered by position', async () => {
       const overview = await fetchOverview();
 
-      expect(overview.workstreams.map((w) => w.name)).toEqual([
-        'Catering',
-        'Flowers',
-        'Venue',
+      expect(overview.workstreams.map((w) => [w.name, w.position])).toEqual([
+        ['Catering', 0],
+        ['Venue', 0],
+        ['Flowers', 1],
       ]);
     });
 
@@ -314,6 +344,38 @@ describe('Overview E2E Tests', () => {
         'Two Spoons',
       ]);
       expect(active.steps[1]?.checklistItems[0]?.done).toBe(true);
+    });
+
+    it('counts the notes of every step without returning their bodies', async () => {
+      const overview = await fetchOverview();
+      const noteCounts = new Map(
+        overview.workstreams.flatMap((workstream) =>
+          workstream.steps.map((step) => [step.id, step.noteCount] as const),
+        ),
+      );
+
+      expect(noteCounts.get(annotatedStepId)).toBe(3);
+      expect(noteCounts.get(activeDeadlineStepId)).toBe(1);
+      expect(noteCounts.get(unannotatedStepId)).toBe(0);
+      expect(noteCounts.get(notStartedDeadlineStepId)).toBe(0);
+      expect(JSON.stringify(overview)).not.toContain('Vegetarian option');
+    });
+
+    it('reflects note creation and deletion in the counts', async () => {
+      const created = await createRequest(app)
+        .post(`/steps/${unannotatedStepId}/notes`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ content: 'Ask about corkage' })
+        .expect(201);
+
+      expect(await fetchNoteCount(unannotatedStepId)).toBe(1);
+
+      await createRequest(app)
+        .delete(`/notes/${(created.body as { id: string }).id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(204);
+
+      expect(await fetchNoteCount(unannotatedStepId)).toBe(0);
     });
 
     it('includes the group id on grouped workstreams and null on ungrouped ones', async () => {

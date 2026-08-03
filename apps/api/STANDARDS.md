@@ -68,6 +68,34 @@ Controller → Service → Repository → EntityManager
   persistence adapter. Do not add a parallel abstract repository plus a
   `MikroOrm*Repository` implementation or generic base repository until a
   second real adapter requires that seam.
+- A query shared by multiple repositories, or one that must join a caller's
+  transaction (run on the forked `em` of `em.transactional`), lives as an
+  `em`-parameterized function in `repositories/<concern>.query.ts`. Only
+  repository implementations may call it — it is inside the persistence seam,
+  not a service-facing interface
+  ([ADR 0008](../../docs/adr/0008-shared-queries-as-em-parameterized-functions.md)).
+- The persistence seam is framework-free: repository-layer code (including
+  `.query.ts` helpers) signals a vanished row with MikroORM's `NotFoundError`
+  — which the exception filter maps to 404 — never with a NestJS HTTP
+  exception.
+
+## Manual ordering
+
+- Ordering is the **parent's** concern. A child's `position` column is the
+  parent's ordering encoded on child rows as a persistence detail; child
+  endpoints never accept or expose ordering writes beyond what the parent
+  operation decides. A workstream's _scope_ is the set of the project's
+  workstreams sharing one group (ungrouped is its own scope); positions are
+  contiguous from 0 within each scope. Steps within a workstream and
+  checklist items within a step are contiguous from **1** — several guards
+  rely on 0 being an impossible step position, so keep the bases as they are.
+- Reorder operations use the **order-callback idiom**: the repository method
+  (`reorder`, `reorderScope`) locks the ordering root (project or workstream
+  row), loads the scope in current order, and hands it to a service-supplied
+  callback that decides membership and final order — throwing the 409 inside
+  the callback so the transaction rolls back. The repository then rewrites
+  positions contiguously; renumbering is single-phase under the deferred
+  unique constraint (no temporary positions).
 
 ## Entity definitions (MikroORM 7)
 

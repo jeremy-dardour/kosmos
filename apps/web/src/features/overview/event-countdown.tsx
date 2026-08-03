@@ -29,7 +29,7 @@ export const EventCountdown = ({ eventDate }: EventCountdownProperties) => {
             : t('overview.header.eventPassed', { count: -daysUntilEvent });
 
   return (
-    <span className="shrink-0 rounded-full bg-urgency-calm px-2.5 py-1 text-[11px] font-semibold tabular-nums text-urgency-calm-foreground">
+    <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold tabular-nums text-muted-foreground">
       {label}
     </span>
   );

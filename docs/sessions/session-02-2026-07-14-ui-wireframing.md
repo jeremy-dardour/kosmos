@@ -4,8 +4,9 @@
 
 Took the overview concept through a wireframing pass (three turns of
 exploration) and chose a direction. Full spec and the wireframe file are in
-[docs/prototype/timeline/](../prototype/timeline/); **turn 3 / option 3a** is
-the chosen layout.
+`docs/prototype/timeline/` (removed in a later session; the two-panel layout it
+chose was superseded by [inline overview editing](../prototype/overview-editing/HANDOFF.md)); **turn 3 / option 3a** was
+the layout chosen at the time.
 
 ## Decisions
 

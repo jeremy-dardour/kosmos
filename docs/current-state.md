@@ -5,23 +5,37 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-30 (session 30)_
+_Last updated: 2026-08-03 (session 34)_
 
 ## Phase
 
-**Building.** Slices 1 and 2 are merged; Slices 3 and 6 are in draft PRs #37
-and #38. Slices 4 and 5 are complete on feature branches. Slice 7 is complete
-on `feat/slice-7`, rebased on latest main, and open as PR #44 with two rounds
-of review comments addressed. All feature slices are now built; deployment
-(#26) is the last remaining issue.
+**#40 (inline overview rework) complete — PR #48 merge-ready.** All of
+C1–C20 landed green on `feat/40-overview-rework`; the four-way final review
+(spec/standards/security/simplicity) and an independent design review both
+came back clean; every commit-by-commit review comment is addressed and its
+thread resolved; the deviations log was persisted into the standards/ADRs
+and deleted (closeout posted on PR #48). Post-review refactors landed
+in-PR: aggregate-root write ownership
+([ADR 0009](./adr/0009-workstream-aggregate-root-write-ownership.md),
+`WorkstreamStructureService`), composite-component folders on the web,
+free-text emoji icons, framework-free persistence seam, locked writes
+touching the root in the repositories. Remaining mechanics: squash-merge
+with a curated message + archive tag, then **deployment
+([#26](https://github.com/jeremy-dardour/wedding-planner/issues/26))** —
+which should also pick up the noted `NULLS NOT DISTINCT` migration for the
+ungrouped position scope. Session log:
+[session 34](./sessions/session-34-2026-08-03-c19-c20-review-close-out.md).
 
 ## Done
 
 - Domain model defined and agreed — entities, statuses, and rules in
   [CONTEXT.md](../CONTEXT.md); full behavioral spec with rationale in the
   [V1 Product PRD](./specs/v1-product/PRD.md).
-- UI direction chosen: the two-panel "Pipeline Stack" wireframe
-  ([docs/prototype/timeline/](./prototype/timeline/), turn 3 / option 3a).
+- UI direction chosen: **inline overview editing** — one column, no detail
+  panel, every edit in the card
+  ([docs/prototype/overview-editing/](./prototype/overview-editing/)). This
+  replaced the original two-panel "Pipeline Stack" wireframe, whose files were
+  deleted once the specs were updated.
 - Specified the Workstream **pipeline state machine** end-to-end
   ([ADR 0005](./adr/0005-workstream-pipeline-state-machine.md)).
 - Entity/schema design written
@@ -31,7 +45,7 @@ of review comments addressed. All feature slices are now built; deployment
   ([docs/specs/auth/PRD.md](./specs/auth/PRD.md)).
 - API contract resolved: unified `advance` endpoint, one overview aggregate
   read, flat CRUD, derived state server-side
-  ([docs/specs/api-contract/PRD.md](./specs/api-contract/PRD.md)).
+  ([docs/specs/v1-product/api-contract.md](./specs/v1-product/api-contract.md)).
 - Hosting & deployment resolved: Cloud Run + Neon, single deployable, ~$0/mo.
 - **V1 Technical Design** written — links all decisions
   ([docs/specs/v1-tech-design.md](./specs/v1-tech-design.md)).
@@ -113,10 +127,9 @@ of review comments addressed. All feature slices are now built; deployment
   integration only; no Playwright E2E was added. Standards and spec re-reviews
   are clear
   ([session 26](./sessions/session-26-2026-07-28-slice-6-pipeline-editing.md)).
-- **Step-editing UI/design review** tracked separately in
-  [#39](https://github.com/jeremy-dardour/wedding-planner/issues/39), covering
-  editor density, hierarchy, control discoverability, constrained widths, and
-  accessibility without reopening settled domain behavior.
+- **Step-editing UI/design review** was tracked in
+  [#39](https://github.com/jeremy-dardour/wedding-planner/issues/39); answered
+  by the inline-editing design below and closed into #40.
 - **PR #38 review follow-up** — addressed all 13 review comments. Migrated four
   repositories to extend `EntityRepository<T>`, extracted `validatePipelineEdit`
   from `replacePipeline`, added 14 service unit tests and 13 component tests,
@@ -128,9 +141,10 @@ of review comments addressed. All feature slices are now built; deployment
   urgency bands, date ticks under pipeline dots, overdue card treatment
   (matches blocked border), owner filter (single-select by current-step
   effective owner, excludes NotStarted/Complete), and group filter
-  (multi-select show/hide). Shared `urgency.ts` module, `FilterTrigger`
-  component, `useCurrentDate` hook extracted. 7 integration tests added. No
-  API changes
+  (multi-select show/hide). Shared `urgency.ts` module and `FilterTrigger`
+  component extracted (no `useCurrentDate` hook exists — the overview reads
+  one clock at render; stale urgency on a long-lived tab is an accepted V1
+  limitation). 7 integration tests added. No API changes
   ([session 28](./sessions/session-28-2026-07-30-slice-4-deadline-badges-filters.md)).
 - **#22 — Slice 5: notes actions** — complete on `feat/slice-5`. Notes are
   independently collapsible per persisted Step in normal and pipeline-editing
@@ -154,29 +168,45 @@ of review comments addressed. All feature slices are now built; deployment
   main (Slices 4/5 merged upstream). Deferred edit-UX polish tracked in #43
   ([session 30](./sessions/session-30-2026-07-30-slice-7-management.md)).
 
+- **Inline overview editing settled** — prototype and specs on `prototype-2`.
+  Every Workstream / Step / checklist / note edit happens inline in the overview
+  list with **no detail panel**; the V1 PRD now specifies it and the superseded
+  two-panel wireframe is deleted. Decisions, rejected ideas, backend
+  requirements, a component map and a full behaviour spec are in
+  [docs/prototype/overview-editing/HANDOFF.md](./prototype/overview-editing/HANDOFF.md)
+  ([session 31](./sessions/session-31-2026-07-31-inline-overview-editing.md)).
+  All UI rework tickets are consolidated into
+  [#40](https://github.com/jeremy-dardour/wedding-planner/issues/40).
+
+- **#40 fully unblocked** — a second prototyping pass on `prototype-2` added
+  the collapsed Completed section, manual drag & drop ordering (dnd-kit), the
+  advance control (B3: right of the status badges), 13px step titles,
+  owner-override markers, light frames on complete cards and tooltips. B1/B2
+  settled through a data-lifecycle grilling: `noteCount` on the aggregate;
+  commit-on-blur with granular step/checklist endpoints replacing the
+  whole-tail pipeline PUT; last-write-wins + per-op validation; mutation
+  responses patched into the cached aggregate with a focus-deferred trailing
+  invalidate; throttle raise. The api-contract spec moved to
+  [docs/specs/v1-product/api-contract.md](./specs/v1-product/api-contract.md)
+  and was rewritten; the phased build plan is
+  [overview-rework-plan.md](./specs/v1-product/overview-rework-plan.md)
+  ([session 32](./sessions/session-32-2026-07-31-prototype-2-and-b-decisions.md)).
+
 ## In flight
 
-- **Draft PR #37 (`feat/slice-3`)** — Slice 3: advance + start pipeline actions
-  (#20).
-- **Draft PR #38 (`feat/slice-6`)** — Slice 6: pipeline and checklist editing
-  (#23).
-- **`feat/slice-5`** — Slice 5 notes actions (#22), verified and ready for a
-  draft PR.
+- **PR #48 (`feat/40-overview-rework`)** — merge-ready; squash-merge + archive
+  tag are the only remaining mechanics.
 
 ## Open questions
 
-- Overview ordering is alphabetical (groups and workstreams by name) — nothing
-  in the specs states an order. Revisit if manual ordering is wanted.
+- None. The last open items were settled in session 34: aggregate-root write
+  ownership (ADR 0009, implemented in-PR), positions kept over order-arrays
+  (Default group explored and rejected for V1), free-text icons, and the
+  deviations-log dispositions.
 
 ## Next steps
 
-1. Land Slice 7 PR #44 (review comments addressed — mind the
-   `useUpdateWorkstreamPipeline` rename also touching #38); review and land PRs
-   #37 and #38.
-2. Review and land PRs #37 and #38, and open the Slice 5 (#22) draft PR from
-   `feat/slice-5`.
-3. Review and refine the management/step-editing UI in #39 and #43.
-4. All feature slices built — next is deployment (#26). Reorder repositories
-   use two-phase temporary positions because the generated constraints are not
-   deferrable.
-5. Mobile responsiveness deferred to #35.
+1. Squash-merge PR #48 (curated message, archive tag on the branch head).
+2. **Deployment (#26)** — the last milestone. Include the noted
+   `NULLS NOT DISTINCT` migration for the ungrouped workstream position
+   scope while a migration PR is open anyway.

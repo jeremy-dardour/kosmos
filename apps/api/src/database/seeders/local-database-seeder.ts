@@ -66,21 +66,25 @@ export class LocalDatabaseSeeder extends Seeder {
 
     const logistics = em.create(Group, {
       project,
+      position: 0,
       name: 'Logistics',
       color: '#8b6cc1',
     });
     const foodAndDrink = em.create(Group, {
       project,
+      position: 1,
       name: 'Food & Drink',
       color: '#e09850',
     });
     const vendors = em.create(Group, {
       project,
+      position: 2,
       name: 'Vendors',
       color: '#5a9e6f',
     });
     const attire = em.create(Group, {
       project,
+      position: 3,
       name: 'Attire',
       color: '#c16c8b',
     });
@@ -259,8 +263,13 @@ export class LocalDatabaseSeeder extends Seeder {
       },
     ];
 
+    const positionsByScope = new Map<string, number>();
     for (const seed of workstreams) {
-      await this.createWorkstream(em, project, seed);
+      const scope = seed.group?.id ?? 'ungrouped';
+      const position = positionsByScope.get(scope) ?? 0;
+      positionsByScope.set(scope, position + 1);
+
+      await this.createWorkstream(em, project, seed, position);
     }
 
     await em.flush();
@@ -277,9 +286,11 @@ export class LocalDatabaseSeeder extends Seeder {
     em: EntityManager,
     project: Project,
     seed: WorkstreamSeed,
+    position: number,
   ): Promise<void> {
     const workstream = em.create(Workstream, {
       project,
+      position,
       name: seed.name,
       icon: seed.icon,
       group: seed.group ?? null,

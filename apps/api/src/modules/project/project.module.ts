@@ -8,7 +8,6 @@ import { Project } from '@/database/entities/project.entity';
 import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 import { ChecklistItemController } from '@/modules/project/checklist-item.controller';
-import { ChecklistItemService } from '@/modules/project/checklist-item.service';
 import { GroupController } from '@/modules/project/group.controller';
 import { GroupService } from '@/modules/project/group.service';
 import { NoteController } from '@/modules/project/note.controller';
@@ -22,7 +21,10 @@ import { GroupRepository } from '@/modules/project/repositories/group.repository
 import { NoteRepository } from '@/modules/project/repositories/note.repository';
 import { OverviewRepository } from '@/modules/project/repositories/overview.repository';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
+import { StepRepository } from '@/modules/project/repositories/step.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
+import { StepController } from '@/modules/project/step.controller';
+import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 import { WorkstreamController } from '@/modules/project/workstream.controller';
 import { WorkstreamService } from '@/modules/project/workstream.service';
 
@@ -45,6 +47,7 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
     OverviewController,
     GroupController,
     WorkstreamController,
+    StepController,
     ChecklistItemController,
     NoteController,
   ],
@@ -53,12 +56,13 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
     OverviewService,
     GroupService,
     WorkstreamService,
-    ChecklistItemService,
+    WorkstreamStructureService,
     NoteService,
     ProjectRepository,
     OverviewRepository,
     GroupRepository,
     WorkstreamRepository,
+    StepRepository,
     ChecklistItemRepository,
     NoteRepository,
   ],

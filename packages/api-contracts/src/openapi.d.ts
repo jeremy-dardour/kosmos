@@ -161,6 +161,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/projects/{projectId}/group-order': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Reorder the project's groups
+     * @description The ids must be exactly the project's groups, in the new order.
+     */
+    put: operations['GroupController_reorder'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/groups/{id}': {
     parameters: {
       query?: never;
@@ -193,6 +213,26 @@ export interface paths {
     put?: never;
     /** Create a workstream */
     post: operations['WorkstreamController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/projects/{projectId}/workstream-order': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Reorder one group scope's workstreams
+     * @description The ids must be exactly the scope's live workstreams, in the new order. Complete workstreams trail them and are not returned.
+     */
+    put: operations['WorkstreamController_reorder'];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -237,7 +277,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/workstreams/{id}/pipeline': {
+  '/api/workstreams/{id}/steps': {
     parameters: {
       query?: never;
       header?: never;
@@ -245,9 +285,76 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    /** Atomically replace the editable pipeline tail */
-    put: operations['WorkstreamController_updatePipeline'];
+    put?: never;
+    /**
+     * Insert a step into the future pipeline
+     * @description Shifts the steps at and after `position` down by one.
+     */
+    post: operations['WorkstreamController_createStep'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/workstreams/{id}/step-order': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Reorder the workstream's future steps
+     * @description The ids must be exactly the steps after the pointer, in the new order. Past and current steps never move.
+     */
+    put: operations['WorkstreamController_reorderSteps'];
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/steps/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a future step
+     * @description Renumbers the steps that follow it.
+     */
+    delete: operations['StepController_remove'];
+    options?: never;
+    head?: never;
+    /**
+     * Edit a step
+     * @description Current and future steps only. `blocked` is only meaningful on the current step.
+     */
+    patch: operations['StepController_update'];
+    trace?: never;
+  };
+  '/api/steps/{stepId}/checklist-items': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add a checklist item to a step
+     * @description Appended after the step's existing items.
+     */
+    post: operations['StepController_createChecklistItem'];
     delete?: never;
     options?: never;
     head?: never;
@@ -264,11 +371,15 @@ export interface paths {
     get?: never;
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * Delete a checklist item
+     * @description Renumbers the items that follow it.
+     */
+    delete: operations['ChecklistItemController_remove'];
     options?: never;
     head?: never;
-    /** Set a checklist item done or undone */
-    patch: operations['ChecklistItemController_toggle'];
+    /** Rename a checklist item and/or set it done */
+    patch: operations['ChecklistItemController_update'];
     trace?: never;
   };
   '/api/workstreams/{workstreamId}/notes': {
@@ -424,6 +535,8 @@ export interface components {
     GroupDto: {
       /** Format: uuid */
       id: string;
+      /** @description Manual order within the project */
+      position: number;
       name: string;
       /** @example #8b6cc1 */
       color: string;
@@ -482,6 +595,8 @@ export interface components {
        */
       effectiveOwnerId?: string | null;
       checklistItems: components['schemas']['ChecklistItemDto'][];
+      /** @description Number of notes on this step; the notes themselves load on demand */
+      noteCount: number;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -490,6 +605,8 @@ export interface components {
     WorkstreamDto: {
       /** Format: uuid */
       id: string;
+      /** @description Manual order within its group scope; ungrouped is its own */
+      position: number;
       name: string;
       /** @description Emoji or icon name */
       icon: string;
@@ -537,6 +654,10 @@ export interface components {
        */
       color: string;
     };
+    ReorderGroupsDto: {
+      /** @description Every one of the project's groups, in the new order */
+      ids: string[];
+    };
     UpdateGroupDto: {
       name?: string;
       /**
@@ -557,6 +678,15 @@ export interface components {
       /** Format: uuid */
       ownerId?: string | null;
     };
+    ReorderWorkstreamsDto: {
+      /**
+       * Format: uuid
+       * @description The scope to reorder; null is the ungrouped bucket
+       */
+      groupId: string | null;
+      /** @description Every live workstream in that scope, in the new order */
+      ids: string[];
+    };
     UpdateWorkstreamDto: {
       name?: string;
       /** @example 💐 */
@@ -576,39 +706,46 @@ export interface components {
       /** @description Defaults to done for an active workstream */
       outcome?: components['schemas']['StepOutcome'];
     };
-    EditableChecklistItemDto: {
-      /** Format: uuid */
-      id?: string;
+    CreateStepDto: {
       name: string;
-      done: boolean;
-    };
-    EditableStepDto: {
-      /** Format: uuid */
-      id?: string;
-      name: string;
+      /** @description 1-indexed insertion position; must be in the future zone */
+      position: number;
       /**
        * Format: date
-       * @description Calendar day (YYYY-MM-DD), or null to clear
+       * @description Calendar day (YYYY-MM-DD)
        */
-      deadline: string | null;
+      deadline?: string | null;
       /**
        * Format: uuid
        * @description Step-level override; null inherits the workstream owner
        */
-      ownerId: string | null;
-      blocked: boolean;
-      checklistItems: components['schemas']['EditableChecklistItemDto'][];
+      ownerId?: string | null;
     };
-    UpdatePipelineDto: {
+    ReorderStepsDto: {
+      /** @description Every one of the workstream's future steps, in the new order */
+      ids: string[];
+    };
+    UpdateStepDto: {
+      name?: string;
       /**
-       * Format: date-time
-       * @description Workstream updatedAt value read before editing began
+       * Format: date
+       * @description Calendar day (YYYY-MM-DD); null to clear
        */
-      expectedUpdatedAt: string;
-      steps: components['schemas']['EditableStepDto'][];
+      deadline?: string | null;
+      /**
+       * Format: uuid
+       * @description null restores inheritance from the workstream owner
+       */
+      ownerId?: string | null;
+      /** @description Informational flag; meaningful only on the current step */
+      blocked?: boolean;
     };
-    ToggleChecklistItemDto: {
-      done: boolean;
+    CreateChecklistItemDto: {
+      name: string;
+    };
+    UpdateChecklistItemDto: {
+      name?: string;
+      done?: boolean;
     };
     NoteDto: {
       /** Format: uuid */
@@ -1662,6 +1799,103 @@ export interface operations {
       };
     };
   };
+  GroupController_reorder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReorderGroupsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupDto'][];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The submitted ids do not match the project's groups */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
   GroupController_remove: {
     parameters: {
       query?: never;
@@ -1875,6 +2109,103 @@ export interface operations {
       };
       /** @description Resource not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  WorkstreamController_reorder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReorderWorkstreamsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkstreamDto'][];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The submitted ids do not match the scope's live workstreams */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -2187,7 +2518,7 @@ export interface operations {
       };
     };
   };
-  WorkstreamController_updatePipeline: {
+  WorkstreamController_createStep: {
     parameters: {
       query?: never;
       header?: never;
@@ -2198,11 +2529,11 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['UpdatePipelineDto'];
+        'application/json': components['schemas']['CreateStepDto'];
       };
     };
     responses: {
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
@@ -2237,7 +2568,7 @@ export interface operations {
           'application/json': components['schemas']['ProblemDetailsDto'];
         };
       };
-      /** @description The pipeline is stale, frozen, or does not match the editable tail */
+      /** @description The position is not in the future zone */
       409: {
         headers: {
           [name: string]: unknown;
@@ -2284,7 +2615,7 @@ export interface operations {
       };
     };
   };
-  ChecklistItemController_toggle: {
+  WorkstreamController_reorderSteps: {
     parameters: {
       query?: never;
       header?: never;
@@ -2295,7 +2626,482 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['ToggleChecklistItemDto'];
+        'application/json': components['schemas']['ReorderStepsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkstreamDto'];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The submitted ids do not match the workstream's future steps */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  StepController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkstreamDto'];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The step is the current step or a frozen past step */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  StepController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateStepDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StepDto'];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The step is a past step and is frozen */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  StepController_createChecklistItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        stepId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateChecklistItemDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChecklistItemDto'];
+        };
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The step is a past step and is frozen */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  ChecklistItemController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid request format */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Authentication failed */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The checklist item belongs to a frozen past step */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description Error response (400/401/403/404/422/429/500 etc.) */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+    };
+  };
+  ChecklistItemController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateChecklistItemDto'];
       };
     };
     responses: {

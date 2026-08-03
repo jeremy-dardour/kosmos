@@ -15,7 +15,9 @@ surfaced so nothing slips.
 
 For how the concepts are defined, see [CONTEXT.md](../CONTEXT.md) (domain
 glossary); for the reasoning behind them, [docs/domain-decisions.md](./domain-decisions.md).
-For the current UI direction, see [docs/prototype/timeline/](./prototype/timeline/).
+For the current UI direction, see
+[docs/prototype/overview-editing/](./prototype/overview-editing/) — everything
+is edited inline in the overview, with no detail panel.
 
 ## Who it's for
 

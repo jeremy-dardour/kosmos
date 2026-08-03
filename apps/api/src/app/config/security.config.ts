@@ -52,8 +52,9 @@ export const corsConfig: CorsOptions = {
 export const throttlerConfig = {
   // Time window (ms)
   ttl: 60_000, // 60 seconds
-  // Max requests per window
-  limit: 30, // requests per minute
+  // Max requests per window. Sized for the inline overview's commit-on-blur
+  // bursts, which were measured tripping the previous 30/min abuse limit.
+  limit: 120, // requests per minute
   ignoreUserAgents: [],
   skipSuccessfulRequests: false,
   skipFailedRequests: false,

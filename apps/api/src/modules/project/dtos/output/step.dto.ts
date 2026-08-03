@@ -10,6 +10,7 @@ import { resolveOwner } from '@/modules/project/utils/resolve-owner.util';
 
 import type { Step } from '@/database/entities/step.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
+import type { NoteCountsByStep } from '@/modules/project/types/note-counts.type';
 
 export type StepParent = Pick<Workstream, 'owner' | 'currentStep'>;
 
@@ -69,6 +70,12 @@ export class StepDto {
   @ApiProperty({ type: [ChecklistItemDto] })
   checklistItems!: ChecklistItemDto[];
 
+  @ApiProperty({
+    description:
+      'Number of notes on this step; the notes themselves load on demand',
+  })
+  noteCount!: number;
+
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
 
@@ -76,7 +83,11 @@ export class StepDto {
   updatedAt!: Date;
 }
 
-export function toStepDto(step: Step, workstream: StepParent): StepDto {
+export function toStepDto(
+  step: Step,
+  workstream: StepParent,
+  noteCounts: NoteCountsByStep,
+): StepDto {
   const owner = resolveOwner(step, workstream);
 
   return {
@@ -93,6 +104,7 @@ export function toStepDto(step: Step, workstream: StepParent): StepDto {
     checklistItems: sortChecklistItems(step.getChecklistItems()).map((item) =>
       toChecklistItemDto(item),
     ),
+    noteCount: noteCounts.get(step.id) ?? 0,
     createdAt: step.createdAt,
     updatedAt: step.updatedAt,
   };

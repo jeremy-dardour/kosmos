@@ -24,7 +24,7 @@
   ([domain context](../../CONTEXT.md)).
 - Pipeline structure and Step details save atomically at Workstream level;
   checklist completion remains an immediate item-level mutation
-  ([API contract](../specs/api-contract/PRD.md)).
+  ([API contract](../specs/v1-product/api-contract.md)).
 - Current checklist content defaults expanded; past and future checklist
   content defaults compact, with past controls disabled
   ([domain context](../../CONTEXT.md)).

@@ -7,6 +7,7 @@ import type { Group, Workstream } from '@/api/hooks/use-overview';
 function group(id: string, name: string): Group {
   return {
     id,
+    position: 0,
     name,
     color: '#5a9e6f',
     createdAt: '2026-07-01T00:00:00.000Z',
@@ -17,6 +18,7 @@ function group(id: string, name: string): Group {
 function workstream(id: string, groupId: string | null): Workstream {
   return {
     id,
+    position: 0,
     name: id,
     icon: '💐',
     groupId,

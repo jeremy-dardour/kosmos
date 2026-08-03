@@ -426,6 +426,7 @@ describe('Project CRUD E2E Tests', () => {
       expect(body.steps[0]).toMatchObject({
         explicitOwnerId: null,
         effectiveOwnerId: owner.id,
+        noteCount: 1,
       });
     });
 
