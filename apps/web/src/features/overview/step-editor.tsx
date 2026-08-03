@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { ClickToEdit } from '@/features/overview/click-to-edit';
 import { DeadlineField } from '@/features/overview/deadline-field';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
+import { HOVER_REVEAL } from '@/features/overview/hover-reveal';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { NoteThread } from '@/features/overview/note-thread';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
@@ -418,7 +419,10 @@ function ChecklistBlock({
                     onClick={() =>
                       deleteItem.mutate({ params: { path: { id: item.id } } })
                     }
-                    className="shrink-0 text-muted-foreground opacity-0 group-focus-within/item:opacity-100 group-hover/item:opacity-100 pointer-coarse:opacity-100"
+                    className={cn(
+                      HOVER_REVEAL,
+                      'shrink-0 text-muted-foreground group-focus-within/item:opacity-100 group-hover/item:opacity-100',
+                    )}
                   >
                     <XIcon aria-hidden className="size-3" />
                   </button>

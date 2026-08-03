@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { canAppendStep } from '@/features/overview/can-append-step';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
+import { HOVER_REVEAL } from '@/features/overview/hover-reveal';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { OwnerAvatar } from '@/features/overview/owner-avatar';
 import { STEP_STATUS_LABELS } from '@/features/overview/step-status-labels';
@@ -321,7 +322,10 @@ function InsertStepPoint({
         onClick={onClick}
         // `top-0` + `size-5` matches the dot row's height, so the button lands
         // centred on the connector line; the row has no height of its own.
-        className="absolute left-1/2 top-0 flex size-5 -translate-x-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground opacity-0 shadow-xs transition-opacity hover:border-foreground/30 hover:text-foreground focus-visible:opacity-100 group-hover/dots:opacity-100 pointer-coarse:opacity-100"
+        className={cn(
+          HOVER_REVEAL,
+          'absolute left-1/2 top-0 flex size-5 -translate-x-1/2 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-xs hover:border-foreground/30 hover:text-foreground group-hover/dots:opacity-100',
+        )}
       >
         <PlusIcon aria-hidden className="size-3" />
       </button>

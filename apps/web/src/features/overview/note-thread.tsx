@@ -2,6 +2,9 @@ import { PencilIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { HOVER_REVEAL } from '@/features/overview/hover-reveal';
+import { cn } from '@/lib/utils';
+
 import type { StepThread } from '@/features/overview/use-step-notes';
 
 const URL_REGEX = /https?:\/\/[^\s<>)"]+/g;
@@ -98,7 +101,12 @@ export const NoteThread = ({
             <span className="font-medium">{entry.author}</span>
             <span className="text-muted-foreground/70">{entry.when}</span>
             {entry.isOwn && !isAppendOnly && editingId !== entry.id && (
-              <span className="ml-auto flex items-center gap-1 opacity-0 group-focus-within/note:opacity-100 group-hover/note:opacity-100 pointer-coarse:opacity-100">
+              <span
+                className={cn(
+                  HOVER_REVEAL,
+                  'ml-auto flex items-center gap-1 group-focus-within/note:opacity-100 group-hover/note:opacity-100',
+                )}
+              >
                 <button
                   type="button"
                   aria-label={t('overview.notes.editNote', { name: stepName })}

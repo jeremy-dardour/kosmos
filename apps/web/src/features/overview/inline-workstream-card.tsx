@@ -20,6 +20,7 @@ import { daysUntil } from '@/features/overview/days-until';
 import { DotCaret } from '@/features/overview/dot-caret';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
 import { GhostStep } from '@/features/overview/ghost-step';
+import { HOVER_REVEAL } from '@/features/overview/hover-reveal';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 import { isInsideCard } from '@/features/overview/is-inside-card';
 import { OwnerPicker } from '@/features/overview/owner-picker';
@@ -213,7 +214,10 @@ export const InlineWorkstreamCard = ({
             size="icon-xs"
             aria-label={t('overview.card.delete', { name: workstream.name })}
             title={t('overview.card.delete', { name: workstream.name })}
-            className="text-muted-foreground/60 opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover/card:opacity-100 pointer-coarse:opacity-100"
+            className={cn(
+              HOVER_REVEAL,
+              'text-muted-foreground/60 hover:text-destructive group-hover/card:opacity-100',
+            )}
             onClick={() => setIsConfirmingDelete(true)}
           >
             <Trash2Icon />

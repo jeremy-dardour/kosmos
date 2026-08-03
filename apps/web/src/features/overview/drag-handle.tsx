@@ -1,5 +1,6 @@
 import { GripVerticalIcon } from 'lucide-react';
 
+import { HOVER_REVEAL } from '@/features/overview/hover-reveal';
 import { cn } from '@/lib/utils';
 
 import type { ComponentProps } from 'react';
@@ -27,7 +28,8 @@ export const DragHandle = ({
       title={label}
       {...dragProperties}
       className={cn(
-        'shrink-0 cursor-grab touch-none rounded text-muted-foreground/60 opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 active:cursor-grabbing pointer-coarse:opacity-100',
+        HOVER_REVEAL,
+        'shrink-0 cursor-grab touch-none rounded text-muted-foreground/60 hover:text-foreground active:cursor-grabbing',
         className,
       )}
     >
