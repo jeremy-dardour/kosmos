@@ -184,6 +184,9 @@ outcome?: Opt<StepOutcome> | null;
 `options`; MikroORM accepts that dictionary but does not apply it to the
 constraint. Ordered mutations run in a transaction so the deferred uniqueness
 check occurs only after final contiguous positions have been assigned.
+Renumbering is **single-phase**: rewrite the final positions directly in one
+locked transaction and let the deferred constraint absorb transient
+collisions — never write temporary positions in a first pass.
 
 ## Explicit indexes
 

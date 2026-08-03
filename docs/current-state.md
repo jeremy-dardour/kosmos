@@ -142,9 +142,10 @@ Deployment (#26) remains after #40.
   urgency bands, date ticks under pipeline dots, overdue card treatment
   (matches blocked border), owner filter (single-select by current-step
   effective owner, excludes NotStarted/Complete), and group filter
-  (multi-select show/hide). Shared `urgency.ts` module, `FilterTrigger`
-  component, `useCurrentDate` hook extracted. 7 integration tests added. No
-  API changes
+  (multi-select show/hide). Shared `urgency.ts` module and `FilterTrigger`
+  component extracted (no `useCurrentDate` hook exists — the overview reads
+  one clock at render; stale urgency on a long-lived tab is an accepted V1
+  limitation). 7 integration tests added. No API changes
   ([session 28](./sessions/session-28-2026-07-30-slice-4-deadline-badges-filters.md)).
 - **#22 — Slice 5: notes actions** — complete on `feat/slice-5`. Notes are
   independently collapsible per persisted Step in normal and pipeline-editing

@@ -128,7 +128,14 @@ response returns only the live workstreams, in the new order).
 A migration seeds positions from today's alphabetical order so nothing visibly
 moves on upgrade. `POST /projects/:projectId/workstreams` inserts at position 0
 (top of its group), shifting siblings server-side. Changing a workstream's
-group appends it to the **top** of the target scope.
+group appends it to the **top** of the target scope. `POST
+/projects/:projectId/groups` appends the new group at the **end** of the
+project's groups (`max + 1`, hole-safe after deletes) — new groups are rare
+and should not jump above existing ones.
+
+Workstream reorder is routed on the **project** (with `groupId` in the body)
+rather than on a group resource because the ungrouped scope has no group row
+to address; one route serves every scope uniformly.
 
 ### Workstream
 
@@ -304,7 +311,7 @@ ownerId?: string | null;             // @IsOptional, @IsUUID — null inherits
 name?: string;                       // @IsNotEmpty when present — empty rejected
 deadline?: string | null;            // null to clear
 ownerId?: string | null;             // null restores inheritance
-blocked?: boolean;                   // current step only
+blocked?: boolean;                   // accepted on current and future steps (inert off the pointer); frozen past steps 409
 ```
 
 ### ReorderStepsDto

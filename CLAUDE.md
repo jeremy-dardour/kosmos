@@ -97,7 +97,9 @@ kind as the next numbered ADR.
 
 ## Workflow
 
-- Before declaring work done: `pnpm check-types && pnpm lint && pnpm test`
+- Before declaring work done: `pnpm check-types && pnpm lint && pnpm format:check && pnpm test`
+- After regenerating API types, run the web typecheck with `tsc -b --force` —
+  turbo's incremental buildinfo has false-passed a stale generated-type change.
 - After changing API routes, authentication, persistence, transactions, or
   concurrency behavior, also run `pnpm --filter api test:e2e`.
 - After changing entities: regenerate and verify migrations (see
