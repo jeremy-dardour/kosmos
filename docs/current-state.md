@@ -5,27 +5,26 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-07-31 (session 33)_
+_Last updated: 2026-08-03 (session 34)_
 
 ## Phase
 
-**Building #40 (inline overview rework) via orchestrated implementer agents.**
-Branch `feat/40-overview-rework` (from `prototype-2`, design commits squashed),
-tracked by PR #48 with a live C1–C20 checklist and a how-to-review comment.
-**Phases A (backend, C1–C7), B (web foundation, C8–C10) and C (components,
-C11–C17) are fully landed and pushed** — the inline overview is the live
-production surface (page swapped in C17, visually verified against the
-running app). Each commit green (typecheck, lint, format, unit, and API e2e
-for backend commits). Phase D in progress: C18 (delete old components,
-prototype, whole-tail PUT) in flight, then C19 a11y, C20 mobile, and a
-four-way final review (spec/standards/simplicity/security). Deviations and
-new patterns are logged in
-[docs/reviews/pr-48-deviations-log.md](./reviews/pr-48-deviations-log.md) —
-**open decision #20: workstream deletion lost its UI entry point in C17**.
-Session log: [session 33](./sessions/session-33-2026-07-31-phase-a-backend-orchestration.md).
-Orchestration protocol + restart facts:
-[orchestration-prompt.md](./specs/v1-product/orchestration-prompt.md).
-Deployment (#26) remains after #40.
+**#40 (inline overview rework) complete — PR #48 merge-ready.** All of
+C1–C20 landed green on `feat/40-overview-rework`; the four-way final review
+(spec/standards/security/simplicity) and an independent design review both
+came back clean; every commit-by-commit review comment is addressed and its
+thread resolved; the deviations log was persisted into the standards/ADRs
+and deleted (closeout posted on PR #48). Post-review refactors landed
+in-PR: aggregate-root write ownership
+([ADR 0009](./adr/0009-workstream-aggregate-root-write-ownership.md),
+`WorkstreamStructureService`), composite-component folders on the web,
+free-text emoji icons, framework-free persistence seam, locked writes
+touching the root in the repositories. Remaining mechanics: squash-merge
+with a curated message + archive tag, then **deployment
+([#26](https://github.com/jeremy-dardour/wedding-planner/issues/26))** —
+which should also pick up the noted `NULLS NOT DISTINCT` migration for the
+ungrouped position scope. Session log:
+[session 34](./sessions/session-34-2026-08-03-c19-c20-review-close-out.md).
 
 ## Done
 
@@ -195,29 +194,19 @@ Deployment (#26) remains after #40.
 
 ## In flight
 
-- **Draft PR #37 (`feat/slice-3`)** — Slice 3: advance + start pipeline actions
-  (#20).
-- **Draft PR #38 (`feat/slice-6`)** — Slice 6: pipeline and checklist editing
-  (#23).
-- **`feat/slice-5`** — Slice 5 notes actions (#22), verified and ready for a
-  draft PR.
+- **PR #48 (`feat/40-overview-rework`)** — merge-ready; squash-merge + archive
+  tag are the only remaining mechanics.
 
 ## Open questions
 
-- None blocking #40 — B1 (noteCount on the aggregate), B2 (granular
-  commit-on-blur save model, whole-tail PUT removed) and B3 (advance control
-  after the status badges) are all settled; see the handoff §3.8/§6 and the
-  [V1 API contract](./specs/v1-product/api-contract.md). Ordering is manual
-  (drag & drop), resolving the old "revisit if manual ordering is wanted"
-  question.
+- None. The last open items were settled in session 34: aggregate-root write
+  ownership (ADR 0009, implemented in-PR), positions kept over order-arrays
+  (Default group explored and rejected for V1), free-text icons, and the
+  deviations-log dispositions.
 
 ## Next steps
 
-1. Land Slice 7 PR #44 (review comments addressed — mind the
-   `useUpdateWorkstreamPipeline` rename also touching #38); review and land PRs
-   #37 and #38, and open the Slice 5 (#22) draft PR from `feat/slice-5`.
-2. Execute the [#40 build plan](./specs/v1-product/overview-rework-plan.md)
-   phase by phase, backend first (noteCount, positions + reorder endpoints,
-   granular step editing replacing the whole-tail PUT, throttle raise). The
-   two production date bugs are Phase B of that plan.
-3. All feature slices built — after #40, deployment (#26) remains.
+1. Squash-merge PR #48 (curated message, archive tag on the branch head).
+2. **Deployment (#26)** — the last milestone. Include the noted
+   `NULLS NOT DISTINCT` migration for the ungrouped workstream position
+   scope while a migration PR is open anyway.
