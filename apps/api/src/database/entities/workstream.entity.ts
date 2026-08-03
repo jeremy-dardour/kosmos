@@ -32,7 +32,12 @@ export class Workstream {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: Opt<string>;
 
-  /** Manual order within its group scope; ungrouped is its own scope. */
+  /**
+   * Manual order within the workstream's *scope* — the set of the project's
+   * workstreams sharing one group, with ungrouped forming its own scope.
+   * Positions are contiguous from 0 within each scope; every renumbering runs
+   * single-phase in one locked transaction under the deferred constraint.
+   */
   @Property()
   position!: number;
 
@@ -83,6 +88,18 @@ export class Workstream {
     return this.completedAt
       ? WorkstreamLifecycle.Complete
       : WorkstreamLifecycle.Active;
+  }
+
+  isComplete(): boolean {
+    return this.getLifecycle() === WorkstreamLifecycle.Complete;
+  }
+
+  /**
+   * Marks the aggregate changed after a child edit MikroORM's own change
+   * tracking would not see on this row.
+   */
+  touch(): void {
+    this.updatedAt = new Date();
   }
 
   getSteps(): readonly Step[] {

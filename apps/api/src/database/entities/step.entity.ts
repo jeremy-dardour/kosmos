@@ -83,6 +83,11 @@ export class Step {
     return this.checklistItems.getItems();
   }
 
+  /** A step with a recorded outcome is past, and past steps are frozen. */
+  isFrozen(): boolean {
+    return this.outcome != null;
+  }
+
   addChecklistItem(item: ChecklistItem): void {
     item.step = this;
     this.checklistItems.add(item);

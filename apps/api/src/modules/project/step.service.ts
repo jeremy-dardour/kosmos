@@ -22,7 +22,6 @@ import {
   assertStepEditable,
   futureSteps,
 } from '@/modules/project/utils/step-mutability.util';
-import { touchWorkstream } from '@/modules/project/utils/touch-workstream.util';
 
 import type { User } from '@/database/entities/user.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
@@ -62,7 +61,7 @@ export class StepService {
         step.blocked = false;
         lockedWorkstream.addStep(step);
 
-        touchWorkstream(lockedWorkstream);
+        lockedWorkstream.touch();
       },
     );
 
@@ -90,7 +89,7 @@ export class StepService {
           lockedStep.blocked = dto.blocked;
         }
 
-        touchWorkstream(lockedWorkstream);
+        lockedWorkstream.touch();
       },
     );
 
@@ -132,7 +131,7 @@ export class StepService {
           byId.get(id)!.position = slots[index]!;
         }
 
-        touchWorkstream(lockedWorkstream);
+        lockedWorkstream.touch();
       },
     );
 
@@ -145,7 +144,7 @@ export class StepService {
       (step, lockedWorkstream) => {
         assertStepDeletable(lockedWorkstream, step);
         closePositionGap(lockedWorkstream.getSteps(), step.position);
-        touchWorkstream(lockedWorkstream);
+        lockedWorkstream.touch();
       },
     );
 

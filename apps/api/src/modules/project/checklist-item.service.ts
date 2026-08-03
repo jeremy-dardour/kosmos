@@ -8,7 +8,6 @@ import {
 import { ChecklistItemRepository } from '@/modules/project/repositories/checklist-item.repository';
 import { closePositionGap } from '@/modules/project/utils/position-gap.util';
 import { assertStepEditable } from '@/modules/project/utils/step-mutability.util';
-import { touchWorkstream } from '@/modules/project/utils/touch-workstream.util';
 
 import type { Step } from '@/database/entities/step.entity';
 import type { CreateChecklistItemDto } from '@/modules/project/dtos/input/create-checklist-item.dto';
@@ -38,7 +37,7 @@ export class ChecklistItemService {
         item.name = dto.name;
         item.done = false;
         step.addChecklistItem(item);
-        touchWorkstream(workstream);
+        workstream.touch();
 
         return item;
       },
@@ -62,7 +61,7 @@ export class ChecklistItemService {
         if (dto.done !== undefined) {
           lockedItem.done = dto.done;
         }
-        touchWorkstream(workstream);
+        workstream.touch();
       },
     );
 
@@ -74,7 +73,7 @@ export class ChecklistItemService {
       assertStepEditable(item.step);
 
       closePositionGap(item.step.getChecklistItems(), item.position);
-      touchWorkstream(workstream);
+      workstream.touch();
     });
   }
 

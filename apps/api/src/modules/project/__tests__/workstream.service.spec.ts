@@ -48,7 +48,7 @@ function createService(workstream: Workstream, targetGroup?: Group) {
     findDetails: vi.fn(() => workstream),
     countNotesByStep: vi.fn(() => new Map<string, number>()),
     save: vi.fn(),
-    saveMovedToGroup: vi.fn(),
+    moveToGroup: vi.fn(),
   };
   const groupRepo = {
     findOneInProject: vi.fn(() => targetGroup ?? null),
@@ -72,9 +72,10 @@ describe('workstreamService.update — group scope', () => {
 
     await service.update('ws-1', { groupId: 'group-2' });
 
-    expect(workstreamRepo.saveMovedToGroup).toHaveBeenCalledWith(
+    expect(workstream.group).toBe(target);
+    expect(workstreamRepo.moveToGroup).toHaveBeenCalledWith(
       workstream,
-      target,
+      'group-1',
     );
     expect(workstreamRepo.save).not.toHaveBeenCalled();
   });
@@ -85,9 +86,10 @@ describe('workstreamService.update — group scope', () => {
 
     await service.update('ws-1', { groupId: null });
 
-    expect(workstreamRepo.saveMovedToGroup).toHaveBeenCalledWith(
+    expect(workstream.group).toBeNull();
+    expect(workstreamRepo.moveToGroup).toHaveBeenCalledWith(
       workstream,
-      null,
+      'group-1',
     );
   });
 
@@ -102,7 +104,7 @@ describe('workstreamService.update — group scope', () => {
     });
 
     expect(workstreamRepo.save).toHaveBeenCalledWith(workstream);
-    expect(workstreamRepo.saveMovedToGroup).not.toHaveBeenCalled();
+    expect(workstreamRepo.moveToGroup).not.toHaveBeenCalled();
   });
 
   it('keeps the position when no group is submitted', async () => {
@@ -112,6 +114,6 @@ describe('workstreamService.update — group scope', () => {
     await service.update('ws-1', { name: 'Catering & Bar' });
 
     expect(workstreamRepo.save).toHaveBeenCalledWith(workstream);
-    expect(workstreamRepo.saveMovedToGroup).not.toHaveBeenCalled();
+    expect(workstreamRepo.moveToGroup).not.toHaveBeenCalled();
   });
 });

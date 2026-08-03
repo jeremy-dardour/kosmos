@@ -77,7 +77,7 @@ export class WorkstreamController {
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() dto: ReorderWorkstreamsDto,
   ): Promise<WorkstreamDto[]> {
-    return this.workstreamService.reorder(projectId, dto);
+    return this.workstreamService.reorderWithinGroup(projectId, dto);
   }
 
   @Patch('workstreams/:id')

@@ -54,7 +54,7 @@ export class GroupRepository extends EntityRepository<Group> {
    * one transaction; the unique constraint is deferred, so the rows may collide
    * until it commits.
    */
-  async reorderProject(
+  async reorder(
     projectId: string,
     order: (groups: Group[]) => Group[],
   ): Promise<Group[]> {

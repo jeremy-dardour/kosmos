@@ -1,5 +1,6 @@
+import { NotFoundError } from '@mikro-orm/core';
 import { EntityRepository, SqlEntityManager } from '@mikro-orm/postgresql';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { lockWorkstreamGraphOfStep } from '@/modules/project/repositories/lock-workstream-graph.query';
@@ -73,7 +74,7 @@ export class ChecklistItemRepository extends EntityRepository<ChecklistItem> {
     const item = step.getChecklistItems().find((sibling) => sibling.id === id);
 
     if (!item) {
-      throw new NotFoundException(`Checklist item ${id} no longer exists`);
+      throw new NotFoundError(`Checklist item ${id} no longer exists`);
     }
 
     return { workstream, item };

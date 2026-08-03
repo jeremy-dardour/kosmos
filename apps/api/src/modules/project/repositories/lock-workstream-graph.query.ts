@@ -1,5 +1,4 @@
-import { LockMode } from '@mikro-orm/core';
-import { NotFoundException } from '@nestjs/common';
+import { LockMode, NotFoundError } from '@mikro-orm/core';
 
 import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
@@ -52,7 +51,9 @@ export async function lockWorkstreamGraphOfStep(
   const step = workstream.getSteps().find((sibling) => sibling.id === stepId);
 
   if (!step) {
-    throw new NotFoundException(`Step ${stepId} no longer exists`);
+    // The persistence seam stays framework-free: MikroORM's NotFoundError is
+    // what the exception filter maps to 404, so no NestJS import belongs here.
+    throw new NotFoundError(`Step ${stepId} no longer exists`);
   }
 
   return { workstream, step };

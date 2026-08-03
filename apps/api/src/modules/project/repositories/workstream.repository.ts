@@ -10,7 +10,6 @@ import {
 } from '@/modules/project/repositories/lock-workstream-graph.query';
 import { countNotesByStep } from '@/modules/project/repositories/note-count.query';
 
-import type { Group } from '@/database/entities/group.entity';
 import type { NoteCountsByStep } from '@/modules/project/types/note-counts.type';
 
 @Injectable()
@@ -46,7 +45,7 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
   async insertAtTop(workstream: Workstream): Promise<void> {
     await this.em.transactional(async (em) => {
       await lockProjectOrder(em, workstream.project.id);
-      await this.shiftScopeDown(
+      await this.openGapAtTop(
         em,
         workstream.project.id,
         workstream.group?.id ?? null,
@@ -58,32 +57,23 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
   }
 
   /**
-   * Moves the workstream to the top of the target group scope and closes the
-   * gap it leaves behind. Both renumberings run while the row still sits in its
-   * source scope, so neither statement touches the row being moved.
+   * Moves the workstream — its new group already assigned by the caller — to
+   * the top of that scope, and closes the gap it leaves in `sourceGroupId`.
+   * Both renumberings hit the database while the row still sits in its source
+   * scope, so neither statement touches the row being moved.
    */
-  async saveMovedToGroup(
+  async moveToGroup(
     workstream: Workstream,
-    group: Group | null,
+    sourceGroupId: string | null,
   ): Promise<void> {
     const projectId = workstream.project.id;
-    const sourceGroupId = workstream.group?.id ?? null;
     const sourcePosition = workstream.position;
 
     await this.em.transactional(async (em) => {
       await lockProjectOrder(em, projectId);
-      await this.shiftScopeDown(em, projectId, group?.id ?? null);
-      await em.nativeUpdate(
-        Workstream,
-        {
-          project: projectId,
-          group: sourceGroupId,
-          position: { $gt: sourcePosition },
-        },
-        { position: raw('position - 1') },
-      );
+      await this.openGapAtTop(em, projectId, workstream.group?.id ?? null);
+      await this.closeGapAfter(em, projectId, sourceGroupId, sourcePosition);
 
-      workstream.group = group;
       workstream.position = 0;
       em.persist(workstream);
     });
@@ -121,7 +111,8 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
     });
   }
 
-  private async shiftScopeDown(
+  /** Frees position 0 of a scope by shifting every row toward higher positions. */
+  private async openGapAtTop(
     em: SqlEntityManager,
     projectId: string,
     groupId: string | null,
@@ -130,6 +121,20 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
       Workstream,
       { project: projectId, group: groupId },
       { position: raw('position + 1') },
+    );
+  }
+
+  /** Closes the hole a row that left `position` opened in its scope. */
+  private async closeGapAfter(
+    em: SqlEntityManager,
+    projectId: string,
+    groupId: string | null,
+    position: number,
+  ): Promise<void> {
+    await em.nativeUpdate(
+      Workstream,
+      { project: projectId, group: groupId, position: { $gt: position } },
+      { position: raw('position - 1') },
     );
   }
 

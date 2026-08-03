@@ -52,7 +52,7 @@ export class GroupService {
   }
 
   async reorder(projectId: string, dto: ReorderGroupsDto): Promise<Group[]> {
-    return this.groupRepository.reorderProject(projectId, (groups) => {
+    return this.groupRepository.reorder(projectId, (groups) => {
       const byId = new Map(groups.map((group) => [group.id, group]));
       const memberIds = groups.map((group) => group.id);
 

@@ -1,4 +1,3 @@
-import { WorkstreamLifecycle } from '@/database/entities/workstream.entity';
 import { conflict } from '@/modules/project/utils/conflict.util';
 
 import type { Step } from '@/database/entities/step.entity';
@@ -12,7 +11,7 @@ import type { Workstream } from '@/database/entities/workstream.entity';
 
 /** Past steps only accept appended notes. `blocked` stays writable elsewhere. */
 export function assertStepEditable(step: Step): void {
-  if (step.outcome != null) {
+  if (step.isFrozen()) {
     conflict('step-frozen', 'Past steps cannot be edited');
   }
 }
@@ -29,7 +28,7 @@ export function assertStepDeletable(workstream: Workstream, step: Step): void {
 }
 
 export function assertPipelineMutable(workstream: Workstream): void {
-  if (workstream.getLifecycle() === WorkstreamLifecycle.Complete) {
+  if (workstream.isComplete()) {
     conflict('step-frozen', 'Completed workstream pipelines cannot be edited');
   }
 }
@@ -56,11 +55,14 @@ export function assertInsertablePosition(
   workstream: Workstream,
   position: number,
 ): void {
-  const isComplete = workstream.getLifecycle() === WorkstreamLifecycle.Complete;
   const pointerPosition = workstream.currentStep?.position ?? 0;
   const stepCount = workstream.getSteps().length;
 
-  if (isComplete || position <= pointerPosition || position > stepCount + 1) {
+  if (
+    workstream.isComplete() ||
+    position <= pointerPosition ||
+    position > stepCount + 1
+  ) {
     conflict(
       'step-insertion-illegal',
       `Position ${position} is not in this workstream's future zone`,

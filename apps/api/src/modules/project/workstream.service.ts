@@ -85,7 +85,9 @@ export class WorkstreamService {
       targetGroup !== undefined &&
       (targetGroup?.id ?? null) !== (workstream.group?.id ?? null)
     ) {
-      await this.workstreamRepository.saveMovedToGroup(workstream, targetGroup);
+      const sourceGroupId = workstream.group?.id ?? null;
+      workstream.group = targetGroup;
+      await this.workstreamRepository.moveToGroup(workstream, sourceGroupId);
     } else {
       await this.workstreamRepository.save(workstream);
     }
@@ -93,7 +95,8 @@ export class WorkstreamService {
     return this.buildDto(id);
   }
 
-  async reorder(
+  /** Reorders the live workstreams of one group scope (`groupId: null` = ungrouped). */
+  async reorderWithinGroup(
     projectId: string,
     dto: ReorderWorkstreamsDto,
   ): Promise<WorkstreamDto[]> {
@@ -105,7 +108,7 @@ export class WorkstreamService {
       projectId,
       group?.id ?? null,
       (scope) => {
-        const live = scope.filter((workstream) => !this.isComplete(workstream));
+        const live = scope.filter((workstream) => !workstream.isComplete());
         const byId = new Map(
           live.map((workstream) => [workstream.id, workstream]),
         );
@@ -122,7 +125,7 @@ export class WorkstreamService {
         // they trail the reordered live ones in their existing relative order.
         return [
           ...dto.ids.map((id) => byId.get(id)!),
-          ...scope.filter((workstream) => this.isComplete(workstream)),
+          ...scope.filter((workstream) => workstream.isComplete()),
         ];
       },
     );
@@ -171,10 +174,6 @@ export class WorkstreamService {
       workstream,
       await this.workstreamRepository.countNotesByStep([workstream]),
     );
-  }
-
-  private isComplete(workstream: Workstream): boolean {
-    return workstream.getLifecycle() === WorkstreamLifecycle.Complete;
   }
 
   private start(workstream: Workstream): void {
