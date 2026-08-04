@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 
 import { Group } from '@/database/entities/group.entity';
 import { lockProjectOrder } from '@/modules/project/repositories/lock-project-order.query';
+import { memberProject } from '@/modules/project/repositories/membership.query';
 
 import type { Project } from '@/database/entities/project.entity';
 
@@ -26,15 +27,20 @@ export class GroupRepository extends EntityRepository<Group> {
     });
   }
 
+  /** The flat-route root load: the group's project must admit the actor. */
+  async findOneForActor(id: string, actorId: string): Promise<Group> {
+    return this.findOneOrFail({ id, project: memberProject(actorId) });
+  }
+
   async save(group: Group): Promise<void> {
     this.em.persist(group);
     await this.em.flush();
   }
 
   /** Appends the group after the project's existing groups. */
-  async insertAtEnd(group: Group): Promise<void> {
+  async insertAtEnd(group: Group, actorId: string): Promise<void> {
     await this.em.transactional(async (em) => {
-      await lockProjectOrder(em, group.project.id);
+      await lockProjectOrder(em, group.project.id, actorId);
 
       // Deletion leaves holes in the sequence, so a row count could collide
       // with a surviving position.
@@ -56,10 +62,11 @@ export class GroupRepository extends EntityRepository<Group> {
    */
   async reorder(
     projectId: string,
+    actorId: string,
     order: (groups: Group[]) => Group[],
   ): Promise<Group[]> {
     return this.em.transactional(async (em) => {
-      await lockProjectOrder(em, projectId);
+      await lockProjectOrder(em, projectId, actorId);
       const groups = await em.find(
         Group,
         { project: projectId },

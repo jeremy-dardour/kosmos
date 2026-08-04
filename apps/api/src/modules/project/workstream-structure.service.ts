@@ -53,11 +53,13 @@ export class WorkstreamStructureService {
   async createStep(
     workstreamId: string,
     dto: CreateStepDto,
+    actor: User,
   ): Promise<WorkstreamDto> {
     const owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
 
     const workstream = await this.workstreamRepository.updateLockedDetails(
       workstreamId,
+      actor.id,
       (lockedWorkstream) => {
         assertInsertablePosition(lockedWorkstream, dto.position);
         openPositionGap(lockedWorkstream.getSteps(), dto.position);
@@ -75,11 +77,16 @@ export class WorkstreamStructureService {
     return this.buildWorkstreamDto(workstream);
   }
 
-  async updateStep(id: string, dto: UpdateStepDto): Promise<StepDto> {
+  async updateStep(
+    id: string,
+    dto: UpdateStepDto,
+    actor: User,
+  ): Promise<StepDto> {
     const owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
 
     const { workstream, step } = await this.stepRepository.updateLocked(
       id,
+      actor.id,
       (lockedStep) => {
         assertStepEditable(lockedStep);
 
@@ -108,9 +115,11 @@ export class WorkstreamStructureService {
   async reorderSteps(
     workstreamId: string,
     dto: ReorderStepsDto,
+    actor: User,
   ): Promise<WorkstreamDto> {
     const workstream = await this.workstreamRepository.updateLockedDetails(
       workstreamId,
+      actor.id,
       (lockedWorkstream) => {
         assertPipelineMutable(lockedWorkstream);
 
@@ -141,9 +150,10 @@ export class WorkstreamStructureService {
     return this.buildWorkstreamDto(workstream);
   }
 
-  async removeStep(id: string): Promise<WorkstreamDto> {
+  async removeStep(id: string, actor: User): Promise<WorkstreamDto> {
     const workstream = await this.stepRepository.removeLocked(
       id,
+      actor.id,
       (step, lockedWorkstream) => {
         assertStepDeletable(lockedWorkstream, step);
         closePositionGap(lockedWorkstream.getSteps(), step.position);
@@ -156,9 +166,11 @@ export class WorkstreamStructureService {
   async createChecklistItem(
     stepId: string,
     dto: CreateChecklistItemDto,
+    actor: User,
   ): Promise<ChecklistItemDto> {
     const created = await this.checklistItemRepository.createLocked(
       stepId,
+      actor.id,
       (step) => {
         assertStepEditable(step);
 
@@ -178,9 +190,11 @@ export class WorkstreamStructureService {
   async updateChecklistItem(
     id: string,
     dto: UpdateChecklistItemDto,
+    actor: User,
   ): Promise<ChecklistItemDto> {
     const item = await this.checklistItemRepository.updateLocked(
       id,
+      actor.id,
       (lockedItem) => {
         assertStepEditable(lockedItem.step);
 
@@ -196,8 +210,8 @@ export class WorkstreamStructureService {
     return toChecklistItemDto(item);
   }
 
-  async removeChecklistItem(id: string): Promise<void> {
-    await this.checklistItemRepository.removeLocked(id, (item) => {
+  async removeChecklistItem(id: string, actor: User): Promise<void> {
+    await this.checklistItemRepository.removeLocked(id, actor.id, (item) => {
       assertStepEditable(item.step);
 
       closePositionGap(item.step.getChecklistItems(), item.position);

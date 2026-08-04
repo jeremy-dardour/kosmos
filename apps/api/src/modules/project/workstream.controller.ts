@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 
 import { ActorInterceptor } from '@/app/auth/actor.interceptor';
+import { Actor } from '@/app/auth/decorators';
 import {
   ApiBadRequestResponse,
   ApiCommonErrorResponses,
@@ -37,6 +38,8 @@ import { UpdateWorkstreamDto } from '@/modules/project/dtos/input/update-workstr
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
 import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 import { WorkstreamService } from '@/modules/project/workstream.service';
+
+import type { User } from '@/database/entities/user.entity';
 
 /** Reads go through the overview aggregate, so there is no GET here. */
 @Controller()
@@ -58,8 +61,9 @@ export class WorkstreamController {
   async create(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() dto: CreateWorkstreamDto,
+    @Actor() actor: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamService.create(projectId, dto);
+    return this.workstreamService.create(projectId, dto, actor);
   }
 
   @Put('projects/:projectId/workstream-order')
@@ -75,8 +79,9 @@ export class WorkstreamController {
   async reorder(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() dto: ReorderWorkstreamsDto,
+    @Actor() actor: User,
   ): Promise<WorkstreamDto[]> {
-    return this.workstreamService.reorderWithinGroup(projectId, dto);
+    return this.workstreamService.reorderWithinGroup(projectId, dto, actor);
   }
 
   @Patch('workstreams/:id')
@@ -85,8 +90,9 @@ export class WorkstreamController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateWorkstreamDto,
+    @Actor() actor: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamService.update(id, dto);
+    return this.workstreamService.update(id, dto, actor);
   }
 
   @Post('workstreams/:id/advance')
@@ -100,8 +106,9 @@ export class WorkstreamController {
   async advance(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AdvanceWorkstreamDto,
+    @Actor() actor: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamService.progress(id, dto);
+    return this.workstreamService.progress(id, dto, actor);
   }
 
   @Post('workstreams/:id/steps')
@@ -114,8 +121,9 @@ export class WorkstreamController {
   async createStep(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateStepDto,
+    @Actor() actor: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamStructureService.createStep(id, dto);
+    return this.workstreamStructureService.createStep(id, dto, actor);
   }
 
   @Put('workstreams/:id/step-order')
@@ -131,8 +139,9 @@ export class WorkstreamController {
   async reorderSteps(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReorderStepsDto,
+    @Actor() actor: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamStructureService.reorderSteps(id, dto);
+    return this.workstreamStructureService.reorderSteps(id, dto, actor);
   }
 
   @Delete('workstreams/:id')
@@ -142,7 +151,10 @@ export class WorkstreamController {
     description: 'Cascades to its steps, checklist items and notes.',
   })
   @ApiNoContentResponse()
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    await this.workstreamService.remove(id);
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Actor() actor: User,
+  ): Promise<void> {
+    await this.workstreamService.remove(id, actor);
   }
 }

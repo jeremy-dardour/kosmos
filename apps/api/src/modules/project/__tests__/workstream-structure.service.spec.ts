@@ -14,6 +14,8 @@ import type { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import type { Step } from '@/database/entities/step.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
 
+const actor = buildUser('actor-1');
+
 type ApplyToStep = (step: Step, workstream: Workstream) => void;
 type ApplyToItem = (item: ChecklistItem, workstream: Workstream) => void;
 type BuildItem = (step: Step, workstream: Workstream) => ChecklistItem;
@@ -23,13 +25,13 @@ function createStepService(workstream: Workstream) {
     workstream.getSteps().find((step) => step.id === id)!;
 
   const stepRepository = {
-    updateLocked: vi.fn((id: string, apply: ApplyToStep) => {
+    updateLocked: vi.fn((id: string, _actorId: string, apply: ApplyToStep) => {
       const step = findStep(id);
       apply(step, workstream);
 
       return { workstream, step };
     }),
-    removeLocked: vi.fn((id: string, apply: ApplyToStep) => {
+    removeLocked: vi.fn((id: string, _actorId: string, apply: ApplyToStep) => {
       const step = findStep(id);
       apply(step, workstream);
       workstream.steps.remove(step);
@@ -39,7 +41,7 @@ function createStepService(workstream: Workstream) {
   };
   const workstreamRepository = {
     updateLockedDetails: vi.fn(
-      (_id: string, apply: (target: Workstream) => void) => {
+      (_id: string, _actorId: string, apply: (target: Workstream) => void) => {
         apply(workstream);
 
         return workstream;
@@ -71,16 +73,16 @@ function createChecklistItemService(step: Step) {
     step.getChecklistItems().find((item) => item.id === id)!;
 
   const checklistItemRepository = {
-    createLocked: vi.fn((_stepId: string, build: BuildItem) =>
+    createLocked: vi.fn((_stepId: string, _actorId: string, build: BuildItem) =>
       build(step, workstream),
     ),
-    updateLocked: vi.fn((id: string, apply: ApplyToItem) => {
+    updateLocked: vi.fn((id: string, _actorId: string, apply: ApplyToItem) => {
       const item = findItem(id);
       apply(item, workstream);
 
       return item;
     }),
-    removeLocked: vi.fn((id: string, apply: ApplyToItem) => {
+    removeLocked: vi.fn((id: string, _actorId: string, apply: ApplyToItem) => {
       const item = findItem(id);
       apply(item, workstream);
       step.checklistItems.remove(item);
@@ -132,7 +134,7 @@ describe('workstreamStructureService.createStep', () => {
       }),
     );
 
-    await service.createStep('ws-1', { name: 'Inserted', position: 2 });
+    await service.createStep('ws-1', { name: 'Inserted', position: 2 }, actor);
 
     expect(positions()).toEqual([
       { name: 'First', position: 1 },
@@ -151,7 +153,7 @@ describe('workstreamStructureService.createStep', () => {
       }),
     );
 
-    await service.createStep('ws-1', { name: 'Next', position: 2 });
+    await service.createStep('ws-1', { name: 'Next', position: 2 }, actor);
 
     expect(positions()).toEqual([
       { name: 'Current', position: 1 },
@@ -170,7 +172,7 @@ describe('workstreamStructureService.createStep', () => {
     );
 
     await expect(
-      service.createStep('ws-1', { name: 'Too early', position: 1 }),
+      service.createStep('ws-1', { name: 'Too early', position: 1 }, actor),
     ).rejects.toThrow("not in this workstream's future zone");
   });
 
@@ -180,11 +182,15 @@ describe('workstreamStructureService.createStep', () => {
     const { service, userRepository } = createStepService(workstream);
     userRepository.findOneOrFail.mockResolvedValue(owner);
 
-    await service.createStep('ws-1', {
-      name: 'Owned',
-      position: 1,
-      ownerId: 'u1',
-    });
+    await service.createStep(
+      'ws-1',
+      {
+        name: 'Owned',
+        position: 1,
+        ownerId: 'u1',
+      },
+      actor,
+    );
 
     expect(workstream.getSteps()[0]?.owner).toBe(owner);
   });
@@ -201,7 +207,7 @@ describe('workstreamStructureService.updateStep', () => {
     });
     const { service } = createStepService(buildWorkstream({ steps: [step] }));
 
-    await service.updateStep('s1', { name: 'Renamed' });
+    await service.updateStep('s1', { name: 'Renamed' }, actor);
 
     expect(step).toMatchObject({
       name: 'Renamed',
@@ -215,7 +221,7 @@ describe('workstreamStructureService.updateStep', () => {
     step.owner = buildUser('u1');
     const { service } = createStepService(buildWorkstream({ steps: [step] }));
 
-    await service.updateStep('s1', { deadline: null, ownerId: null });
+    await service.updateStep('s1', { deadline: null, ownerId: null }, actor);
 
     expect(step.deadline).toBeNull();
     expect(step.owner).toBeNull();
@@ -232,7 +238,7 @@ describe('workstreamStructureService.updateStep', () => {
       }),
     );
 
-    await service.updateStep('future', { blocked: true });
+    await service.updateStep('future', { blocked: true }, actor);
 
     expect(future.blocked).toBe(true);
   });
@@ -246,7 +252,7 @@ describe('workstreamStructureService.updateStep', () => {
     const { service } = createStepService(buildWorkstream({ steps: [past] }));
 
     await expect(
-      service.updateStep('past', { name: 'Rewrite' }),
+      service.updateStep('past', { name: 'Rewrite' }, actor),
     ).rejects.toThrow('Past steps cannot be edited');
   });
 });
@@ -274,7 +280,7 @@ describe('workstreamStructureService.reorderSteps', () => {
   it('reorders the future tail without moving past or current steps', async () => {
     const { service, positions } = createStepService(buildActivePipeline());
 
-    await service.reorderSteps('ws-1', { ids: ['f2', 'f1'] });
+    await service.reorderSteps('ws-1', { ids: ['f2', 'f1'] }, actor);
 
     expect(positions()).toEqual([
       { name: 'Past', position: 1 },
@@ -294,7 +300,7 @@ describe('workstreamStructureService.reorderSteps', () => {
       }),
     );
 
-    await service.reorderSteps('ws-1', { ids: ['s2', 's1'] });
+    await service.reorderSteps('ws-1', { ids: ['s2', 's1'] }, actor);
 
     expect(positions()).toEqual([
       { name: 'Second', position: 1 },
@@ -305,19 +311,19 @@ describe('workstreamStructureService.reorderSteps', () => {
   it('rejects a list missing a future step', async () => {
     const { service } = createStepService(buildActivePipeline());
 
-    await expect(service.reorderSteps('ws-1', { ids: ['f1'] })).rejects.toThrow(
-      "do not match the workstream's future steps",
-    );
+    await expect(
+      service.reorderSteps('ws-1', { ids: ['f1'] }, actor),
+    ).rejects.toThrow("do not match the workstream's future steps");
   });
 
   it('rejects a list naming the current or a past step', async () => {
     const { service } = createStepService(buildActivePipeline());
 
     await expect(
-      service.reorderSteps('ws-1', { ids: ['current', 'f1', 'f2'] }),
+      service.reorderSteps('ws-1', { ids: ['current', 'f1', 'f2'] }, actor),
     ).rejects.toThrow("do not match the workstream's future steps");
     await expect(
-      service.reorderSteps('ws-1', { ids: ['past', 'f1'] }),
+      service.reorderSteps('ws-1', { ids: ['past', 'f1'] }, actor),
     ).rejects.toThrow("do not match the workstream's future steps");
   });
 
@@ -325,7 +331,7 @@ describe('workstreamStructureService.reorderSteps', () => {
     const { service } = createStepService(buildActivePipeline());
 
     await expect(
-      service.reorderSteps('ws-1', { ids: ['f1', 'f1'] }),
+      service.reorderSteps('ws-1', { ids: ['f1', 'f1'] }, actor),
     ).rejects.toThrow("do not match the workstream's future steps");
   });
 
@@ -341,9 +347,9 @@ describe('workstreamStructureService.reorderSteps', () => {
       }),
     );
 
-    await expect(service.reorderSteps('ws-1', { ids: [] })).rejects.toThrow(
-      'Completed workstream pipelines cannot be edited',
-    );
+    await expect(
+      service.reorderSteps('ws-1', { ids: [] }, actor),
+    ).rejects.toThrow('Completed workstream pipelines cannot be edited');
   });
 });
 
@@ -359,7 +365,7 @@ describe('workstreamStructureService.removeStep', () => {
       }),
     );
 
-    await service.removeStep('s2');
+    await service.removeStep('s2', actor);
 
     expect(positions()).toEqual([
       { name: 'First', position: 1 },
@@ -377,7 +383,7 @@ describe('workstreamStructureService.removeStep', () => {
       }),
     );
 
-    await expect(service.removeStep('current')).rejects.toThrow(
+    await expect(service.removeStep('current', actor)).rejects.toThrow(
       'The current step cannot be deleted while it is in progress',
     );
   });
@@ -390,7 +396,7 @@ describe('workstreamStructureService.removeStep', () => {
     });
     const { service } = createStepService(buildWorkstream({ steps: [past] }));
 
-    await expect(service.removeStep('past')).rejects.toThrow(
+    await expect(service.removeStep('past', actor)).rejects.toThrow(
       'Past steps cannot be edited',
     );
   });
@@ -409,7 +415,7 @@ describe('workstreamStructureService.createChecklistItem', () => {
       }),
     );
 
-    await service.createChecklistItem('s1', { name: 'Fourth' });
+    await service.createChecklistItem('s1', { name: 'Fourth' }, actor);
 
     expect(positions()).toEqual([
       { name: 'First', position: 1 },
@@ -423,7 +429,11 @@ describe('workstreamStructureService.createChecklistItem', () => {
       buildStep({ id: 's1', position: 1 }),
     );
 
-    const created = await service.createChecklistItem('s1', { name: 'Only' });
+    const created = await service.createChecklistItem(
+      's1',
+      { name: 'Only' },
+      actor,
+    );
 
     expect(created).toMatchObject({ position: 1, done: false, name: 'Only' });
   });
@@ -432,7 +442,7 @@ describe('workstreamStructureService.createChecklistItem', () => {
     const { service } = createChecklistItemService(buildPastStep());
 
     await expect(
-      service.createChecklistItem('past', { name: 'Too late' }),
+      service.createChecklistItem('past', { name: 'Too late' }, actor),
     ).rejects.toThrow('Past steps cannot be edited');
   });
 });
@@ -444,10 +454,10 @@ describe('workstreamStructureService.updateChecklistItem', () => {
       buildStep({ id: 's1', position: 1, checklistItems: [item] }),
     );
 
-    await service.updateChecklistItem('ci1', { done: true });
+    await service.updateChecklistItem('ci1', { done: true }, actor);
     expect(item).toMatchObject({ name: 'Original', done: true });
 
-    await service.updateChecklistItem('ci1', { name: 'Renamed' });
+    await service.updateChecklistItem('ci1', { name: 'Renamed' }, actor);
     expect(item).toMatchObject({ name: 'Renamed', done: true });
   });
 
@@ -457,7 +467,7 @@ describe('workstreamStructureService.updateChecklistItem', () => {
     );
 
     await expect(
-      service.updateChecklistItem('ci1', { done: true }),
+      service.updateChecklistItem('ci1', { done: true }, actor),
     ).rejects.toThrow('Past steps cannot be edited');
   });
 });
@@ -476,7 +486,7 @@ describe('workstreamStructureService.removeChecklistItem', () => {
       }),
     );
 
-    await service.removeChecklistItem('ci2');
+    await service.removeChecklistItem('ci2', actor);
 
     expect(positions()).toEqual([
       { name: 'First', position: 1 },
@@ -489,7 +499,7 @@ describe('workstreamStructureService.removeChecklistItem', () => {
       buildPastStep([buildChecklistItem('ci1', 'Frozen')]),
     );
 
-    await expect(service.removeChecklistItem('ci1')).rejects.toThrow(
+    await expect(service.removeChecklistItem('ci1', actor)).rejects.toThrow(
       'Past steps cannot be edited',
     );
   });
