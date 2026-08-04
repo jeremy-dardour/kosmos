@@ -2,12 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { Group } from '@/database/entities/group.entity';
 import { Project } from '@/database/entities/project.entity';
+import { User } from '@/database/entities/user.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 import { WorkstreamService } from '@/modules/project/workstream.service';
 
 import type { Collection } from '@mikro-orm/core';
 
 const T0 = new Date('2026-07-01');
+
+const actor = new User();
+actor.id = 'actor-1';
 
 function buildGroup(id: string): Group {
   const group = new Group();
@@ -44,7 +48,6 @@ function buildWorkstream(group: Group | null): Workstream {
 
 function createService(workstream: Workstream, targetGroup?: Group) {
   const workstreamRepo = {
-    findOneOrFail: vi.fn(() => workstream),
     findDetails: vi.fn(() => workstream),
     countNotesByStep: vi.fn(() => new Map<string, number>()),
     save: vi.fn(),
@@ -70,12 +73,13 @@ describe('workstreamService.update — group scope', () => {
     const workstream = buildWorkstream(buildGroup('group-1'));
     const { service, workstreamRepo } = createService(workstream, target);
 
-    await service.update('ws-1', { groupId: 'group-2' });
+    await service.update('ws-1', { groupId: 'group-2' }, actor);
 
     expect(workstream.group).toBe(target);
     expect(workstreamRepo.moveToGroup).toHaveBeenCalledWith(
       workstream,
       'group-1',
+      actor.id,
     );
     expect(workstreamRepo.save).not.toHaveBeenCalled();
   });
@@ -84,12 +88,13 @@ describe('workstreamService.update — group scope', () => {
     const workstream = buildWorkstream(buildGroup('group-1'));
     const { service, workstreamRepo } = createService(workstream);
 
-    await service.update('ws-1', { groupId: null });
+    await service.update('ws-1', { groupId: null }, actor);
 
     expect(workstream.group).toBeNull();
     expect(workstreamRepo.moveToGroup).toHaveBeenCalledWith(
       workstream,
       'group-1',
+      actor.id,
     );
   });
 
@@ -98,10 +103,11 @@ describe('workstreamService.update — group scope', () => {
     const workstream = buildWorkstream(group);
     const { service, workstreamRepo } = createService(workstream, group);
 
-    await service.update('ws-1', {
-      name: 'Catering & Bar',
-      groupId: 'group-1',
-    });
+    await service.update(
+      'ws-1',
+      { name: 'Catering & Bar', groupId: 'group-1' },
+      actor,
+    );
 
     expect(workstreamRepo.save).toHaveBeenCalledWith(workstream);
     expect(workstreamRepo.moveToGroup).not.toHaveBeenCalled();
@@ -111,7 +117,7 @@ describe('workstreamService.update — group scope', () => {
     const workstream = buildWorkstream(buildGroup('group-1'));
     const { service, workstreamRepo } = createService(workstream);
 
-    await service.update('ws-1', { name: 'Catering & Bar' });
+    await service.update('ws-1', { name: 'Catering & Bar' }, actor);
 
     expect(workstreamRepo.save).toHaveBeenCalledWith(workstream);
     expect(workstreamRepo.moveToGroup).not.toHaveBeenCalled();

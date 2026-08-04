@@ -17,6 +17,7 @@ import {
 } from '@nestjs/swagger';
 
 import { ActorInterceptor } from '@/app/auth/actor.interceptor';
+import { Actor } from '@/app/auth/decorators';
 import {
   ApiCommonErrorResponses,
   ApiConflictResponse,
@@ -29,6 +30,8 @@ import { ChecklistItemDto } from '@/modules/project/dtos/output/checklist-item.d
 import { StepDto } from '@/modules/project/dtos/output/step.dto';
 import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
 import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
+
+import type { User } from '@/database/entities/user.entity';
 
 @Controller()
 @UseInterceptors(ActorInterceptor)
@@ -53,8 +56,9 @@ export class StepController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateStepDto,
+    @Actor() actor: User,
   ): Promise<StepDto> {
-    return this.workstreamStructureService.updateStep(id, dto);
+    return this.workstreamStructureService.updateStep(id, dto, actor);
   }
 
   @Delete('steps/:id')
@@ -64,8 +68,11 @@ export class StepController {
   })
   @ApiOkResponse({ type: WorkstreamDto })
   @ApiConflictResponse('The step is the current step or a frozen past step')
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<WorkstreamDto> {
-    return this.workstreamStructureService.removeStep(id);
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Actor() actor: User,
+  ): Promise<WorkstreamDto> {
+    return this.workstreamStructureService.removeStep(id, actor);
   }
 
   @Post('steps/:stepId/checklist-items')
@@ -78,7 +85,12 @@ export class StepController {
   async createChecklistItem(
     @Param('stepId', ParseUUIDPipe) stepId: string,
     @Body() dto: CreateChecklistItemDto,
+    @Actor() actor: User,
   ): Promise<ChecklistItemDto> {
-    return this.workstreamStructureService.createChecklistItem(stepId, dto);
+    return this.workstreamStructureService.createChecklistItem(
+      stepId,
+      dto,
+      actor,
+    );
   }
 }
