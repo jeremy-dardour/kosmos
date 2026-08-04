@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { Note } from '@/database/entities/note.entity';
 import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
+import { memberProject } from '@/modules/project/repositories/membership.query';
 
 @Injectable()
 export class NoteRepository extends EntityRepository<Note> {
@@ -12,8 +13,14 @@ export class NoteRepository extends EntityRepository<Note> {
     super(em, Note);
   }
 
-  async findByWorkstream(workstreamId: string): Promise<Note[]> {
-    await this.em.findOneOrFail(Workstream, { id: workstreamId });
+  async findByWorkstream(
+    workstreamId: string,
+    actorId: string,
+  ): Promise<Note[]> {
+    await this.em.findOneOrFail(Workstream, {
+      id: workstreamId,
+      project: memberProject(actorId),
+    });
 
     return this.em.find(
       Note,
@@ -25,13 +32,16 @@ export class NoteRepository extends EntityRepository<Note> {
     );
   }
 
-  async findStepOrFail(stepId: string): Promise<Step> {
-    return this.em.findOneOrFail(Step, { id: stepId });
+  async findStepOrFail(stepId: string, actorId: string): Promise<Step> {
+    return this.em.findOneOrFail(Step, {
+      id: stepId,
+      workstream: { project: memberProject(actorId) },
+    });
   }
 
-  async findDetailsOrFail(id: string): Promise<Note> {
+  async findDetailsOrFail(id: string, actorId: string): Promise<Note> {
     return this.findOneOrFail(
-      { id },
+      { id, step: { workstream: { project: memberProject(actorId) } } },
       { populate: ['step', 'author'], refresh: true },
     );
   }
