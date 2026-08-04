@@ -52,23 +52,28 @@ progress.
   `NULLS NOT DISTINCT` migration
 - PR #59 — multi-tenancy T-1: per-user project list + owned project creation
 - PR #60 — production API docs disabled and nightly backup workflow hardened
+- PR #62 — Kosmos rename: product identity, positioning, template cleanup,
+  reviewed twice ([PRD](./specs/kosmos-rename/PRD.md) +
+  [implementation plan](./specs/kosmos-rename/implementation-plan.md)), incl.
+  `deployment/provision.sh` and the allow-list moved to Secret Manager
 
 ## In flight
 
-- **Draft PR #62 (`chore/kosmos-rename`)** — product identity,
-  project-management positioning, and template cleanup; tracked in the
-  [implementation plan](./specs/kosmos-rename/implementation-plan.md). The
-  GitHub/GCP/OAuth cutover follows after merge.
+- Nothing — the Kosmos rename **including the external cutover is complete**:
+  repository `jeremy-dardour/kosmos`, Cloud Run service `kosmos` (512Mi,
+  serving), `kosmos-runtime` SA, WIF on the new slug, OAuth rebranded,
+  CD + nightly backup verified, old-name resources deleted. The GCP project
+  keeps its immutable ID (see [provisioning](./provisioning.md)).
 
 ## Open questions
 
-- None.
+- Should the brand mark adapt to light/dark theme? (tracked in the
+  [rename PRD](./specs/kosmos-rename/PRD.md#open-questions); decide during a
+  visual pass)
 
 ## Next steps
 
-1. Complete the [Kosmos rename](./specs/kosmos-rename/implementation-plan.md),
-   including repository and production infrastructure cutover.
-2. **T-2
+1. **T-2
    ([#54](https://github.com/jeremy-dardour/kosmos/issues/54))** — the
    security boundary: enforcement on flat routes, project get/patch and
    overview, honoring the constraints recorded in the
