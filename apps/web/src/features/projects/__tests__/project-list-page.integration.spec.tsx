@@ -106,7 +106,7 @@ describe('project list page', () => {
       project({ id: 'p1', name: 'Our Wedding' }),
     ]);
     projectsApi.mockCreateProjectError(409, {
-      type: 'https://wedding-planner.dev/errors/project-limit-reached',
+      type: 'https://kosmos.dev/errors/project-limit-reached',
       title: 'Conflict',
       status: 409,
       detail: 'The owned-project limit is reached',

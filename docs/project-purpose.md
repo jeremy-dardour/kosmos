@@ -1,33 +1,35 @@
 # Project Purpose
 
-**Why this exists.** A visual tool to manage preparation for Jeremy's actual
-wedding — one overview of everything that needs doing, kept up to date. It is a
-real personal tool used by the couple (plus a few helpers), not a demo or a
-portfolio piece.
+**Why this exists.** Kosmos is a visual tool for projects with many parallel
+tracks of work — one overview of everything that needs doing, kept up to date.
+It began with wedding planning and remains a real tool for active projects, not
+a demo or a portfolio piece.
 
 ## What it is
 
-A pipeline tracker for the 20–50 workstreams a wedding involves (Venue,
-Catering, Flowers, …). Each workstream is an ordered pipeline of steps with a
-current position; the primary action is "advance" a workstream to its next step.
-The overview shows every workstream and its status at a glance, with deadlines
-surfaced so nothing slips.
+A pipeline tracker for the 20–50 workstreams a complex project can involve.
+Each workstream is an ordered pipeline of steps with a current position; the
+primary action is "advance" a workstream to its next step. The overview shows
+every workstream and its status at a glance, with deadlines surfaced so nothing
+slips. Weddings, launches, moves, and other event-driven projects all fit the
+same model.
 
 For how the concepts are defined, see [CONTEXT.md](../CONTEXT.md) (domain
-glossary); for the reasoning behind them, [docs/domain-decisions.md](./domain-decisions.md).
+glossary); for the reasoning behind them, the
+[V1 Product PRD](./specs/v1-product/PRD.md).
 For the current UI direction, see
 [docs/prototype/overview-editing/](./prototype/overview-editing/) — everything
 is edited inline in the overview, with no detail panel.
 
 ## Who it's for
 
-2–6 users total: the couple as primary users, plus a few helpers. Everyone has
-equal access in V1 (no roles).
+Small trusted project teams. Project owners choose their members; members work
+together without fine-grained roles in the current version.
 
 ## Scope boundaries (V1)
 
 - **In:** workstreams, ordered steps, checklist steps, per-step owners/deadlines,
   append-only notes, links, visual-only dependencies, a single overview screen.
-- **Out:** file uploads (links only), roles/permissions, notifications
-  (pull-based only), multi-project/multi-wedding reuse, and enforced
+- **Out:** file uploads (links only), fine-grained roles/permissions,
+  notifications (pull-based only), project templates, and enforced
   dependencies.

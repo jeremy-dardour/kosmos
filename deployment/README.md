@@ -1,5 +1,14 @@
 # Production deployment runbook
 
+> **Cutover status:** this runbook names the post-rename resources (`kosmos`
+> service, `kosmos-runtime` SA, `jeremy-dardour/kosmos` repo). Until the
+> [external cutover](../docs/specs/kosmos-rename/implementation-plan.md#phase-5--external-cutover)
+> completes, the live resources still carry the `wedding-planner` names —
+> substitute accordingly. The cutover itself is [`provision.sh`](./provision.sh)
+> (converges the kosmos resources) followed, after verification, by
+> [`cutover-teardown-old-name.sh`](./cutover-teardown-old-name.sh) (deletes the
+> old-name resources). Remove this note after cutover.
+
 The production deployment is one Cloud Run service in `europe-west1`. It
 serves the API and built SPA from the same container and connects directly to
 Neon in AWS `eu-central-1`. The single-container web-serving decision and its
@@ -43,10 +52,10 @@ List revisions and move all traffic back to a known-good revision:
 
 ```bash
 gcloud run revisions list \
-  --service wedding-planner \
+  --service kosmos \
   --region europe-west1
 
-gcloud run services update-traffic wedding-planner \
+gcloud run services update-traffic kosmos \
   --region europe-west1 \
   --to-revisions <previous-revision>=100
 ```
@@ -97,12 +106,12 @@ Use a disposable local database. Dumps contain personal data, so keep the
 download outside the repository and delete it after the drill.
 
 ```bash
-export RESTORE_DATABASE_URL=postgresql://postgres:postgres@localhost:<port>/wedding_planner_restore
+export RESTORE_DATABASE_URL=postgresql://postgres:postgres@localhost:<port>/kosmos_restore
 export DUMP_OBJECT=gs://<backup-bucket>/nightly/<timestamp>.sql.gz
 
-createdb --host localhost --port <port> --username postgres wedding_planner_restore
-gcloud storage cp "$DUMP_OBJECT" /tmp/wedding-planner-restore.sql.gz
-gunzip --stdout /tmp/wedding-planner-restore.sql.gz |
+createdb --host localhost --port <port> --username postgres kosmos_restore
+gcloud storage cp "$DUMP_OBJECT" /tmp/kosmos-restore.sql.gz
+gunzip --stdout /tmp/kosmos-restore.sql.gz |
   psql "$RESTORE_DATABASE_URL" --set ON_ERROR_STOP=on
 
 psql "$RESTORE_DATABASE_URL" --command '\dt'
@@ -113,8 +122,8 @@ Open the app locally and verify representative project, workstream, step, and
 note data. Then stop the app and clean up:
 
 ```bash
-dropdb --host localhost --port <port> --username postgres wedding_planner_restore
-rm /tmp/wedding-planner-restore.sql.gz
+dropdb --host localhost --port <port> --username postgres kosmos_restore
+rm /tmp/kosmos-restore.sql.gz
 ```
 
 First successful restore drill: 2026-08-04, using
@@ -126,7 +135,7 @@ credentials.
 ## Operational checks
 
 ```bash
-gcloud run services describe wedding-planner --region europe-west1
+gcloud run services describe kosmos --region europe-west1
 curl --fail https://<service-or-custom-domain>/health
 ```
 

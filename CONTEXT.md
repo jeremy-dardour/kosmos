@@ -4,11 +4,11 @@
 
 ### Project
 
-The top-level container that all Workstreams (and Groups) belong to. Has a name and an optional **event date** (the wedding day) that anchors a global countdown on the overview. In V1 exactly one exists (the wedding), but "wedding" is not hardcoded — the seam keeps the model reusable. No owner and no per-project User membership in V1; no cross-project features.
+The top-level container that all Workstreams (and Groups) belong to. Has a name and an optional **event date** that anchors a global countdown on the overview. An event date may be a launch, ceremony, move, or any other project target. Projects have an owner and a member-scoped set of Users; there are no cross-project workstreams or groups.
 
 ### Workstream
 
-A named track of wedding preparation work (e.g., "Venue", "Catering", "Flowers"). Has a name and an icon for quick visual identification. Contains an ordered sequence of Steps forming a pipeline, with a current-position pointer. Belongs to a Project, has an optional default Owner, and optionally belongs to a Group. Moves through three lifecycle states — **NotStarted → Active → Complete** — via `start` and `advance` (see Key Rules).
+A named track of project work (e.g., "Venue", "Catering", "Launch content", or "Procurement"). Has a name and an icon for quick visual identification. Contains an ordered sequence of Steps forming a pipeline, with a current-position pointer. Belongs to a Project, has an optional default Owner, and optionally belongs to a Group. Moves through three lifecycle states — **NotStarted → Active → Complete** — via `start` and `advance` (see Key Rules).
 
 ### Step
 
@@ -64,8 +64,3 @@ A Step's status is derived from its position relative to the current pointer (it
 - **Parallelism**: Handled at the Workstream level (separate workstreams run independently), not within a pipeline — except via Checklist Steps for unordered sub-items within a single step.
 - **Access control (V1)**: Gated outside the app — no in-app whitelist. Google OAuth for identity; access is limited to the OAuth app's allowed users, with a static `.env` allow-list as a fallback.
 - **Notifications (V1)**: Pull-only — no email/push. Deadlines surface via the per-card countdown badge.
-
----
-
-For the full behavioral spec — including rationale behind every rule — see the
-[V1 Product PRD](./docs/specs/v1-product/PRD.md).

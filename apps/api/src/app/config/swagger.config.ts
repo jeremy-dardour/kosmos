@@ -11,8 +11,8 @@ import type { OpenAPIObject, SwaggerCustomOptions } from '@nestjs/swagger';
  * Swagger base config
  */
 export const swaggerConfig = {
-  title: 'Template API',
-  description: 'Fullstack template API',
+  title: 'Kosmos API',
+  description: 'Project management API for Kosmos',
   version: '1.0',
 };
 

@@ -7,7 +7,7 @@ This branch contains one throwaway prototype that answers a single question and
 records the answer. It is evidence, not an implementation. The next worker
 rewrites the behaviour through production modules and deletes the prototype.
 
-Tracked by [#40](https://github.com/jeremy-dardour/wedding-planner/issues/40),
+Tracked by [#40](https://github.com/jeremy-dardour/kosmos/issues/40),
 which consolidates #35, #39, #41 and #43.
 
 **Start with §4 if you are estimating** — several shipped capabilities, including

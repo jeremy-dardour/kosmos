@@ -5,13 +5,13 @@ change — it always reflects _now_. History lives in
 [docs/sessions/](./sessions/); one line per merged PR below, details in the
 linked docs.
 
-_Last updated: 2026-08-04 (session 39)_
+_Last updated: 2026-08-04 (session 40)_
 
 ## What this is
 
-A visual pipeline tracker for wedding preparation — 20–50 workstreams, each
-an ordered step pipeline with one overview screen where everything is edited
-inline. The specs are the source of truth:
+Kosmos is a visual project-management pipeline tracker for projects with many
+parallel workstreams. Each workstream is an ordered step pipeline, shown in one
+overview where everything is edited inline. The specs are the source of truth:
 
 - [V1 Product PRD](./specs/v1-product/PRD.md) — behavior + rationale;
   glossary in [CONTEXT.md](../CONTEXT.md)
@@ -26,9 +26,10 @@ inline. The specs are the source of truth:
 ## Phase
 
 **V1 is feature-complete and deployed** — Cloud Run + Neon shipped via PR #58,
-[#26](https://github.com/jeremy-dardour/wedding-planner/issues/26) closed.
+[#26](https://github.com/jeremy-dardour/kosmos/issues/26) closed.
 Current feature: multi-tenancy (T-1 shipped, then #54 → #56). Deployment
-hardening is in draft PR #60.
+hardening shipped in PR #60; the Kosmos product and infrastructure rename is in
+progress.
 
 ## Shipped (one line per PR)
 
@@ -50,12 +51,14 @@ hardening is in draft PR #60.
 - PR #58 — Cloud Run + Neon deployment (#26), incl. the ungrouped-position
   `NULLS NOT DISTINCT` migration
 - PR #59 — multi-tenancy T-1: per-user project list + owned project creation
+- PR #60 — production API docs disabled and nightly backup workflow hardened
 
 ## In flight
 
-- **Draft PR #60 (`feat/deploy-cleanup`)** — disable production API docs and
-  fix the nightly backup workflow; full CI and a branch-dispatched backup are
-  green, awaiting user review.
+- **Draft PR #62 (`chore/kosmos-rename`)** — product identity,
+  project-management positioning, and template cleanup; tracked in the
+  [implementation plan](./specs/kosmos-rename/implementation-plan.md). The
+  GitHub/GCP/OAuth cutover follows after merge.
 
 ## Open questions
 
@@ -63,11 +66,10 @@ hardening is in draft PR #60.
 
 ## Next steps
 
-1. Review and merge PR #60; verify production documentation routes return 404
-   after its automatic deployment. The custom domain remains a future task in
-   the [deployment runbook](../deployment/README.md#future-custom-domain).
+1. Complete the [Kosmos rename](./specs/kosmos-rename/implementation-plan.md),
+   including repository and production infrastructure cutover.
 2. **T-2
-   ([#54](https://github.com/jeremy-dardour/wedding-planner/issues/54))** — the
+   ([#54](https://github.com/jeremy-dardour/kosmos/issues/54))** — the
    security boundary: enforcement on flat routes, project get/patch and
    overview, honoring the constraints recorded in the
    [tech design's Attach-on-login section](./specs/multi-tenancy/tech-design.md#attach-on-login);

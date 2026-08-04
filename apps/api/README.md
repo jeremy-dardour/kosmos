@@ -1,11 +1,15 @@
-# Template API
+# Kosmos API
 
-NestJS backend for the fullstack template. Exposes a typed, contract-first REST API with OpenAPI and uses MikroORM for PostgreSQL persistence.
+NestJS backend for Kosmos. It exposes a typed, contract-first REST API with
+OpenAPI and uses MikroORM for PostgreSQL persistence.
 
 ## Setup
 
 1. Copy `.env.example` to `.env` and configure variables
 2. Start database: `pnpm db:start`
+   > The database name changed from `nestjs` to `kosmos` in the rename. A
+   > Postgres volume created before that keeps its old name — recreate it once
+   > with `docker compose down -v` (from the repo root) before `db:start`.
 3. Run migrations: `pnpm db:migrate:up`
 4. Seed development data: `pnpm db:seed:local`
 5. Start API: `pnpm dev`
@@ -64,7 +68,7 @@ directly via the workflow, and never reads either file.
 
 ## CLI Commands
 
-The template includes a `nest-commander` CLI shell for background jobs or one-off scripts:
+The API includes a `nest-commander` CLI shell for background jobs or one-off scripts:
 
 ```bash
 pnpm command:build-and-run:example

@@ -39,7 +39,7 @@ describe('layoutHeader', () => {
   });
 
   it('should render the app title', () => {
-    const title = screen.getByText('app.logo.description');
+    const title = screen.getByText('Kosmos');
     expect(title).toBeInTheDocument();
   });
 
@@ -66,7 +66,7 @@ describe('layoutHeader', () => {
   });
 
   it('should link the title to the home page', () => {
-    const title = screen.getByRole('link', { name: 'app.logo.description' });
+    const title = screen.getByRole('link', { name: 'app.logo.homeLink' });
 
     expect(title).toHaveAttribute('href', '/');
   });

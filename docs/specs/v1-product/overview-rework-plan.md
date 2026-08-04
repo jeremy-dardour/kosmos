@@ -3,7 +3,7 @@
 Status: ready-for-agent
 
 The ordered build plan for
-[#40 — UI rework: inline overview editing](https://github.com/jeremy-dardour/wedding-planner/issues/40).
+[#40 — UI rework: inline overview editing](https://github.com/jeremy-dardour/kosmos/issues/40).
 Every design decision is already made — **do not reopen any of them**. This
 plan tells you what to build, in what order, commit by commit.
 

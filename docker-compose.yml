@@ -1,6 +1,6 @@
 services:
   api:
-    image: template-api:local
+    image: kosmos-api:local
     container_name: api
     env_file:
       - apps/api/.env.docker.local
@@ -18,7 +18,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=nestjs
+      - POSTGRES_DB=kosmos
     ports:
       - '${DATABASE_PORT:-5432}:5432'
     volumes:
@@ -29,7 +29,7 @@ services:
     environment:
       - POSTGRES_USER=postgres-test
       - POSTGRES_PASSWORD=postgres-test
-      - POSTGRES_DB=nestjs
+      - POSTGRES_DB=kosmos
     ports:
       - '${DATABASE_TEST_PORT:-5433}:5432'
     volumes:

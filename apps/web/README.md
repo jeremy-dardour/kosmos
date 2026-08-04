@@ -1,6 +1,7 @@
-# Template Web
+# Kosmos Web
 
-React + Vite frontend for the TypeScript Fullstack Template. Consumes OpenAPI-generated types and provides a modern, maintainable UI built with shadcn/ui.
+React + Vite frontend for Kosmos. It consumes OpenAPI-generated types and
+provides the project overview, workstream management, and authentication UI.
 
 ## Features
 

@@ -1,8 +1,14 @@
 # Provisioning a production environment
 
+> **Cutover status:** this guide names the post-rename resources (`kosmos`
+> service, `kosmos-runtime` SA, `jeremy-dardour/kosmos` repo). Until the
+> [external cutover](./specs/kosmos-rename/implementation-plan.md#phase-5--external-cutover)
+> completes, the live environment still uses the `wedding-planner` names.
+> Remove this note after cutover.
+
 One-time setup of all infrastructure for a deployment environment (GCP +
 Neon + GitHub), as decided in
-[issue #26](https://github.com/jeremy-dardour/wedding-planner/issues/26).
+[issue #26](https://github.com/jeremy-dardour/kosmos/issues/26).
 Day-2 operations (restore, rollback, migration rehearsal) live in the
 [deployment runbook](../deployment/README.md); the _why_ behind
 these choices is recorded on the issue and in
@@ -10,6 +16,13 @@ these choices is recorded on the issue and in
 
 Substitute the `<...>` placeholders; everything else is decided and should
 be used as written.
+
+Steps 1–8 are automated as an idempotent script,
+[`deployment/provision.sh`](../deployment/provision.sh) — run it for a new
+environment or re-run it to converge an existing one (it is also the
+cutover path for the rename). This document remains the reference for what
+the script does and for the steps that stay manual (billing/budget, Neon,
+OAuth origins, custom domain).
 
 ## Prerequisites
 
@@ -21,7 +34,7 @@ be used as written.
 ```bash
 export PROJECT_ID=<gcp-project-id>
 export REGION=europe-west1
-export REPO=jeremy-dardour/wedding-planner
+export REPO=jeremy-dardour/kosmos
 export AR_REPO=<artifact-registry-repo-name>
 ```
 
@@ -63,10 +76,10 @@ dry-run **disabled** (console leaves it on, which never deletes anything).
 
 Two accounts, least privilege:
 
-| Account                   | Purpose                                 | Permissions                                                                                                                                                          |
-| ------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `wedding-planner-runtime` | Cloud Run workload identity             | `secretmanager.secretAccessor` on the `database-url` secret only (step 6)                                                                                            |
-| `github-deployer`         | CI: push images, deploy, upload backups | `run.admin` + `artifactregistry.writer` (project), `iam.serviceAccountUser` on the runtime SA, `storage.objectCreator` + `storage.objectViewer` on the backup bucket |
+| Account           | Purpose                                 | Permissions                                                                                                                                                          |
+| ----------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kosmos-runtime`  | Cloud Run workload identity             | `secretmanager.secretAccessor` on the `database-url` secret only (step 6)                                                                                            |
+| `github-deployer` | CI: push images, deploy, upload backups | `run.admin` + `artifactregistry.writer` (project), `iam.serviceAccountUser` on the runtime SA, `storage.objectCreator` + `storage.objectViewer` on the backup bucket |
 
 The runtime SA deliberately has nothing else: the app's database is
 external (Neon) and Cloud Run captures logs/metrics without IAM grants, so
@@ -74,9 +87,9 @@ a fully compromised container yields only the database URL it already
 holds.
 
 ```bash
-gcloud iam service-accounts create wedding-planner-runtime --display-name="Cloud Run runtime"
+gcloud iam service-accounts create kosmos-runtime --display-name="Kosmos Cloud Run runtime"
 gcloud iam service-accounts create github-deployer --display-name="GitHub Actions deployer"
-export RUNTIME_SA=wedding-planner-runtime@$PROJECT_ID.iam.gserviceaccount.com
+export RUNTIME_SA=kosmos-runtime@$PROJECT_ID.iam.gserviceaccount.com
 export DEPLOYER_SA=github-deployer@$PROJECT_ID.iam.gserviceaccount.com
 
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -100,11 +113,11 @@ gcloud iam workload-identity-pools providers create-oidc github-oidc \
   --location=global --workload-identity-pool=github \
   --issuer-uri="https://token.actions.githubusercontent.com" \
   --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-  --attribute-condition="assertion.repository=='jeremy-dardour/wedding-planner'"
+  --attribute-condition="assertion.repository=='jeremy-dardour/kosmos'"
 
 gcloud iam service-accounts add-iam-policy-binding $DEPLOYER_SA \
   --role="roles/iam.workloadIdentityUser" \
-  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/jeremy-dardour/wedding-planner"
+  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/jeremy-dardour/kosmos"
 
 # Provider resource name — needed as a GitHub variable in step 7
 gcloud iam workload-identity-pools providers describe github-oidc \
@@ -174,7 +187,7 @@ gh variable set GCP_REGION       --env production -R $REPO --body "$REGION"
 gh variable set GCP_WIF_PROVIDER --env production -R $REPO --body "<provider-name-from-step-4>"
 gh variable set GCP_DEPLOYER_SA  --env production -R $REPO --body "$DEPLOYER_SA"
 gh variable set AR_REPO          --env production -R $REPO --body "$AR_REPO"
-gh variable set RUN_SERVICE      --env production -R $REPO --body "wedding-planner"
+gh variable set RUN_SERVICE      --env production -R $REPO --body "kosmos"
 gh variable set BACKUP_BUCKET    --env production -R $REPO --body "$PROJECT_ID-backups"
 gh variable set VITE_GOOGLE_CLIENT_ID --env production -R $REPO --body "<oauth-client-id>"
 ```
@@ -186,14 +199,14 @@ is created and configured here. Build and push a Linux AMD64 image first (use
 `docker build --platform linux/amd64` when building on Apple Silicon), then:
 
 ```bash
-gcloud run deploy wedding-planner \
+gcloud run deploy kosmos \
   --image $REGION-docker.pkg.dev/$PROJECT_ID/$AR_REPO/app:<tag> \
   --region $REGION \
   --service-account $RUNTIME_SA \
   --min-instances=0 --max-instances=1 --memory=256Mi --cpu=1 \
   --port=3000 --allow-unauthenticated \
   --set-secrets DATABASE_URL=database-url:latest \
-  --set-env-vars NODE_ENV=production,AUTH_CLIENT_ID=<oauth-client-id>,AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration,AUTH_ALLOWED_EMAILS=<comma-separated-emails>
+  --set-env-vars "^@^NODE_ENV=production@AUTH_CLIENT_ID=<oauth-client-id>@AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration@AUTH_ALLOWED_EMAILS=<comma-separated-emails>"
 ```
 
 - `--allow-unauthenticated` is intentional: auth is app-level (Google
@@ -215,7 +228,7 @@ account.
 ## 10. Custom domain
 
 ```bash
-gcloud run domain-mappings create --service wedding-planner \
+gcloud run domain-mappings create --service kosmos \
   --domain <domain> --region $REGION
 ```
 

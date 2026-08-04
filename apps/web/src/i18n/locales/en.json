@@ -1,7 +1,7 @@
 {
   "auth.landing.badge": "Private workspace",
-  "auth.landing.title": "Wedding planner",
-  "auth.landing.subtitle": "Sign in with an authorized Google account to continue to the planning dashboard.",
+  "auth.landing.title": "Projects, ordered and in motion.",
+  "auth.landing.subtitle": "Bring workstreams, steps, ownership, and deadlines together in one clear project view.",
   "auth.landing.access.title": "Access",
   "auth.landing.status.checking": "Checking for a valid session in this tab...",
   "auth.landing.status.signIn": "No active session was found.",
@@ -15,7 +15,7 @@
   "app.errorDialog.title": "An error occurred",
   "app.errorDialog.description": "Please try again later.",
   "app.errorDialog.okButton": "Ok",
-  "app.logo.description": "Application",
+  "app.logo.homeLink": "Kosmos home",
   "app.userMenu.logout": "Sign out",
   "projects.list.title": "Your projects",
   "projects.list.loading": "Loading projects",

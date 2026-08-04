@@ -15,7 +15,7 @@ export interface Translations {
   'app.errorDialog.title': string;
   'app.errorDialog.description': string;
   'app.errorDialog.okButton': string;
-  'app.logo.description': string;
+  'app.logo.homeLink': string;
   'app.userMenu.logout': string;
   'projects.list.title': string;
   'projects.list.loading': string;

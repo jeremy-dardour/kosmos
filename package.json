@@ -1,5 +1,5 @@
 {
-  "name": "typescript-fullstack-template",
+  "name": "kosmos",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
@@ -12,8 +12,8 @@
     "start": "pnpm db:start && turbo run start",
     "dev": "pnpm db:start && turbo run dev",
     "build": "turbo run build",
-    "build:api:docker": "DOCKER_BUILDKIT=1 docker build -f deployment/Dockerfile -t template-api:local .",
-    "run:api:docker": "docker run -p 3000:3000 --env-file apps/api/.env.docker.local template-api:local",
+    "build:api:docker": "DOCKER_BUILDKIT=1 docker build -f deployment/Dockerfile -t kosmos-api:local .",
+    "run:api:docker": "docker run -p 3000:3000 --env-file apps/api/.env.docker.local kosmos-api:local",
     "dependencies:check": "syncpack lint",
     "dependencies:fix": "syncpack fix",
     "lint": "turbo run lint",

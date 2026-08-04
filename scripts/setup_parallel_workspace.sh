@@ -30,7 +30,7 @@ set_env_var "$REPO_ROOT/.env" DATABASE_TEST_PORT "$DB_TEST_PORT"
 
 cp "$REPO_ROOT/apps/api/.env.example" "$REPO_ROOT/apps/api/.env"
 set_env_var "$REPO_ROOT/apps/api/.env" PORT "$API_PORT"
-perl -i -pe "s#^(DATABASE_URL=postgres://postgres:postgres\@localhost:)\d+(/nestjs)#\${1}${DB_PORT}\${2}#" \
+perl -i -pe "s#^(DATABASE_URL=postgres://postgres:postgres\@localhost:)\d+(/kosmos)#\${1}${DB_PORT}\${2}#" \
   "$REPO_ROOT/apps/api/.env"
 
 cp "$REPO_ROOT/apps/web/.env.example" "$REPO_ROOT/apps/web/.env"
@@ -40,7 +40,7 @@ perl -i -pe "s#^(VITE_API_URL=http://localhost:)\d+#\${1}${API_PORT}#" \
 
 # .env.e2e is a tracked fixture; override its port for this workspace via an
 # untracked .env.e2e.local instead of editing it in place.
-echo "DATABASE_URL=postgres-test://postgres-test:postgres-test@localhost:${DB_TEST_PORT}/nestjs" \
+echo "DATABASE_URL=postgres-test://postgres-test:postgres-test@localhost:${DB_TEST_PORT}/kosmos" \
   > "$REPO_ROOT/apps/api/.env.e2e.local"
 
 cat <<EOF
