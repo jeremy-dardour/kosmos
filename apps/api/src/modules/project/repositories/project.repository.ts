@@ -61,6 +61,23 @@ export class ProjectRepository extends EntityRepository<Project> {
     });
   }
 
+  /**
+   * A joined member of the project, or null — pending invites and unknown
+   * ids are indistinguishable, so user-table existence never leaks.
+   */
+  async findJoinedMember(
+    projectId: string,
+    userId: string,
+  ): Promise<User | null> {
+    const member = await this.em.findOne(
+      ProjectMember,
+      { project: projectId, user: userId },
+      { populate: ['user'] },
+    );
+
+    return member?.user ?? null;
+  }
+
   async save(project: Project): Promise<void> {
     this.em.persist(project);
     await this.em.flush();
