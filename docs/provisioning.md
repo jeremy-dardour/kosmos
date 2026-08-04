@@ -63,10 +63,10 @@ dry-run **disabled** (console leaves it on, which never deletes anything).
 
 Two accounts, least privilege:
 
-| Account                   | Purpose                                 | Permissions                                                                                                                                 |
-| ------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `wedding-planner-runtime` | Cloud Run workload identity             | `secretmanager.secretAccessor` on the `database-url` secret only (step 6)                                                                   |
-| `github-deployer`         | CI: push images, deploy, upload backups | `run.admin` + `artifactregistry.writer` (project), `iam.serviceAccountUser` on the runtime SA, `storage.objectCreator` on the backup bucket |
+| Account                   | Purpose                                 | Permissions                                                                                                                                                          |
+| ------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `wedding-planner-runtime` | Cloud Run workload identity             | `secretmanager.secretAccessor` on the `database-url` secret only (step 6)                                                                                            |
+| `github-deployer`         | CI: push images, deploy, upload backups | `run.admin` + `artifactregistry.writer` (project), `iam.serviceAccountUser` on the runtime SA, `storage.objectCreator` + `storage.objectViewer` on the backup bucket |
 
 The runtime SA deliberately has nothing else: the app's database is
 external (Neon) and Cloud Run captures logs/metrics without IAM grants, so
@@ -124,9 +124,11 @@ gcloud storage buckets create gs://$PROJECT_ID-backups \
 printf '%s' '{"rule":[{"action":{"type":"Delete"},"condition":{"age":90}}]}' > /tmp/lifecycle.json
 gcloud storage buckets update gs://$PROJECT_ID-backups --lifecycle-file=/tmp/lifecycle.json
 
-# CI may only create objects — it cannot read or delete existing dumps
+# gcloud uploads require create plus get/list; CI still cannot update or delete dumps
 gcloud storage buckets add-iam-policy-binding gs://$PROJECT_ID-backups \
   --member="serviceAccount:$DEPLOYER_SA" --role="roles/storage.objectCreator"
+gcloud storage buckets add-iam-policy-binding gs://$PROJECT_ID-backups \
+  --member="serviceAccount:$DEPLOYER_SA" --role="roles/storage.objectViewer"
 ```
 
 ## 6. Neon database

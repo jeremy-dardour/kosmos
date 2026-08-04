@@ -12,7 +12,7 @@ NestJS backend for the fullstack template. Exposes a typed, contract-first REST 
 
 ## OpenAPI Contract
 
-- API contract is exposed at `/openapi.yaml` when running
+- API contract is exposed at `/openapi.yaml` outside production
 - Types are generated via `pnpm generate:api-types` at the root and stored in `packages/api-contracts`
 - **Never** edit types manually; always update via OpenAPI
 
