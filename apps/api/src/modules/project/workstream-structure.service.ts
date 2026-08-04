@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 
 import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { Step } from '@/database/entities/step.entity';
-import { UserRepository } from '@/database/repositories/user.repository';
 import {
   ChecklistItemDto,
   toChecklistItemDto,
@@ -13,6 +12,7 @@ import {
   WorkstreamDto,
 } from '@/modules/project/dtos/output/workstream.dto';
 import { ChecklistItemRepository } from '@/modules/project/repositories/checklist-item.repository';
+import { ProjectRepository } from '@/modules/project/repositories/project.repository';
 import { StepRepository } from '@/modules/project/repositories/step.repository';
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
 import { conflict } from '@/modules/project/utils/conflict.util';
@@ -28,6 +28,7 @@ import {
   assertStepEditable,
   futureSteps,
 } from '@/modules/project/utils/step-mutability.util';
+import { unprocessable } from '@/modules/project/utils/unprocessable.util';
 
 import type { User } from '@/database/entities/user.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
@@ -47,7 +48,7 @@ export class WorkstreamStructureService {
     private readonly stepRepository: StepRepository,
     private readonly checklistItemRepository: ChecklistItemRepository,
     private readonly workstreamRepository: WorkstreamRepository,
-    private readonly userRepository: UserRepository,
+    private readonly projectRepository: ProjectRepository,
   ) {}
 
   async createStep(
@@ -55,7 +56,15 @@ export class WorkstreamStructureService {
     dto: CreateStepDto,
     actor: User,
   ): Promise<WorkstreamDto> {
-    const owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
+    const owner = dto.ownerId
+      ? await this.resolveMemberOwner(
+          dto.ownerId,
+          await this.workstreamRepository.findProjectIdForActor(
+            workstreamId,
+            actor.id,
+          ),
+        )
+      : null;
 
     const workstream = await this.workstreamRepository.updateLockedDetails(
       workstreamId,
@@ -82,7 +91,15 @@ export class WorkstreamStructureService {
     dto: UpdateStepDto,
     actor: User,
   ): Promise<StepDto> {
-    const owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
+    const owner = dto.ownerId
+      ? await this.resolveMemberOwner(
+          dto.ownerId,
+          await this.workstreamRepository.findProjectIdForActorByStep(
+            id,
+            actor.id,
+          ),
+        )
+      : null;
 
     const { workstream, step } = await this.stepRepository.updateLocked(
       id,
@@ -228,8 +245,24 @@ export class WorkstreamStructureService {
     );
   }
 
-  private async findUser(userId: string): Promise<User> {
-    return this.userRepository.findOneOrFail(userId);
+  /** Owner assignment guard (ADR 0006): unknown ids and non-members 422 alike. */
+  private async resolveMemberOwner(
+    ownerId: string,
+    projectId: string,
+  ): Promise<User> {
+    const owner = await this.projectRepository.findJoinedMember(
+      projectId,
+      ownerId,
+    );
+
+    if (!owner) {
+      unprocessable(
+        'owner-not-member',
+        'The owner must be a member of this project',
+      );
+    }
+
+    return owner;
   }
 
   private nextChecklistPosition(step: Step): number {

@@ -1,4 +1,4 @@
-import { raw } from '@mikro-orm/core';
+import { NotFoundError, raw } from '@mikro-orm/core';
 import { EntityRepository, SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
@@ -24,6 +24,43 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
       { id, project: memberProject(actorId) },
       { populate: [...WORKSTREAM_GRAPH], refresh: true },
     );
+  }
+
+  /**
+   * Scoped project resolution that orders owner validation after the 404
+   * check: it must throw for a non-member before any owner-membership lookup
+   * runs, or the 422/404 difference becomes a membership oracle.
+   * `disableIdentityMap` keeps the partial load out of the identity map the
+   * subsequent locked mutation re-reads through.
+   */
+  async findProjectIdForActor(id: string, actorId: string): Promise<string> {
+    const workstream = await this.em.findOne(
+      Workstream,
+      { id, project: memberProject(actorId) },
+      { fields: ['project'], disableIdentityMap: true },
+    );
+    if (!workstream) {
+      throw new NotFoundError(`Workstream ${id} not found`);
+    }
+
+    return workstream.project.id;
+  }
+
+  /** Same scoped resolution, reached from one of the workstream's steps. */
+  async findProjectIdForActorByStep(
+    stepId: string,
+    actorId: string,
+  ): Promise<string> {
+    const workstream = await this.em.findOne(
+      Workstream,
+      { steps: { id: stepId }, project: memberProject(actorId) },
+      { fields: ['project'], disableIdentityMap: true },
+    );
+    if (!workstream) {
+      throw new NotFoundError(`Step ${stepId} not found`);
+    }
+
+    return workstream.project.id;
   }
 
   async countNotesByStep(

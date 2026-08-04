@@ -59,9 +59,8 @@ function createService(workstream: Workstream, targetGroup?: Group) {
 
   const service = new WorkstreamService(
     workstreamRepo as never,
-    { findOneOrFail: vi.fn() } as never,
+    { findJoinedMember: vi.fn() } as never,
     groupRepo as never,
-    { findOneOrFail: vi.fn() } as never,
   );
 
   return { service, workstreamRepo };

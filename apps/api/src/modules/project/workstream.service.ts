@@ -7,12 +7,10 @@ import {
 
 import { Group } from '@/database/entities/group.entity';
 import { StepOutcome } from '@/database/entities/step.entity';
-import { User } from '@/database/entities/user.entity';
 import {
   Workstream,
   WorkstreamLifecycle,
 } from '@/database/entities/workstream.entity';
-import { UserRepository } from '@/database/repositories/user.repository';
 import {
   toWorkstreamDto,
   WorkstreamDto,
@@ -22,7 +20,9 @@ import { ProjectRepository } from '@/modules/project/repositories/project.reposi
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
 import { conflict } from '@/modules/project/utils/conflict.util';
 import { isExactMembership } from '@/modules/project/utils/order-membership.util';
+import { unprocessable } from '@/modules/project/utils/unprocessable.util';
 
+import type { User } from '@/database/entities/user.entity';
 import type { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
 import type { CreateWorkstreamDto } from '@/modules/project/dtos/input/create-workstream.dto';
 import type { ReorderWorkstreamsDto } from '@/modules/project/dtos/input/reorder-workstreams.dto';
@@ -38,7 +38,6 @@ export class WorkstreamService {
     private readonly workstreamRepository: WorkstreamRepository,
     private readonly projectRepository: ProjectRepository,
     private readonly groupRepository: GroupRepository,
-    private readonly userRepository: UserRepository,
   ) {}
 
   async create(
@@ -58,7 +57,9 @@ export class WorkstreamService {
     workstream.group = dto.groupId
       ? await this.findGroupInProject(dto.groupId, projectId)
       : null;
-    workstream.owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
+    workstream.owner = dto.ownerId
+      ? await this.resolveMemberOwner(dto.ownerId, project.id)
+      : null;
 
     await this.workstreamRepository.insertAtTop(workstream, actor.id);
 
@@ -82,7 +83,9 @@ export class WorkstreamService {
       workstream.icon = dto.icon;
     }
     if (dto.ownerId !== undefined) {
-      workstream.owner = dto.ownerId ? await this.findUser(dto.ownerId) : null;
+      workstream.owner = dto.ownerId
+        ? await this.resolveMemberOwner(dto.ownerId, workstream.project.id)
+        : null;
     }
 
     const targetGroup =
@@ -264,7 +267,23 @@ export class WorkstreamService {
     return group;
   }
 
-  private async findUser(userId: string): Promise<User> {
-    return this.userRepository.findOneOrFail(userId);
+  /** Owner assignment guard (ADR 0006): unknown ids and non-members 422 alike. */
+  private async resolveMemberOwner(
+    ownerId: string,
+    projectId: string,
+  ): Promise<User> {
+    const owner = await this.projectRepository.findJoinedMember(
+      projectId,
+      ownerId,
+    );
+
+    if (!owner) {
+      unprocessable(
+        'owner-not-member',
+        'The owner must be a member of this project',
+      );
+    }
+
+    return owner;
   }
 }

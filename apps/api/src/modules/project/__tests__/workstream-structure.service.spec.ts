@@ -48,17 +48,19 @@ function createStepService(workstream: Workstream) {
       },
     ),
     countNotesByStep: vi.fn(() => new Map<string, number>()),
+    findProjectIdForActor: vi.fn(() => Promise.resolve('project-1')),
+    findProjectIdForActorByStep: vi.fn(() => Promise.resolve('project-1')),
   };
-  const userRepository = { findOneOrFail: vi.fn() };
+  const projectRepository = { findJoinedMember: vi.fn() };
 
   return {
     service: new WorkstreamStructureService(
       stepRepository as never,
       {} as never,
       workstreamRepository as never,
-      userRepository as never,
+      projectRepository as never,
     ),
-    userRepository,
+    projectRepository,
     positions: () =>
       [...workstream.getSteps()]
         .sort((left, right) => left.position - right.position)
@@ -176,11 +178,11 @@ describe('workstreamStructureService.createStep', () => {
     ).rejects.toThrow("not in this workstream's future zone");
   });
 
-  it('resolves an explicit owner', async () => {
+  it('resolves an explicit owner from the project members', async () => {
     const owner = buildUser('u1');
     const workstream = buildWorkstream({ steps: [] });
-    const { service, userRepository } = createStepService(workstream);
-    userRepository.findOneOrFail.mockResolvedValue(owner);
+    const { service, projectRepository } = createStepService(workstream);
+    projectRepository.findJoinedMember.mockResolvedValue(owner);
 
     await service.createStep(
       'ws-1',
@@ -193,6 +195,28 @@ describe('workstreamStructureService.createStep', () => {
     );
 
     expect(workstream.getSteps()[0]?.owner).toBe(owner);
+    expect(projectRepository.findJoinedMember).toHaveBeenCalledWith(
+      'project-1',
+      'u1',
+    );
+  });
+
+  it('rejects an owner who is not a joined member', async () => {
+    const { service, projectRepository } = createStepService(
+      buildWorkstream({ steps: [] }),
+    );
+    projectRepository.findJoinedMember.mockResolvedValue(null);
+
+    const create = service.createStep(
+      'ws-1',
+      { name: 'Owned', position: 1, ownerId: 'stranger' },
+      actor,
+    );
+
+    await expect(create).rejects.toMatchObject({
+      typeSlug: 'owner-not-member',
+      status: 422,
+    });
   });
 });
 
