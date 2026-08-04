@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,6 +21,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { ActorInterceptor } from '@/app/auth/actor.interceptor';
 import {
   ApiCommonErrorResponses,
   ApiConflictResponse,
@@ -32,11 +34,8 @@ import { UpdateGroupDto } from '@/modules/project/dtos/input/update-group.dto';
 import { GroupDto, toGroupDto } from '@/modules/project/dtos/output/group.dto';
 import { GroupService } from '@/modules/project/group.service';
 
-/**
- * Mutations take a bare group id and are deliberately not project-scoped: V1
- * has one project and no roles. A second project would need them scoped.
- */
 @Controller()
+@UseInterceptors(ActorInterceptor)
 @ApiTags('groups')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()

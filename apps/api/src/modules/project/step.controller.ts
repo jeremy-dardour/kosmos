@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -15,6 +16,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { ActorInterceptor } from '@/app/auth/actor.interceptor';
 import {
   ApiCommonErrorResponses,
   ApiConflictResponse,
@@ -29,6 +31,7 @@ import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
 import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 
 @Controller()
+@UseInterceptors(ActorInterceptor)
 @ApiTags('steps')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()

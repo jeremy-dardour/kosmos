@@ -1,4 +1,10 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -6,6 +12,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { ActorInterceptor } from '@/app/auth/actor.interceptor';
 import {
   ApiCommonErrorResponses,
   ApiNotFoundResponse,
@@ -15,6 +22,7 @@ import { OverviewDto } from '@/modules/project/dtos/output/overview.dto';
 import { OverviewService } from '@/modules/project/overview.service';
 
 @Controller('projects/:projectId/overview')
+@UseInterceptors(ActorInterceptor)
 @ApiTags('overview')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()

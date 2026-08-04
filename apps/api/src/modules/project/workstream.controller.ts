@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Put,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,6 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { ActorInterceptor } from '@/app/auth/actor.interceptor';
 import {
   ApiBadRequestResponse,
   ApiCommonErrorResponses,
@@ -36,12 +38,9 @@ import { WorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
 import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 import { WorkstreamService } from '@/modules/project/workstream.service';
 
-/**
- * Reads go through the overview aggregate, so there is no GET here. Mutations
- * take a bare workstream id and are deliberately not project-scoped: V1 has one
- * project and no roles. A second project would need them scoped.
- */
+/** Reads go through the overview aggregate, so there is no GET here. */
 @Controller()
+@UseInterceptors(ActorInterceptor)
 @ApiTags('workstreams')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()

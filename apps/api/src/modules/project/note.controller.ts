@@ -9,7 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Req,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,7 +20,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ActorResolutionService } from '@/app/auth/actor-resolution.service';
+import { ActorInterceptor } from '@/app/auth/actor.interceptor';
+import { Actor } from '@/app/auth/decorators';
 import {
   ApiCommonErrorResponses,
   ApiForbiddenResponse,
@@ -32,19 +33,17 @@ import { UpdateNoteDto } from '@/modules/project/dtos/input/update-note.dto';
 import { NoteDto } from '@/modules/project/dtos/output/note.dto';
 import { NoteService } from '@/modules/project/note.service';
 
-import type { AuthenticatedRequest } from '@/app/auth/types/token.types';
+import type { User } from '@/database/entities/user.entity';
 
 @Controller()
+@UseInterceptors(ActorInterceptor)
 @ApiTags('notes')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()
 @ApiUnauthorizedResponse()
 @ApiNotFoundResponse()
 export class NoteController {
-  constructor(
-    private readonly noteService: NoteService,
-    private readonly actorResolution: ActorResolutionService,
-  ) {}
+  constructor(private readonly noteService: NoteService) {}
 
   @Get('workstreams/:workstreamId/notes')
   @ApiOperation({ summary: 'List notes for a workstream' })
@@ -61,10 +60,8 @@ export class NoteController {
   async create(
     @Param('stepId', ParseUUIDPipe) stepId: string,
     @Body() dto: CreateNoteDto,
-    @Req() request: AuthenticatedRequest,
+    @Actor() actor: User,
   ): Promise<NoteDto> {
-    const actor = await this.actorResolution.resolve(request.user);
-
     return this.noteService.create(stepId, actor.id, dto);
   }
 
@@ -75,10 +72,8 @@ export class NoteController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateNoteDto,
-    @Req() request: AuthenticatedRequest,
+    @Actor() actor: User,
   ): Promise<NoteDto> {
-    const actor = await this.actorResolution.resolve(request.user);
-
     return this.noteService.update(id, actor.id, dto);
   }
 
@@ -89,10 +84,8 @@ export class NoteController {
   @ApiForbiddenResponse('Only the note author can delete it')
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @Req() request: AuthenticatedRequest,
+    @Actor() actor: User,
   ): Promise<void> {
-    const actor = await this.actorResolution.resolve(request.user);
-
     await this.noteService.remove(id, actor.id);
   }
 }
