@@ -50,8 +50,9 @@ export class NoteController {
   @ApiOkResponse({ type: [NoteDto] })
   async getWorkstreamNotes(
     @Param('workstreamId', ParseUUIDPipe) workstreamId: string,
+    @Actor() actor: User,
   ): Promise<NoteDto[]> {
-    return this.noteService.getWorkstreamNotes(workstreamId);
+    return this.noteService.getWorkstreamNotes(workstreamId, actor);
   }
 
   @Post('steps/:stepId/notes')
@@ -62,7 +63,7 @@ export class NoteController {
     @Body() dto: CreateNoteDto,
     @Actor() actor: User,
   ): Promise<NoteDto> {
-    return this.noteService.create(stepId, actor.id, dto);
+    return this.noteService.create(stepId, actor, dto);
   }
 
   @Patch('notes/:id')
@@ -74,7 +75,7 @@ export class NoteController {
     @Body() dto: UpdateNoteDto,
     @Actor() actor: User,
   ): Promise<NoteDto> {
-    return this.noteService.update(id, actor.id, dto);
+    return this.noteService.update(id, actor, dto);
   }
 
   @Delete('notes/:id')
@@ -86,6 +87,6 @@ export class NoteController {
     @Param('id', ParseUUIDPipe) id: string,
     @Actor() actor: User,
   ): Promise<void> {
-    await this.noteService.remove(id, actor.id);
+    await this.noteService.remove(id, actor);
   }
 }
