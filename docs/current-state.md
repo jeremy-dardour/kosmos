@@ -5,7 +5,7 @@ change — it always reflects _now_. History lives in
 [docs/sessions/](./sessions/); one line per merged PR below, details in the
 linked docs.
 
-_Last updated: 2026-08-04 (session 38)_
+_Last updated: 2026-08-04 (session 39)_
 
 ## What this is
 
@@ -21,13 +21,14 @@ inline. The specs are the source of truth:
 - [Auth PRD](./specs/auth/PRD.md) — Google GIS + `.env` allow-list
 - [Multi-tenancy PRD](./specs/multi-tenancy/PRD.md) +
   [tech design](./specs/multi-tenancy/tech-design.md) — in progress: T-1
-  (#53) built and in review, T-2→T-4 (#54→#56) remaining
+  (#53) shipped, T-2→T-4 (#54→#56) remaining
 
 ## Phase
 
 **V1 is feature-complete and deployed** — Cloud Run + Neon shipped via PR #58,
 [#26](https://github.com/jeremy-dardour/wedding-planner/issues/26) closed.
-Current feature: multi-tenancy (T-1 in review, then #54 → #56).
+Current feature: multi-tenancy (T-1 shipped, then #54 → #56). Deployment
+hardening is in draft PR #60.
 
 ## Shipped (one line per PR)
 
@@ -48,11 +49,13 @@ Current feature: multi-tenancy (T-1 in review, then #54 → #56).
   session 37 log
 - PR #58 — Cloud Run + Neon deployment (#26), incl. the ungrouped-position
   `NULLS NOT DISTINCT` migration
+- PR #59 — multi-tenancy T-1: per-user project list + owned project creation
 
 ## In flight
 
-- **PR #59 (`feat/multi-tenancy-t1`)** — T-1 walking skeleton (#53):
-  per-user project list + create, review battery done, open.
+- **Draft PR #60 (`feat/deploy-cleanup`)** — disable production API docs and
+  fix the nightly backup workflow; full CI and a branch-dispatched backup are
+  green, awaiting user review.
 
 ## Open questions
 
@@ -60,9 +63,12 @@ Current feature: multi-tenancy (T-1 in review, then #54 → #56).
 
 ## Next steps
 
-1. **Merge PR #59**, then **T-2
-   ([#54](https://github.com/jeremy-dardour/wedding-planner/issues/54))** —
-   the security boundary: enforcement on flat routes, project get/patch and
+1. Review and merge PR #60; verify production documentation routes return 404
+   after its automatic deployment. The custom domain remains a future task in
+   the [deployment runbook](../deployment/README.md#future-custom-domain).
+2. **T-2
+   ([#54](https://github.com/jeremy-dardour/wedding-planner/issues/54))** — the
+   security boundary: enforcement on flat routes, project get/patch and
    overview, honoring the constraints recorded in the
    [tech design's Attach-on-login section](./specs/multi-tenancy/tech-design.md#attach-on-login);
    then #55 → #56.

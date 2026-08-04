@@ -3,6 +3,7 @@ import { apiReference } from '@scalar/nestjs-api-reference';
 
 import { ProblemDetailsDto } from '@/shared/dtos/problem-details.dto';
 
+import type { Env } from '@/app/config/env.schema';
 import type { INestApplication } from '@nestjs/common';
 import type { OpenAPIObject, SwaggerCustomOptions } from '@nestjs/swagger';
 
@@ -74,11 +75,16 @@ function addDefaultErrorResponses(document: OpenAPIObject): void {
 }
 
 /**
- * Setup API documentation
+ * Setup API documentation outside production
  * - /docs - Scalar API docs (default)
  * - /swagger - Swagger UI (fallback)
  */
-export function setupSwagger(app: INestApplication): void {
+export function setupSwagger(
+  app: INestApplication,
+  env: Env['NODE_ENV'],
+): void {
+  if (env === 'production') return;
+
   const config = new DocumentBuilder()
     .setTitle(swaggerConfig.title)
     .setDescription(swaggerConfig.description)

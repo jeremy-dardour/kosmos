@@ -82,13 +82,19 @@ async function bootstrap() {
   app.useGlobalPipes(createValidationPipe());
 
   // Swagger docs
-  setupSwagger(app);
+  setupSwagger(app, env);
 
   const port: Env['PORT'] = configService.get('PORT');
   await app.listen(port);
 
   const nodeVersion = process.version;
   const baseUrl = `http://localhost:${port}`;
+  const documentationEndpoints =
+    env === 'production'
+      ? '|  - API docs:   disabled in production              |'
+      : `|  - Docs:       ${`${baseUrl}/api/docs`.padEnd(35)}  |
+|  - Swagger:    ${`${baseUrl}/api/swagger`.padEnd(35)}  |
+|  - YAML:       ${`${baseUrl}/openapi.yaml`.padEnd(35)}  |`;
 
   const startupMessage = `
 +-----------------------------------------------------+
@@ -100,9 +106,7 @@ async function bootstrap() {
 +-----------------------------------------------------+
 |  Endpoints:                                         |
 |  - API:        ${`${baseUrl}/api`.padEnd(35)}  |
-|  - Docs:       ${`${baseUrl}/api/docs`.padEnd(35)}  |
-|  - Swagger:    ${`${baseUrl}/api/swagger`.padEnd(35)}  |
-|  - YAML:       ${`${baseUrl}/openapi.yaml`.padEnd(35)}  |
+${documentationEndpoints}
 |  - Health:     ${`${baseUrl}/health`.padEnd(35)}  |
 +-----------------------------------------------------+`;
 

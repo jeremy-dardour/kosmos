@@ -8,6 +8,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createStaticAssetsImports } from '@/app/config/static-assets.config';
+import { setupSwagger } from '@/app/config/swagger.config';
 
 import type { DynamicModule, INestApplication } from '@nestjs/common';
 
@@ -107,6 +108,38 @@ describe('spa fallback routing', () => {
     'keeps %s a 404 instead of the SPA shell',
     async (path) => {
       const response = await request(app.getHttpServer() as never).get(path);
+
+      expect(response.status).toBe(404);
+      expect(response.text).not.toContain('<title>spa</title>');
+    },
+  );
+});
+
+describe('production API documentation', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const rootPath = await mkdtemp(path.join(tmpdir(), 'spa-dist-'));
+    await writeFile(path.join(rootPath, 'index.html'), indexHtml);
+
+    app = await NestFactory.create(StubAppModule.forRoot(rootPath), {
+      logger: false,
+    });
+    app.setGlobalPrefix('api', {
+      exclude: [{ path: 'health', method: RequestMethod.ALL }],
+    });
+    setupSwagger(app, 'production');
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it.each(['/api/docs', '/api/swagger', '/openapi.yaml'])(
+    'does not expose %s or replace it with the SPA shell',
+    async (route) => {
+      const response = await request(app.getHttpServer() as never).get(route);
 
       expect(response.status).toBe(404);
       expect(response.text).not.toContain('<title>spa</title>');

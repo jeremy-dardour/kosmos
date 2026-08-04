@@ -38,7 +38,7 @@ jobs:
             --output /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
             https://www.postgresql.org/media/keys/ACCC4CF8.asc
           . /etc/os-release
-          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt \${VERSION_CODENAME}-pgdg main" |
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" |
             sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
           sudo apt-get update
           sudo apt-get install --yes postgresql-client-18
@@ -50,7 +50,8 @@ jobs:
         run: |
           set -o pipefail
           backup_name="$(date -u +'%Y-%m-%dT%H-%M-%SZ').sql.gz"
-          pg_dump --no-owner --no-privileges "$DATABASE_URL" |
+          /usr/lib/postgresql/18/bin/pg_dump \
+            --no-owner --no-privileges "$DATABASE_URL" |
             gzip -9 > /tmp/backup.sql.gz
           gcloud storage cp \
             /tmp/backup.sql.gz \

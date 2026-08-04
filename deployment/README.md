@@ -25,6 +25,14 @@ workflow sets the platform explicitly as well.
 The container entrypoint runs all pending MikroORM migrations before starting
 NestJS. A migration failure prevents the revision from becoming ready.
 
+## Future: custom domain
+
+Production currently uses the Cloud Run-provided `run.app` URL. A custom
+domain is deliberately deferred and is not required to operate the service.
+When revisiting it, follow step 9 of the provisioning guide: verify domain
+ownership, create the Cloud Run mapping, add the generated DNS records, wait
+for managed TLS, add the new origin to Google OAuth, and verify sign-in.
+
 ## Deployments and rollback
 
 Every successful CI run for `main` triggers `.github/workflows/cd.yml`. The
@@ -109,15 +117,17 @@ dropdb --host localhost --port <port> --username postgres wedding_planner_restor
 rm /tmp/wedding-planner-restore.sql.gz
 ```
 
-Record the date and dump object after the first successful drill. Do not record
-database contents or credentials.
+First successful restore drill: 2026-08-04, using
+`nightly/2026-08-04T13-45-59Z.sql.gz`. The gzip, schema, constraints, and
+migration history were verified in disposable Postgres 18 and all local
+artifacts were removed afterward. Do not record database contents or
+credentials.
 
 ## Operational checks
 
 ```bash
 gcloud run services describe wedding-planner --region europe-west1
 curl --fail https://<service-or-custom-domain>/health
-curl --fail https://<service-or-custom-domain>/openapi.yaml
 ```
 
 If startup exceeds 256 MiB, raise memory to 512 MiB before changing scaling or
