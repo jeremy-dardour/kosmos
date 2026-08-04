@@ -11,6 +11,7 @@ import { signIn } from '@/__e2e-tests__/helpers/sign-in.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
 import { Group } from '@/database/entities/group.entity';
 import { Note } from '@/database/entities/note.entity';
+import { ProjectMember } from '@/database/entities/project-member.entity';
 import { Step, StepOutcome } from '@/database/entities/step.entity';
 import { User } from '@/database/entities/user.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
@@ -76,7 +77,21 @@ describe('Overview E2E Tests', () => {
       avatarUrl: null,
     });
 
-    const project = createProjectFixture(em, { eventDate: calendarDay(10) });
+    const project = await createProjectFixture(em, {
+      eventDate: calendarDay(10),
+    });
+    // The users directory returns joined members only, so the owners the
+    // fixtures reference must be members to appear in it.
+    em.create(ProjectMember, {
+      project,
+      email: workstreamOwner.email,
+      user: workstreamOwner,
+    });
+    em.create(ProjectMember, {
+      project,
+      email: stepOwner.email,
+      user: stepOwner,
+    });
 
     const group = em.create(Group, {
       project,
@@ -385,7 +400,7 @@ describe('Overview E2E Tests', () => {
       expect(findWorkstream(overview, activeId).groupId).toBeNull();
     });
 
-    it('includes one canonical summary for every user', async () => {
+    it('includes one canonical summary for every joined member', async () => {
       const overview = await fetchOverview();
 
       expect(overview.users).toEqual(

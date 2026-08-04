@@ -2,11 +2,15 @@ import request from 'supertest';
 
 import { createTestApp } from '@/__e2e-tests__/helpers/create-app.helper';
 import { MockTokenFactory } from '@/__e2e-tests__/helpers/mock-token.factory';
-import { createProjectFixture } from '@/__e2e-tests__/helpers/project-fixture.helper';
+import {
+  addJoinedMember,
+  createProjectFixture,
+} from '@/__e2e-tests__/helpers/project-fixture.helper';
 import {
   resetDatabase,
   testEntityManager,
 } from '@/__e2e-tests__/helpers/reset-database.helper';
+import { signIn } from '@/__e2e-tests__/helpers/sign-in.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
 import { Note } from '@/database/entities/note.entity';
 import { Step, StepOutcome } from '@/database/entities/step.entity';
@@ -42,6 +46,7 @@ describe('Step editing E2E Tests', () => {
     em = testEntityManager(app);
     authorization = `Bearer ${await tokenFactory.validToken()}`;
     await resetDatabase(em);
+    await signIn(app, authorization);
   });
 
   afterEach(async () => {
@@ -55,7 +60,7 @@ describe('Step editing E2E Tests', () => {
     current: Step;
     future: Step;
   }> {
-    const project = createProjectFixture(em);
+    const project = await createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -91,7 +96,7 @@ describe('Step editing E2E Tests', () => {
     workstream: Workstream;
     steps: Step[];
   }> {
-    const project = createProjectFixture(em);
+    const project = await createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -160,6 +165,7 @@ describe('Step editing E2E Tests', () => {
         name: 'Owner',
       });
       const { workstream } = await createStartedWorkstream();
+      addJoinedMember(em, workstream.project.id, owner);
       await em.flush();
 
       const response = await request(app.getHttpServer() as never)
@@ -258,7 +264,8 @@ describe('Step editing E2E Tests', () => {
         email: 'author@example.com',
         name: 'Author',
       });
-      const { current } = await createStartedWorkstream();
+      const { workstream, current } = await createStartedWorkstream();
+      addJoinedMember(em, workstream.project.id, author);
       em.create(Note, { step: current, author, content: 'Called the venue' });
       await em.flush();
 
