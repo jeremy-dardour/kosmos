@@ -2,12 +2,12 @@ import request from 'supertest';
 
 import { createTestApp } from '@/__e2e-tests__/helpers/create-app.helper';
 import { MockTokenFactory } from '@/__e2e-tests__/helpers/mock-token.factory';
+import { createProjectFixture } from '@/__e2e-tests__/helpers/project-fixture.helper';
 import {
   resetDatabase,
   testEntityManager,
 } from '@/__e2e-tests__/helpers/reset-database.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
-import { Project } from '@/database/entities/project.entity';
 import { Step, StepOutcome } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 
@@ -40,7 +40,7 @@ describe('Workstream advance E2E Tests', () => {
   });
 
   it('starts a populated workstream at its first step', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -83,7 +83,7 @@ describe('Workstream advance E2E Tests', () => {
   });
 
   it('rejects an outcome when starting a workstream', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -105,7 +105,7 @@ describe('Workstream advance E2E Tests', () => {
   });
 
   it('rejects starting an empty workstream with a typed conflict', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -127,7 +127,7 @@ describe('Workstream advance E2E Tests', () => {
   });
 
   it('records Done and moves an active workstream to its next step', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -172,7 +172,7 @@ describe('Workstream advance E2E Tests', () => {
   });
 
   it('records Skipped when that outcome is chosen', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -219,7 +219,7 @@ describe('Workstream advance E2E Tests', () => {
   });
 
   it('completes the workstream when its last step is advanced', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -255,7 +255,7 @@ describe('Workstream advance E2E Tests', () => {
   });
 
   it('rejects advancing a complete workstream with a typed conflict', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -286,7 +286,7 @@ describe('Workstream advance E2E Tests', () => {
   });
 
   it('serializes concurrent advances without losing a transition', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,

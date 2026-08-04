@@ -92,12 +92,15 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List projects
-     * @description V1 holds a single project; the client uses this to discover its id on first load.
+     * List the projects the current user belongs to
+     * @description Projects the user is a member of, plus their own soft-deleted ones.
      */
     get: operations['ProjectController_findAll'];
     put?: never;
-    /** Create a project */
+    /**
+     * Create a project
+     * @description The current user becomes its owner and first member.
+     */
     post: operations['ProjectController_create'];
     delete?: never;
     options?: never;
@@ -511,6 +514,10 @@ export interface components {
       name: string;
       /** Format: date */
       eventDate?: string | null;
+      /** Format: uuid */
+      ownerId: string;
+      /** Format: date-time */
+      deletedAt?: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -1326,6 +1333,15 @@ export interface operations {
       };
       /** @description Authentication failed */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetailsDto'];
+        };
+      };
+      /** @description The owned-project limit is reached */
+      409: {
         headers: {
           [name: string]: unknown;
         };

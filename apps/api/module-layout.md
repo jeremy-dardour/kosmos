@@ -9,13 +9,14 @@ state machine in
 
 ## One module for the project aggregate
 
-A single `project` module owns Project, Group, Workstream, Step, ChecklistItem
-and Note:
+A single `project` module owns Project, ProjectMember, Group, Workstream, Step,
+ChecklistItem and Note:
 
 ```
 src/modules/project/
   project.module.ts
-  project.controller.ts           ← Project CRUD
+  project.controller.ts           ← Project CRUD (actor-scoped list + owned
+                                    create)
   project.service.ts
   overview.controller.ts          ← GET /projects/:projectId/overview
   overview.service.ts             ← the aggregate read model
@@ -30,7 +31,9 @@ src/modules/project/
   step.controller.ts              ← Step field edits + delete
                                     + checklist item create
   repositories/
-    project.repository.ts         ← Project entity persistence
+    project.repository.ts         ← Project + ProjectMember persistence
+                                    (membership-scoped list, transactional
+                                    owned create)
     group.repository.ts           ← Group entity persistence
     workstream.repository.ts      ← Workstream aggregate persistence
     step.repository.ts            ← Step persistence under the workstream lock
@@ -79,13 +82,17 @@ project, 20–50 workstreams).
 - The overview read model has its own query-focused repository so its
   repeatable-read entity graph is not forced through CRUD repositories.
 - Controllers stay thin and call the matching service directly.
+- Actor-scoped endpoints resolve the acting User in the controller via
+  `app/auth`'s `ActorResolutionService` (request identity → User row) and pass
+  the resolved entity to the service; services never see the raw token payload.
 
 ---
 
 ## Other modules
 
-- `user` — user entity registration. Authentication provisioning and project
-  ownership lookups share the entity-only `database/repositories/user.repository.ts`.
+- `user` — user entity registration. Authentication provisioning, actor
+  resolution (`app/auth`'s `ActorResolutionService`) and project ownership
+  lookups share the entity-only `database/repositories/user.repository.ts`.
 
 ---
 

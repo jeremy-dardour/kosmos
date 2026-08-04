@@ -20,15 +20,14 @@ inline. The specs are the source of truth:
   decisions in [docs/adr/](./adr/)
 - [Auth PRD](./specs/auth/PRD.md) — Google GIS + `.env` allow-list
 - [Multi-tenancy PRD](./specs/multi-tenancy/PRD.md) +
-  [tech design](./specs/multi-tenancy/tech-design.md) — next feature, specced
-  and ticketed (#53→#56), not started
+  [tech design](./specs/multi-tenancy/tech-design.md) — in progress: T-1
+  (#53) built and in review, T-2→T-4 (#54→#56) remaining
 
 ## Phase
 
-**V1 product work is feature-complete on main.** Deployment implementation is
-green in PR #58 and awaits review, merge, and live production verification for
-[#26](https://github.com/jeremy-dardour/wedding-planner/issues/26). Next
-feature: multi-tenancy.
+**V1 is feature-complete and deployed** — Cloud Run + Neon shipped via PR #58,
+[#26](https://github.com/jeremy-dardour/wedding-planner/issues/26) closed.
+Current feature: multi-tenancy (T-1 in review, then #54 → #56).
 
 ## Shipped (one line per PR)
 
@@ -45,12 +44,15 @@ feature: multi-tenancy.
   [overview-rework-plan](./specs/v1-product/overview-rework-plan.md)
 - PR #52 — widget panel: rail, Project pulse, calendar + agenda (#49, #50);
   ADR 0010
-- PR #57 — multi-tenancy PRD + technical design; tickets #53–#56
+- PR #57 — multi-tenancy specs (PRD + tech design, tickets #53→#56) +
+  session 37 log
+- PR #58 — Cloud Run + Neon deployment (#26), incl. the ungrouped-position
+  `NULLS NOT DISTINCT` migration
 
 ## In flight
 
-- **PR #58 (`feat/deploy`)** — Cloud Run + Neon deployment implementation for
-  #26; CI green at `52e8aae`, awaiting user review, deliberately unmerged.
+- **PR #59 (`feat/multi-tenancy-t1`)** — T-1 walking skeleton (#53):
+  per-user project list + create, review battery done, open.
 
 ## Open questions
 
@@ -58,9 +60,9 @@ feature: multi-tenancy.
 
 ## Next steps
 
-1. Review and merge PR #58. Its first successful `main` CI run activates CD;
-   then verify production health, OAuth, backup creation, and the restore
-   drill before closing #26.
-2. **Multi-tenancy T-1
-   ([#53](https://github.com/jeremy-dardour/wedding-planner/issues/53))**,
-   then #54 → #55 → #56.
+1. **Merge PR #59**, then **T-2
+   ([#54](https://github.com/jeremy-dardour/wedding-planner/issues/54))** —
+   the security boundary: enforcement on flat routes, project get/patch and
+   overview, honoring the constraints recorded in the
+   [tech design's Attach-on-login section](./specs/multi-tenancy/tech-design.md#attach-on-login);
+   then #55 → #56.

@@ -6,6 +6,7 @@ import {
   resetDatabase,
   testEntityManager,
 } from '@/__e2e-tests__/helpers/reset-database.helper';
+import { signIn } from '@/__e2e-tests__/helpers/sign-in.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
 import { Group } from '@/database/entities/group.entity';
 import { Project } from '@/database/entities/project.entity';
@@ -36,6 +37,7 @@ describe('Manual ordering E2E Tests', () => {
     em = testEntityManager(app);
     authorization = `Bearer ${await tokenFactory.validToken()}`;
     await resetDatabase(em);
+    await signIn(app, authorization);
 
     projectId = await createProject('Wedding Prep');
   });

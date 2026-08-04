@@ -1,7 +1,10 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 
+import { STUB_USER } from '@/testing/stub-auth';
+
 import type { CreateChecklistItemInput } from '@/api/hooks/use-create-checklist-item';
+import type { CreateProjectInput } from '@/api/hooks/use-create-project';
 import type { CreateStepInput } from '@/api/hooks/use-create-step';
 import type {
   ChecklistItem,
@@ -701,6 +704,48 @@ export function setupOverviewApi(initialOverview: Overview) {
           problemResponse(status, problem),
         ),
       );
+    },
+  };
+}
+
+/** GET/POST `/api/projects`, standing in for `setupOverviewApi`'s single-project GET when a test drives the list itself. */
+export function setupProjectsApi(initialProjects: Project[] = []) {
+  let projects = initialProjects;
+  let generatedId = 0;
+  let nextCreateError: {
+    status: number;
+    problem: Record<string, unknown>;
+  } | null = null;
+
+  server.use(
+    http.get(`${API_BASE}/api/projects`, () => HttpResponse.json(projects)),
+    http.post(`${API_BASE}/api/projects`, async ({ request }) => {
+      if (nextCreateError) {
+        const { status, problem } = nextCreateError;
+        nextCreateError = null;
+        return problemResponse(status, problem);
+      }
+
+      const input = (await request.json()) as CreateProjectInput;
+      const now = new Date().toISOString();
+      const created: Project = {
+        id: `mock-project-${++generatedId}`,
+        name: input.name,
+        eventDate: input.eventDate ?? null,
+        ownerId: STUB_USER.id,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      projects = [...projects, created];
+      return HttpResponse.json(created, { status: 201 });
+    }),
+  );
+
+  return {
+    getProjects: () => projects,
+    mockCreateProjectError(status: number, problem: Record<string, unknown>) {
+      nextCreateError = { status, problem };
     },
   };
 }

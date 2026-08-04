@@ -6,6 +6,7 @@ import {
   resetDatabase,
   testEntityManager,
 } from '@/__e2e-tests__/helpers/reset-database.helper';
+import { signIn } from '@/__e2e-tests__/helpers/sign-in.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
 import { Step } from '@/database/entities/step.entity';
 import { User } from '@/database/entities/user.entity';
@@ -43,6 +44,7 @@ describe('Project CRUD E2E Tests', () => {
     auth = `Bearer ${await tokenFactory.validToken()}`;
 
     await resetDatabase(em);
+    await signIn(app, auth);
   });
 
   afterEach(async () => {

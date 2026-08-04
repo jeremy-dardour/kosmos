@@ -1,6 +1,7 @@
 import { Seeder } from '@mikro-orm/seeder';
 
 import { Group } from '@/database/entities/group.entity';
+import { ProjectMember } from '@/database/entities/project-member.entity';
 import { Project } from '@/database/entities/project.entity';
 import { Step, StepOutcome } from '@/database/entities/step.entity';
 import { User } from '@/database/entities/user.entity';
@@ -35,6 +36,11 @@ interface WorkstreamSeed {
   steps: StepSeed[];
 }
 
+/** Overridable so a developer's own account can own the fixture project locally. */
+const DEFAULT_SEED_OWNER_EMAIL = 'mock@example.com';
+
+const MOCK_PARTNER_EMAIL = 'mock-partner@example.com';
+
 /**
  * Development fixture covering every lifecycle, step status and deadline
  * urgency band the overview renders. Dates are relative to the run date.
@@ -43,26 +49,29 @@ export class LocalDatabaseSeeder extends Seeder {
   async run(em: EntityManager): Promise<void> {
     await this.clear(em);
 
-    const jeremy = em.create(User, {
-      email: 'jeremy@example.com',
-      name: 'Jeremy',
-      avatarUrl: null,
-    });
-    const partner = em.create(User, {
-      email: 'partner@example.com',
-      name: 'Alex Doe',
-      avatarUrl: null,
-    });
-    const helper = em.create(User, {
-      email: 'helper@example.com',
-      name: 'Sam Reed',
-      avatarUrl: null,
-    });
+    const user = this.userFactory(em);
+    const jeremy = user('jeremy@example.com', 'Jeremy');
+    const partner = user('partner@example.com', 'Alex Doe');
+    const helper = user('helper@example.com', 'Sam Reed');
+    const owner = user(
+      process.env.SEED_OWNER_EMAIL ?? DEFAULT_SEED_OWNER_EMAIL,
+      'MockUser',
+    );
+    const mockPartner = user(MOCK_PARTNER_EMAIL, 'MockPartner');
 
     const project = em.create(Project, {
       name: 'Wedding Prep',
       eventDate: day(147),
+      owner,
     });
+    this.addMembers(em, project, [owner, jeremy, partner, helper]);
+
+    const secondProject = em.create(Project, {
+      name: 'Birthday Bash',
+      eventDate: day(38),
+      owner: mockPartner,
+    });
+    this.addMembers(em, secondProject, [mockPartner]);
 
     const logistics = em.create(Group, {
       project,
@@ -275,11 +284,57 @@ export class LocalDatabaseSeeder extends Seeder {
     await em.flush();
   }
 
-  /** The pointer is released first — `current_step_id` is ON DELETE RESTRICT. */
+  /**
+   * Two restrictive FKs dictate the order: `workstream.current_step_id` is
+   * released before its steps go, and users outlive the projects they own.
+   * Member rows cascade with the project.
+   */
   private async clear(em: EntityManager): Promise<void> {
     await em.nativeUpdate(Workstream, {}, { currentStep: null });
     await em.nativeDelete(Project, {});
     await em.nativeDelete(User, {});
+  }
+
+  /** Keeps one row per email — the seed owner may be one of the fixture users. */
+  private userFactory(
+    em: EntityManager,
+  ): (email: string, name: string) => User {
+    const byEmail = new Map<string, User>();
+
+    return (email, name) => {
+      const normalized = email.toLowerCase();
+      const existing = byEmail.get(normalized);
+
+      if (existing) {
+        return existing;
+      }
+
+      const created = em.create(User, {
+        email: normalized,
+        name,
+        avatarUrl: null,
+      });
+      byEmail.set(normalized, created);
+
+      return created;
+    };
+  }
+
+  /** The owner always has a member row, so membership alone answers "who can access". */
+  private addMembers(
+    em: EntityManager,
+    project: Project,
+    users: readonly User[],
+  ): void {
+    const distinctUsers = new Set(users);
+
+    for (const member of distinctUsers) {
+      em.create(ProjectMember, {
+        project,
+        email: member.email,
+        user: member,
+      });
+    }
   }
 
   private async createWorkstream(

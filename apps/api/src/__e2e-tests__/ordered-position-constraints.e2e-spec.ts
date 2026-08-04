@@ -1,9 +1,9 @@
 import { createTestApp } from '@/__e2e-tests__/helpers/create-app.helper';
+import { createProjectFixture } from '@/__e2e-tests__/helpers/project-fixture.helper';
 import {
   resetDatabase,
   testEntityManager,
 } from '@/__e2e-tests__/helpers/reset-database.helper';
-import { Project } from '@/database/entities/project.entity';
 import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 
@@ -25,7 +25,7 @@ describe('ordered position constraints', () => {
   });
 
   it('defers Step position uniqueness until a reorder transaction commits', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -64,7 +64,7 @@ describe('ordered position constraints', () => {
   });
 
   it('rejects a duplicate position within the ungrouped Workstream scope', async () => {
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
     em.create(Workstream, {
       project,
       position: 0,

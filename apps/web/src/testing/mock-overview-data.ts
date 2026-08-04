@@ -1,3 +1,5 @@
+import { STUB_USER } from '@/testing/stub-auth';
+
 import type {
   ChecklistItem,
   Group,
@@ -10,11 +12,14 @@ import type { NoteEntry } from '@/api/hooks/use-workstream-notes';
 
 const TS = '2026-07-01T00:00:00.000Z';
 
+/** Owned by the stub session user by default — override `ownerId` for a shared project. */
 export function project(overrides: Partial<Project> = {}): Project {
   return {
     id: 'p1',
     name: 'Our Wedding',
     eventDate: '2027-06-15',
+    ownerId: STUB_USER.id,
+    deletedAt: null,
     createdAt: TS,
     updatedAt: TS,
     ...overrides,

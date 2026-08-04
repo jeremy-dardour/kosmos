@@ -1,31 +1,53 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { Project } from '@/database/entities/project.entity';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
+import { conflict } from '@/modules/project/utils/conflict.util';
 
+import type { Env } from '@/app/config/env.schema';
+import type { User } from '@/database/entities/user.entity';
 import type { CreateProjectDto } from '@/modules/project/dtos/input/create-project.dto';
 import type { UpdateProjectDto } from '@/modules/project/dtos/input/update-project.dto';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly projectRepository: ProjectRepository) {}
+  /** Bounds accidents, not usage (PRD decision 10). */
+  private readonly maxOwnedProjects: number;
 
-  async findAll(): Promise<Project[]> {
-    return this.projectRepository.findAllOrdered();
+  constructor(
+    private readonly projectRepository: ProjectRepository,
+    configService: ConfigService<Env, true>,
+  ) {
+    this.maxOwnedProjects = configService.get('MAX_OWNED_PROJECTS', {
+      infer: true,
+    });
+  }
+
+  async findAllForActor(actor: User): Promise<Project[]> {
+    return this.projectRepository.findAllForActor(actor.id);
   }
 
   async findOne(id: string): Promise<Project> {
     return this.projectRepository.findOneOrFail(id);
   }
 
-  async create(dto: CreateProjectDto): Promise<Project> {
-    const project = new Project();
-    project.name = dto.name;
-    project.eventDate = dto.eventDate ?? null;
+  async create(dto: CreateProjectDto, actor: User): Promise<Project> {
+    return this.projectRepository.createOwned(actor, (ownedCount) => {
+      if (ownedCount >= this.maxOwnedProjects) {
+        conflict(
+          'project-limit-reached',
+          `You cannot own more than ${this.maxOwnedProjects} projects`,
+        );
+      }
 
-    await this.projectRepository.save(project);
+      const project = new Project();
+      project.name = dto.name;
+      project.eventDate = dto.eventDate ?? null;
+      project.owner = actor;
 
-    return project;
+      return project;
+    });
   }
 
   async update(id: string, dto: UpdateProjectDto): Promise<Project> {

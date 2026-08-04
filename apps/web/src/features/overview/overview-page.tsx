@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router';
 
 import { useOverview } from '@/api/hooks/use-overview';
-import { useProjects } from '@/api/hooks/use-projects';
 import { useAuthState } from '@/auth/auth-context';
 import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
 import { GroupManagerDialog } from '@/features/overview/group-manager-dialog';
@@ -46,8 +46,7 @@ function applyGroupFilter(
 export const OverviewPage = () => {
   const { t } = useTranslation();
 
-  const projects = useProjects();
-  const projectId = projects.data?.[0]?.id;
+  const { projectId } = useParams<{ projectId: string }>();
   const overview = useOverview(projectId);
   const authState = useAuthState();
 
@@ -84,8 +83,7 @@ export const OverviewPage = () => {
     return { ...overview.data, workstreams };
   }, [overview.data, ownerFilter, hiddenGroupIds]);
 
-  const isLoading =
-    projects.isPending || (Boolean(projectId) && overview.isPending);
+  const isLoading = overview.isPending;
 
   const handleGroupToggle = useCallback((groupId: string) => {
     setHiddenGroupIds((prev) => {
@@ -165,17 +163,6 @@ export const OverviewPage = () => {
 
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           {isLoading && <OverviewSkeleton />}
-
-          {!isLoading && !projectId && (
-            <div className="rounded-lg border border-dashed p-panel text-center">
-              <p className="text-sm font-medium">
-                {t('overview.noProject.title')}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t('overview.noProject.description')}
-              </p>
-            </div>
-          )}
 
           {filtered?.workstreams.length === 0 && (
             <div className="rounded-lg border border-dashed p-panel text-center">

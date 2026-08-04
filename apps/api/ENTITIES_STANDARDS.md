@@ -190,6 +190,9 @@ collisions — never write temporary positions in a first pass.
 
 ## Explicit indexes
 
-Add `@Index({ properties: ['step'] })` on child entities loaded by parent
-(Note, ChecklistItem). FK indexes are created automatically by the FK; add
-explicit indexes only for query patterns not covered by FKs.
+Postgres does **not** index FK columns automatically, and neither does this
+MikroORM setup — an FK column is only indexed when an explicit `@Index`
+declares it or a `@Unique` constraint leads with it (e.g. `step.workstream_id`
+via `(workstream_id, position)`). So declare `@Index` on every FK used to load
+children by parent (Note, ChecklistItem, ProjectMember) unless a unique
+constraint already covers it as the leading column.

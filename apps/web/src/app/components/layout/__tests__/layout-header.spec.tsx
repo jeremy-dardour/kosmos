@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LayoutHeader } from '@/app/components/layout/layout-header';
@@ -19,9 +20,11 @@ const setup = () => {
   });
 
   render(
-    <AuthContext value={authSystem}>
-      <LayoutHeader />
-    </AuthContext>,
+    <MemoryRouter initialEntries={['/projects/p1']}>
+      <AuthContext value={authSystem}>
+        <LayoutHeader />
+      </AuthContext>
+    </MemoryRouter>,
   );
 
   return auth;
@@ -62,10 +65,9 @@ describe('layoutHeader', () => {
     expect(auth.signOut).toHaveBeenCalledOnce();
   });
 
-  it('should navigate to home page when title is clicked', async () => {
-    const title = screen.getByText('app.logo.description');
-    await userEvent.click(title);
+  it('should link the title to the home page', () => {
+    const title = screen.getByRole('link', { name: 'app.logo.description' });
 
-    expect(globalThis.location.href).toBe('http://localhost:3000/');
+    expect(title).toHaveAttribute('href', '/');
   });
 });

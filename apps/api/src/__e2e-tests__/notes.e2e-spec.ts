@@ -2,13 +2,14 @@ import request from 'supertest';
 
 import { createTestApp } from '@/__e2e-tests__/helpers/create-app.helper';
 import { MockTokenFactory } from '@/__e2e-tests__/helpers/mock-token.factory';
+import { createProjectFixture } from '@/__e2e-tests__/helpers/project-fixture.helper';
 import {
   resetDatabase,
   testEntityManager,
 } from '@/__e2e-tests__/helpers/reset-database.helper';
+import { signIn } from '@/__e2e-tests__/helpers/sign-in.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
 import { Note } from '@/database/entities/note.entity';
-import { Project } from '@/database/entities/project.entity';
 import { Step, StepOutcome } from '@/database/entities/step.entity';
 import { User } from '@/database/entities/user.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
@@ -50,6 +51,7 @@ describe('Notes E2E Tests', () => {
     token = await tokenFactory.validToken();
 
     await resetDatabase(em);
+    await signIn(app, `Bearer ${token}`);
     await seedFixture();
   });
 
@@ -69,7 +71,7 @@ describe('Notes E2E Tests', () => {
       avatarUrl: null,
     });
 
-    const project = em.create(Project, { name: 'Wedding Prep' });
+    const project = createProjectFixture(em);
 
     const workstream = em.create(Workstream, {
       project,

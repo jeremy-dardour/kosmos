@@ -21,7 +21,7 @@ import {
   user,
   workstream,
 } from '@/testing/mock-overview-data';
-import { renderWithApp } from '@/testing/render-with-app';
+import { renderAtProjectRoute } from '@/testing/render-with-app';
 
 import type { Overview, Workstream } from '@/api/hooks/use-overview';
 
@@ -299,7 +299,7 @@ async function chooseOwnerFilter(
 async function renderPage(overview: Overview = overviewOf()) {
   const api = setupOverviewApi(overview);
   const agent = userEvent.setup();
-  const view = renderWithApp(<OverviewPage />);
+  const view = renderAtProjectRoute(<OverviewPage />);
   await screen.findByRole('complementary');
 
   return { api, agent, ...view };
@@ -389,7 +389,7 @@ describe('overview widget panel', () => {
       );
       unmount();
 
-      renderWithApp(<OverviewPage />);
+      renderAtProjectRoute(<OverviewPage />);
       await screen.findByRole('button', { name: 'Rename Catering' });
 
       expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
@@ -414,7 +414,7 @@ describe('overview widget panel', () => {
       );
       unmount();
 
-      renderWithApp(<OverviewPage />);
+      renderAtProjectRoute(<OverviewPage />);
       await screen.findByRole('complementary');
 
       expect(pulseHeader()).toHaveAttribute('aria-expanded', 'true');
