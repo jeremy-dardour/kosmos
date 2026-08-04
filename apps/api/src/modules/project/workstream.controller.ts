@@ -9,7 +9,6 @@ import {
   Patch,
   Post,
   Put,
-  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,8 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ActorInterceptor } from '@/app/auth/actor.interceptor';
-import { Actor } from '@/app/auth/decorators';
+import { CurrentUser } from '@/app/auth/decorators';
 import {
   ApiBadRequestResponse,
   ApiCommonErrorResponses,
@@ -43,7 +41,6 @@ import type { User } from '@/database/entities/user.entity';
 
 /** Reads go through the overview aggregate, so there is no GET here. */
 @Controller()
-@UseInterceptors(ActorInterceptor)
 @ApiTags('workstreams')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()
@@ -61,9 +58,9 @@ export class WorkstreamController {
   async create(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() dto: CreateWorkstreamDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamService.create(projectId, dto, actor);
+    return this.workstreamService.create(projectId, dto, currentUser);
   }
 
   @Put('projects/:projectId/workstream-order')
@@ -79,9 +76,13 @@ export class WorkstreamController {
   async reorder(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() dto: ReorderWorkstreamsDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<WorkstreamDto[]> {
-    return this.workstreamService.reorderWithinGroup(projectId, dto, actor);
+    return this.workstreamService.reorderWithinGroup(
+      projectId,
+      dto,
+      currentUser,
+    );
   }
 
   @Patch('workstreams/:id')
@@ -90,9 +91,9 @@ export class WorkstreamController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateWorkstreamDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamService.update(id, dto, actor);
+    return this.workstreamService.update(id, dto, currentUser);
   }
 
   @Post('workstreams/:id/advance')
@@ -106,9 +107,9 @@ export class WorkstreamController {
   async advance(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AdvanceWorkstreamDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamService.progress(id, dto, actor);
+    return this.workstreamService.progress(id, dto, currentUser);
   }
 
   @Post('workstreams/:id/steps')
@@ -121,9 +122,9 @@ export class WorkstreamController {
   async createStep(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateStepDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamStructureService.createStep(id, dto, actor);
+    return this.workstreamStructureService.createStep(id, dto, currentUser);
   }
 
   @Put('workstreams/:id/step-order')
@@ -139,9 +140,9 @@ export class WorkstreamController {
   async reorderSteps(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReorderStepsDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<WorkstreamDto> {
-    return this.workstreamStructureService.reorderSteps(id, dto, actor);
+    return this.workstreamStructureService.reorderSteps(id, dto, currentUser);
   }
 
   @Delete('workstreams/:id')
@@ -153,8 +154,8 @@ export class WorkstreamController {
   @ApiNoContentResponse()
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<void> {
-    await this.workstreamService.remove(id, actor);
+    await this.workstreamService.remove(id, currentUser);
   }
 }

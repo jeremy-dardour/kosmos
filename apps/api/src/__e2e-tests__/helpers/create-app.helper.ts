@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
+import { SkipUserResolution } from '@/app/auth/decorators';
 import { OidcDiscoveryService } from '@/app/auth/strategies/jwt/oidc-discovery.service';
 import { createValidationPipe } from '@/app/config/validation.config';
 import { AllExceptionsFilter } from '@/app/filters/all-exceptions.filter';
@@ -11,6 +12,8 @@ import { AppModule } from '@/app.module';
 import type { INestApplication } from '@nestjs/common';
 import type { TestingModule } from '@nestjs/testing';
 
+// Exercises the auth guard alone: no persisted user may exist yet.
+@SkipUserResolution()
 @Controller('__e2e__/protected')
 class ProtectedE2eController {
   @Get()

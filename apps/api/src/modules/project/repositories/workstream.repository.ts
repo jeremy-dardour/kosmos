@@ -8,7 +8,7 @@ import {
   lockWorkstreamGraph,
   WORKSTREAM_GRAPH,
 } from '@/modules/project/repositories/lock-workstream-graph.query';
-import { memberProject } from '@/modules/project/repositories/membership.query';
+import { projectVisibleTo } from '@/modules/project/repositories/membership.query';
 import { countNotesByStep } from '@/modules/project/repositories/note-count.query';
 
 import type { NoteCountsByStep } from '@/modules/project/types/note-counts.type';
@@ -19,9 +19,9 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
     super(em, Workstream);
   }
 
-  async findDetails(id: string, actorId: string): Promise<Workstream> {
+  async findDetails(id: string, currentUserId: string): Promise<Workstream> {
     return this.findOneOrFail(
-      { id, project: memberProject(actorId) },
+      { id, project: projectVisibleTo(currentUserId) },
       { populate: [...WORKSTREAM_GRAPH], refresh: true },
     );
   }
@@ -33,10 +33,13 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
    * `disableIdentityMap` keeps the partial load out of the identity map the
    * subsequent locked mutation re-reads through.
    */
-  async findProjectIdForActor(id: string, actorId: string): Promise<string> {
+  async findProjectIdForUser(
+    id: string,
+    currentUserId: string,
+  ): Promise<string> {
     const workstream = await this.em.findOne(
       Workstream,
-      { id, project: memberProject(actorId) },
+      { id, project: projectVisibleTo(currentUserId) },
       { fields: ['project'], disableIdentityMap: true },
     );
     if (!workstream) {
@@ -47,13 +50,13 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
   }
 
   /** Same scoped resolution, reached from one of the workstream's steps. */
-  async findProjectIdForActorByStep(
+  async findProjectIdForUserByStep(
     stepId: string,
-    actorId: string,
+    currentUserId: string,
   ): Promise<string> {
     const workstream = await this.em.findOne(
       Workstream,
-      { steps: { id: stepId }, project: memberProject(actorId) },
+      { steps: { id: stepId }, project: projectVisibleTo(currentUserId) },
       { fields: ['project'], disableIdentityMap: true },
     );
     if (!workstream) {
@@ -80,9 +83,12 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
   }
 
   /** Inserts the workstream at the top of its group scope, shifting siblings down. */
-  async insertAtTop(workstream: Workstream, actorId: string): Promise<void> {
+  async insertAtTop(
+    workstream: Workstream,
+    currentUserId: string,
+  ): Promise<void> {
     await this.em.transactional(async (em) => {
-      await lockProjectOrder(em, workstream.project.id, actorId);
+      await lockProjectOrder(em, workstream.project.id, currentUserId);
       await this.openGapAtTop(
         em,
         workstream.project.id,
@@ -103,13 +109,13 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
   async moveToGroup(
     workstream: Workstream,
     sourceGroupId: string | null,
-    actorId: string,
+    currentUserId: string,
   ): Promise<void> {
     const projectId = workstream.project.id;
     const sourcePosition = workstream.position;
 
     await this.em.transactional(async (em) => {
-      await lockProjectOrder(em, projectId, actorId);
+      await lockProjectOrder(em, projectId, currentUserId);
       await this.openGapAtTop(em, projectId, workstream.group?.id ?? null);
       await this.closeGapAfter(em, projectId, sourceGroupId, sourcePosition);
 
@@ -127,11 +133,11 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
   async reorderScope(
     projectId: string,
     groupId: string | null,
-    actorId: string,
+    currentUserId: string,
     order: (scope: Workstream[]) => Workstream[],
   ): Promise<Workstream[]> {
     return this.em.transactional(async (em) => {
-      await lockProjectOrder(em, projectId, actorId);
+      await lockProjectOrder(em, projectId, currentUserId);
       const scope = await em.find(
         Workstream,
         { project: projectId, group: groupId },
@@ -184,11 +190,11 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
    */
   async updateLockedDetails(
     id: string,
-    actorId: string,
+    currentUserId: string,
     apply: (workstream: Workstream) => void,
   ): Promise<Workstream> {
     return this.em.transactional(async (em) => {
-      const workstream = await lockWorkstreamGraph(em, id, actorId);
+      const workstream = await lockWorkstreamGraph(em, id, currentUserId);
 
       apply(workstream);
       workstream.touch();
@@ -198,11 +204,11 @@ export class WorkstreamRepository extends EntityRepository<Workstream> {
     });
   }
 
-  async remove(id: string, actorId: string): Promise<void> {
+  async remove(id: string, currentUserId: string): Promise<void> {
     await this.em.transactional(async (em) => {
       const workstream = await em.findOneOrFail(Workstream, {
         id,
-        project: memberProject(actorId),
+        project: projectVisibleTo(currentUserId),
       });
 
       // The current-step FK is restrictive, so release it before cascading.

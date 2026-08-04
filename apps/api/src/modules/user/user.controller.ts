@@ -8,10 +8,13 @@ import {
 } from '@nestjs/swagger';
 
 import { AuthUserProvisionerService } from '@/app/auth/auth-user-provisioner.service';
+import { SkipUserResolution } from '@/app/auth/decorators';
 import { CurrentUserDto } from '@/modules/user/dtos/output/current-user.dto';
 
 import type { AuthenticatedRequest } from '@/app/auth/types/token.types';
 
+// `/users/me` provisions the very row user resolution would look up.
+@SkipUserResolution()
 @Controller('users')
 @ApiTags('Users')
 @ApiBearerAuth()

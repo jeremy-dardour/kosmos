@@ -23,7 +23,7 @@ function createRequest(app: INestApplication): TestAgent<SuperTestType> {
   return request(app.getHttpServer() as never);
 }
 
-// These actors are in `.env.e2e`'s AUTH_ALLOWED_EMAILS so their per-email
+// These users are in `.env.e2e`'s AUTH_ALLOWED_EMAILS so their per-email
 // tokens pass the OIDC allow-list check.
 const TENANT_A_EMAIL = 'tenant-a@example.com';
 const TENANT_B_EMAIL = 'tenant-b@example.com';
@@ -78,7 +78,7 @@ describe('Project Tenancy E2E Tests', () => {
     return response.body as ProjectDto[];
   }
 
-  it('scopes GET /projects to the projects the actor owns', async () => {
+  it('scopes GET /projects to the projects the currentUser owns', async () => {
     const authA = await tokenFor(TENANT_A_EMAIL);
     const authB = await tokenFor(TENANT_B_EMAIL);
     await signIn(app, authA);
@@ -93,7 +93,7 @@ describe('Project Tenancy E2E Tests', () => {
     expect(listB.map((p) => p.id)).toEqual([projectB.id]);
   });
 
-  it('creates the project owned by the actor and joins them as a member', async () => {
+  it('creates the project owned by the currentUser and joins them as a member', async () => {
     const auth = await tokenFor(TENANT_A_EMAIL);
     const currentUser = await signIn(app, auth);
 
@@ -151,7 +151,7 @@ describe('Project Tenancy E2E Tests', () => {
     expect(list.map((p) => p.id)).toContain(project.id);
   });
 
-  it('returns 401 for GET /projects when the actor email has no user row', async () => {
+  it('returns 401 for GET /projects when the currentUser email has no user row', async () => {
     const auth = await tokenFor(STALE_EMAIL);
 
     await createRequest(app)

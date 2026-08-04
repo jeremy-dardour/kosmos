@@ -138,3 +138,16 @@ See [ENTITIES_STANDARDS.md](./ENTITIES_STANDARDS.md).
 
 - E2E tests: `src/__e2e-tests__/`, named `*.e2e-spec.ts`, serial execution, real PostgreSQL
 - Vitest configs: `vitest.config.mts` (unit) and `vitest.e2e.config.mts` (e2e)
+
+## Tenancy enforcement
+
+- Every route that reads or writes project data embeds the membership
+  predicate (`projectVisibleTo(currentUserId)`) at the resource's FK depth to
+  project; a non-member gets a 404 indistinguishable from a nonexistent id.
+- `CurrentUserInterceptor` is bound globally; opt out only with
+  `@SkipUserResolution()` and a reason of the same weight as `/users/me`
+  (the route provisions the row resolution requires).
+- **Every new or changed route must have a tenancy e2e assertion**: add it to
+  the `ROUTES` table in `tenancy-enforcement.e2e-spec.ts` (non-member 404 +
+  soft-deleted 404), or add a justified exemption there. The sweep's coverage
+  meta-test fails until one of the two happens.

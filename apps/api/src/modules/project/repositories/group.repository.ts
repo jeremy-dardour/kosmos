@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 
 import { Group } from '@/database/entities/group.entity';
 import { lockProjectOrder } from '@/modules/project/repositories/lock-project-order.query';
-import { memberProject } from '@/modules/project/repositories/membership.query';
+import { projectVisibleTo } from '@/modules/project/repositories/membership.query';
 
 import type { Project } from '@/database/entities/project.entity';
 
@@ -27,9 +27,9 @@ export class GroupRepository extends EntityRepository<Group> {
     });
   }
 
-  /** The flat-route root load: the group's project must admit the actor. */
-  async findOneForActor(id: string, actorId: string): Promise<Group> {
-    return this.findOneOrFail({ id, project: memberProject(actorId) });
+  /** The flat-route root load: the group's project must admit the currentUser. */
+  async findOneForUser(id: string, currentUserId: string): Promise<Group> {
+    return this.findOneOrFail({ id, project: projectVisibleTo(currentUserId) });
   }
 
   async save(group: Group): Promise<void> {
@@ -38,9 +38,9 @@ export class GroupRepository extends EntityRepository<Group> {
   }
 
   /** Appends the group after the project's existing groups. */
-  async insertAtEnd(group: Group, actorId: string): Promise<void> {
+  async insertAtEnd(group: Group, currentUserId: string): Promise<void> {
     await this.em.transactional(async (em) => {
-      await lockProjectOrder(em, group.project.id, actorId);
+      await lockProjectOrder(em, group.project.id, currentUserId);
 
       // Deletion leaves holes in the sequence, so a row count could collide
       // with a surviving position.
@@ -62,11 +62,11 @@ export class GroupRepository extends EntityRepository<Group> {
    */
   async reorder(
     projectId: string,
-    actorId: string,
+    currentUserId: string,
     order: (groups: Group[]) => Group[],
   ): Promise<Group[]> {
     return this.em.transactional(async (em) => {
-      await lockProjectOrder(em, projectId, actorId);
+      await lockProjectOrder(em, projectId, currentUserId);
       const groups = await em.find(
         Group,
         { project: projectId },

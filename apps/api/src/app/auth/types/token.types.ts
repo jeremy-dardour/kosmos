@@ -21,7 +21,7 @@ export interface AuthenticatedUser {
   avatarUrl?: string;
 }
 
-export interface ActorRequest extends AuthenticatedRequest {
-  /** Stashed by {@link ActorInterceptor}; read via the `@Actor()` decorator. */
-  actor?: User;
+export interface CurrentUserRequest extends AuthenticatedRequest {
+  /** Stashed by {@link CurrentUserInterceptor}; read via the `@CurrentUser()` decorator. */
+  currentUser?: User;
 }

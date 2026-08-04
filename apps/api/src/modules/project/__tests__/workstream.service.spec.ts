@@ -10,8 +10,8 @@ import type { Collection } from '@mikro-orm/core';
 
 const T0 = new Date('2026-07-01');
 
-const actor = new User();
-actor.id = 'actor-1';
+const currentUser = new User();
+currentUser.id = 'currentUser-1';
 
 function buildGroup(id: string): Group {
   const group = new Group();
@@ -72,13 +72,13 @@ describe('workstreamService.update — group scope', () => {
     const workstream = buildWorkstream(buildGroup('group-1'));
     const { service, workstreamRepo } = createService(workstream, target);
 
-    await service.update('ws-1', { groupId: 'group-2' }, actor);
+    await service.update('ws-1', { groupId: 'group-2' }, currentUser);
 
     expect(workstream.group).toBe(target);
     expect(workstreamRepo.moveToGroup).toHaveBeenCalledWith(
       workstream,
       'group-1',
-      actor.id,
+      currentUser.id,
     );
     expect(workstreamRepo.save).not.toHaveBeenCalled();
   });
@@ -87,13 +87,13 @@ describe('workstreamService.update — group scope', () => {
     const workstream = buildWorkstream(buildGroup('group-1'));
     const { service, workstreamRepo } = createService(workstream);
 
-    await service.update('ws-1', { groupId: null }, actor);
+    await service.update('ws-1', { groupId: null }, currentUser);
 
     expect(workstream.group).toBeNull();
     expect(workstreamRepo.moveToGroup).toHaveBeenCalledWith(
       workstream,
       'group-1',
-      actor.id,
+      currentUser.id,
     );
   });
 
@@ -105,7 +105,7 @@ describe('workstreamService.update — group scope', () => {
     await service.update(
       'ws-1',
       { name: 'Catering & Bar', groupId: 'group-1' },
-      actor,
+      currentUser,
     );
 
     expect(workstreamRepo.save).toHaveBeenCalledWith(workstream);
@@ -116,7 +116,7 @@ describe('workstreamService.update — group scope', () => {
     const workstream = buildWorkstream(buildGroup('group-1'));
     const { service, workstreamRepo } = createService(workstream);
 
-    await service.update('ws-1', { name: 'Catering & Bar' }, actor);
+    await service.update('ws-1', { name: 'Catering & Bar' }, currentUser);
 
     expect(workstreamRepo.save).toHaveBeenCalledWith(workstream);
     expect(workstreamRepo.moveToGroup).not.toHaveBeenCalled();

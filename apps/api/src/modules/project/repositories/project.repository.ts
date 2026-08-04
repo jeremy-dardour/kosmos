@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 
 import { ProjectMember } from '@/database/entities/project-member.entity';
 import { Project } from '@/database/entities/project.entity';
-import { memberProject } from '@/modules/project/repositories/membership.query';
+import { projectVisibleTo } from '@/modules/project/repositories/membership.query';
 
 import type { User } from '@/database/entities/user.entity';
 
@@ -18,12 +18,12 @@ export class ProjectRepository extends EntityRepository<Project> {
    * A soft-deleted project is invisible to its members; only its owner keeps
    * seeing it, so it can be restored.
    */
-  async findAllForActor(actorId: string): Promise<Project[]> {
+  async findAllForUser(currentUserId: string): Promise<Project[]> {
     return this.find(
       {
         $or: [
-          { deletedAt: null, members: { user: actorId } },
-          { deletedAt: { $ne: null }, owner: actorId },
+          { deletedAt: null, members: { user: currentUserId } },
+          { deletedAt: { $ne: null }, owner: currentUserId },
         ],
       },
       { orderBy: { createdAt: 'asc' } },
@@ -35,8 +35,8 @@ export class ProjectRepository extends EntityRepository<Project> {
    * project 404s even for its owner — content routes never see the trash
    * (only the list above and T-4's restore do).
    */
-  async findOneForActor(id: string, actorId: string): Promise<Project> {
-    return this.findOneOrFail({ id, ...memberProject(actorId) });
+  async findOneForUser(id: string, currentUserId: string): Promise<Project> {
+    return this.findOneOrFail({ id, ...projectVisibleTo(currentUserId) });
   }
 
   /**

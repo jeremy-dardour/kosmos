@@ -7,7 +7,7 @@ import { ProjectMember } from '@/database/entities/project-member.entity';
 import { Project } from '@/database/entities/project.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 import { WORKSTREAM_GRAPH } from '@/modules/project/repositories/lock-workstream-graph.query';
-import { memberProject } from '@/modules/project/repositories/membership.query';
+import { projectVisibleTo } from '@/modules/project/repositories/membership.query';
 import { countNotesByStep } from '@/modules/project/repositories/note-count.query';
 
 import type { User } from '@/database/entities/user.entity';
@@ -19,7 +19,7 @@ export class OverviewRepository {
 
   async load(
     projectId: string,
-    actorId: string,
+    currentUserId: string,
   ): Promise<{
     project: Project;
     groups: Group[];
@@ -31,7 +31,7 @@ export class OverviewRepository {
       async (em) => {
         const project = await em.findOneOrFail(Project, {
           id: projectId,
-          ...memberProject(actorId),
+          ...projectVisibleTo(currentUserId),
         });
         const groups = await em.find(
           Group,

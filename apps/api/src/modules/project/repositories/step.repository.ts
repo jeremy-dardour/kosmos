@@ -21,11 +21,11 @@ export class StepRepository extends EntityRepository<Step> {
    */
   async updateLocked(
     id: string,
-    actorId: string,
+    currentUserId: string,
     apply: ApplyToStep,
   ): Promise<{ workstream: Workstream; step: Step }> {
     return this.em.transactional(async (em) => {
-      const located = await lockWorkstreamGraphOfStep(em, id, actorId);
+      const located = await lockWorkstreamGraphOfStep(em, id, currentUserId);
 
       apply(located.step, located.workstream);
       located.workstream.touch();
@@ -38,14 +38,14 @@ export class StepRepository extends EntityRepository<Step> {
   /** Same lock as `updateLocked`; `apply` renumbers the siblings left behind. */
   async removeLocked(
     id: string,
-    actorId: string,
+    currentUserId: string,
     apply: ApplyToStep,
   ): Promise<Workstream> {
     return this.em.transactional(async (em) => {
       const { workstream, step } = await lockWorkstreamGraphOfStep(
         em,
         id,
-        actorId,
+        currentUserId,
       );
 
       apply(step, workstream);

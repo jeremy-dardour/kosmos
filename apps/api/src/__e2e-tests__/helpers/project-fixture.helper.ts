@@ -6,8 +6,8 @@ import { User } from '@/database/entities/user.entity';
 
 import type { SqlEntityManager } from '@mikro-orm/postgresql';
 
-/** The email `MockTokenFactory.validToken()` mints, i.e. the default actor. */
-export const DEFAULT_ACTOR_EMAIL = 'e2e@example.com';
+/** The email `MockTokenFactory.validToken()` mints, i.e. the default currentUser. */
+export const DEFAULT_USER_EMAIL = 'e2e@example.com';
 
 /** Joins `user` to the project — owner assignment 422s for non-members. */
 export function addJoinedMember(
@@ -27,7 +27,7 @@ export function addJoinedMember(
  * care who it is, so each fixture gets its own throwaway owner.
  *
  * Content routes are membership-scoped, so the fixture also writes a member
- * row for each `memberEmails` entry (default: the default actor). A row is
+ * row for each `memberEmails` entry (default: the default current user). A row is
  * linked to its user when that user already exists; otherwise it is left
  * pending and attach-on-login claims it at the next `signIn` for that email.
  */
@@ -51,7 +51,7 @@ export async function createProjectFixture(
     owner,
   });
 
-  const memberEmails = data.memberEmails ?? [DEFAULT_ACTOR_EMAIL];
+  const memberEmails = data.memberEmails ?? [DEFAULT_USER_EMAIL];
   for (const email of memberEmails) {
     em.create(ProjectMember, {
       project,

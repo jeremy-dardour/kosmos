@@ -54,22 +54,22 @@ export class WorkstreamStructureService {
   async createStep(
     workstreamId: string,
     dto: CreateStepDto,
-    actor: User,
+    currentUser: User,
   ): Promise<WorkstreamDto> {
     const owner = dto.ownerId
       ? await resolveMemberOwner(
           this.projectRepository,
           dto.ownerId,
-          await this.workstreamRepository.findProjectIdForActor(
+          await this.workstreamRepository.findProjectIdForUser(
             workstreamId,
-            actor.id,
+            currentUser.id,
           ),
         )
       : null;
 
     const workstream = await this.workstreamRepository.updateLockedDetails(
       workstreamId,
-      actor.id,
+      currentUser.id,
       (lockedWorkstream) => {
         assertInsertablePosition(lockedWorkstream, dto.position);
         openPositionGap(lockedWorkstream.getSteps(), dto.position);
@@ -90,22 +90,22 @@ export class WorkstreamStructureService {
   async updateStep(
     id: string,
     dto: UpdateStepDto,
-    actor: User,
+    currentUser: User,
   ): Promise<StepDto> {
     const owner = dto.ownerId
       ? await resolveMemberOwner(
           this.projectRepository,
           dto.ownerId,
-          await this.workstreamRepository.findProjectIdForActorByStep(
+          await this.workstreamRepository.findProjectIdForUserByStep(
             id,
-            actor.id,
+            currentUser.id,
           ),
         )
       : null;
 
     const { workstream, step } = await this.stepRepository.updateLocked(
       id,
-      actor.id,
+      currentUser.id,
       (lockedStep) => {
         assertStepEditable(lockedStep);
 
@@ -134,11 +134,11 @@ export class WorkstreamStructureService {
   async reorderSteps(
     workstreamId: string,
     dto: ReorderStepsDto,
-    actor: User,
+    currentUser: User,
   ): Promise<WorkstreamDto> {
     const workstream = await this.workstreamRepository.updateLockedDetails(
       workstreamId,
-      actor.id,
+      currentUser.id,
       (lockedWorkstream) => {
         assertPipelineMutable(lockedWorkstream);
 
@@ -169,10 +169,10 @@ export class WorkstreamStructureService {
     return this.buildWorkstreamDto(workstream);
   }
 
-  async removeStep(id: string, actor: User): Promise<WorkstreamDto> {
+  async removeStep(id: string, currentUser: User): Promise<WorkstreamDto> {
     const workstream = await this.stepRepository.removeLocked(
       id,
-      actor.id,
+      currentUser.id,
       (step, lockedWorkstream) => {
         assertStepDeletable(lockedWorkstream, step);
         closePositionGap(lockedWorkstream.getSteps(), step.position);
@@ -185,11 +185,11 @@ export class WorkstreamStructureService {
   async createChecklistItem(
     stepId: string,
     dto: CreateChecklistItemDto,
-    actor: User,
+    currentUser: User,
   ): Promise<ChecklistItemDto> {
     const created = await this.checklistItemRepository.createLocked(
       stepId,
-      actor.id,
+      currentUser.id,
       (step) => {
         assertStepEditable(step);
 
@@ -209,11 +209,11 @@ export class WorkstreamStructureService {
   async updateChecklistItem(
     id: string,
     dto: UpdateChecklistItemDto,
-    actor: User,
+    currentUser: User,
   ): Promise<ChecklistItemDto> {
     const item = await this.checklistItemRepository.updateLocked(
       id,
-      actor.id,
+      currentUser.id,
       (lockedItem) => {
         assertStepEditable(lockedItem.step);
 
@@ -229,12 +229,16 @@ export class WorkstreamStructureService {
     return toChecklistItemDto(item);
   }
 
-  async removeChecklistItem(id: string, actor: User): Promise<void> {
-    await this.checklistItemRepository.removeLocked(id, actor.id, (item) => {
-      assertStepEditable(item.step);
+  async removeChecklistItem(id: string, currentUser: User): Promise<void> {
+    await this.checklistItemRepository.removeLocked(
+      id,
+      currentUser.id,
+      (item) => {
+        assertStepEditable(item.step);
 
-      closePositionGap(item.step.getChecklistItems(), item.position);
-    });
+        closePositionGap(item.step.getChecklistItems(), item.position);
+      },
+    );
   }
 
   /** The locked mutation already returns the loaded graph — no re-fetch. */

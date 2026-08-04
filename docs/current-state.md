@@ -5,7 +5,7 @@ change — it always reflects _now_. History lives in
 [docs/sessions/](./sessions/); one line per merged PR below, details in the
 linked docs.
 
-_Last updated: 2026-08-04 (session 40)_
+_Last updated: 2026-08-04 (session 41)_
 
 ## What this is
 
@@ -21,15 +21,15 @@ overview where everything is edited inline. The specs are the source of truth:
 - [Auth PRD](./specs/auth/PRD.md) — Google GIS + `.env` allow-list
 - [Multi-tenancy PRD](./specs/multi-tenancy/PRD.md) +
   [tech design](./specs/multi-tenancy/tech-design.md) — in progress: T-1
-  (#53) shipped, T-2→T-4 (#54→#56) remaining
+  (#53) shipped, T-2 (#54) in review, T-3/T-4 (#55/#56) remaining
 
 ## Phase
 
 **V1 is feature-complete and deployed** — Cloud Run + Neon shipped via PR #58,
 [#26](https://github.com/jeremy-dardour/kosmos/issues/26) closed.
-Current feature: multi-tenancy (T-1 shipped, then #54 → #56). Deployment
-hardening shipped in PR #60; the Kosmos product and infrastructure rename is in
-progress.
+Current feature: multi-tenancy (T-1 shipped, T-2 in review, then #55 → #56).
+Deployment hardening shipped in PR #60; the Kosmos rename including the
+external cutover is complete.
 
 ## Shipped (one line per PR)
 
@@ -59,11 +59,21 @@ progress.
 
 ## In flight
 
-- Nothing — the Kosmos rename **including the external cutover is complete**:
-  repository `jeremy-dardour/kosmos`, Cloud Run service `kosmos` (512Mi,
-  serving), `kosmos-runtime` SA, WIF on the new slug, OAuth rebranded,
-  CD + nightly backup verified, old-name resources deleted. The GCP project
-  keeps its immutable ID (see [provisioning](./provisioning.md)).
+- **[PR #61](https://github.com/jeremy-dardour/kosmos/pull/61)** — T-2
+  (#54): membership enforcement on every route (non-member → 404), member-only
+  users directory, `owner-not-member` 422, web not-found state; full review
+  battery complete and all validation green. Review comments actioned in
+  session 41: current-user naming (`@CurrentUser()`, `projectVisibleTo` with
+  named `assertProjectVisible`/`assertWorkstreamVisible` pre-reads), globally
+  bound resolution interceptor with `@SkipUserResolution()` opt-out, and a
+  sweep-coverage meta-test guarding the tenancy e2e matrix. Rebased onto the
+  Kosmos-rebranded `main`.
+
+The Kosmos rename **including the external cutover is complete**: repository
+`jeremy-dardour/kosmos`, Cloud Run service `kosmos` (512Mi, serving),
+`kosmos-runtime` SA, WIF on the new slug, OAuth rebranded, CD + nightly backup
+verified, old-name resources deleted. The GCP project keeps its immutable ID
+(see [provisioning](./provisioning.md)).
 
 ## Open questions
 
@@ -73,9 +83,6 @@ progress.
 
 ## Next steps
 
-1. **T-2
-   ([#54](https://github.com/jeremy-dardour/kosmos/issues/54))** — the
-   security boundary: enforcement on flat routes, project get/patch and
-   overview, honoring the constraints recorded in the
-   [tech design's Attach-on-login section](./specs/multi-tenancy/tech-design.md#attach-on-login);
-   then #55 → #56.
+1. Review and merge **T-2
+   ([PR #61](https://github.com/jeremy-dardour/kosmos/pull/61))**; then
+   build T-3 (#55) followed by T-4 (#56).

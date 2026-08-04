@@ -1,3 +1,6 @@
+import { RequestMethod } from '@nestjs/common';
+import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
+import { ModulesContainer } from '@nestjs/core';
 import request from 'supertest';
 
 import { createTestApp } from '@/__e2e-tests__/helpers/create-app.helper';
@@ -8,6 +11,7 @@ import {
 } from '@/__e2e-tests__/helpers/reset-database.helper';
 import { signIn } from '@/__e2e-tests__/helpers/sign-in.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
+import { IS_PUBLIC_KEY, SKIP_USER_RESOLUTION_KEY } from '@/app/auth/decorators';
 import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { Group } from '@/database/entities/group.entity';
 import { Note } from '@/database/entities/note.entity';
@@ -51,8 +55,8 @@ interface Fixture {
   futureStepIds: [string, string];
   checklistItemId: string;
   noteId: string;
-  actorAUserId: string;
-  actorBUserId: string;
+  tenantAUserId: string;
+  tenantBUserId: string;
 }
 
 interface RouteCase {
@@ -163,7 +167,7 @@ const ROUTES: readonly RouteCase[] = [
     memberStatus: 204,
   },
   {
-    name: 'GET /workstreams/:id/notes',
+    name: 'GET /workstreams/:workstreamId/notes',
     issue: (agent, f) =>
       agent.get(`/workstreams/${f.activeWorkstreamId}/notes`),
     memberStatus: 200,
@@ -267,17 +271,17 @@ describe('Tenancy Enforcement E2E Tests', () => {
   /**
    * Project A (owner: user A) with a group, a started workstream carrying
    * past/current/future steps, a checklist item, a note by A and a pending
-   * invite; plus B's own project so the non-member is a fully valid actor.
+   * invite; plus B's own project so the non-member is a fully valid current user.
    */
   async function buildFixture(
-    actorAUserId: string,
-    actorBUserId: string,
+    tenantAUserId: string,
+    tenantBUserId: string,
   ): Promise<Fixture> {
     const projectId = await createProjectAs(authA, 'Tenant A Wedding');
     await createProjectAs(authB, 'Tenant B Wedding');
 
     const project = await em.findOneOrFail(Project, { id: projectId });
-    const actorA = await em.findOneOrFail(User, { id: actorAUserId });
+    const tenantA = await em.findOneOrFail(User, { id: tenantAUserId });
 
     em.create(ProjectMember, { project, email: PENDING_EMAIL, user: null });
 
@@ -333,7 +337,7 @@ describe('Tenancy Enforcement E2E Tests', () => {
 
     const note = em.create(Note, {
       step: current,
-      author: actorA,
+      author: tenantA,
       content: 'Caterer shortlist started',
     });
 
@@ -350,8 +354,8 @@ describe('Tenancy Enforcement E2E Tests', () => {
       futureStepIds: [future1.id, future2.id],
       checklistItemId: checklistItem.id,
       noteId: note.id,
-      actorAUserId,
-      actorBUserId,
+      tenantAUserId,
+      tenantBUserId,
     };
   }
 
@@ -410,19 +414,19 @@ describe('Tenancy Enforcement E2E Tests', () => {
         .expect(200);
 
       const users = (response.body as { users: { id: string }[] }).users;
-      expect(users.map((user) => user.id)).toEqual([fixture.actorAUserId]);
+      expect(users.map((user) => user.id)).toEqual([fixture.tenantAUserId]);
     });
 
     it('accepts a joined member as workstream owner', async () => {
       await createRequest()
         .post(`/projects/${fixture.projectId}/workstreams`)
         .set('Authorization', authA)
-        .send({ name: 'Music', icon: '🎶', ownerId: fixture.actorAUserId })
+        .send({ name: 'Music', icon: '🎶', ownerId: fixture.tenantAUserId })
         .expect(201);
     });
 
     it.each([
-      ['a non-member user', () => fixture.actorBUserId],
+      ['a non-member user', () => fixture.tenantBUserId],
       ['an unknown id', () => '11111111-1111-4111-8111-111111111111'],
     ])(
       'rejects %s as workstream owner with 422 owner-not-member',
@@ -443,7 +447,7 @@ describe('Tenancy Enforcement E2E Tests', () => {
       const response = await createRequest()
         .patch(`/steps/${fixture.futureStepIds[0]}`)
         .set('Authorization', authA)
-        .send({ ownerId: fixture.actorBUserId })
+        .send({ ownerId: fixture.tenantBUserId })
         .expect(422);
 
       expect((response.body as { type: string }).type).toMatch(
@@ -451,4 +455,91 @@ describe('Tenancy Enforcement E2E Tests', () => {
       );
     });
   });
+
+  describe('sweep coverage', () => {
+    /**
+     * Routes deliberately outside the non-member 404 matrix. Adding a route
+     * here needs the same justification as these: either it exposes no
+     * project-scoped resource, or its tenancy proof lives in a feature spec.
+     */
+    const EXEMPT = new Set([
+      // Membership-scoped list/create — no per-id 404 to assert; scoping is
+      // proven in project-tenancy.e2e-spec.ts.
+      'GET /projects',
+      'POST /projects',
+      // Dev-only static info, no tenant data.
+      'GET /.well-known/swagger-credentials',
+    ]);
+
+    it('covers every guarded route in the non-member matrix', () => {
+      const swept = new Set(ROUTES.map((route) => route.name));
+      const missing = listGuardedRoutes(app).filter(
+        (route) => !swept.has(route) && !EXEMPT.has(route),
+      );
+
+      expect(missing).toEqual([]);
+    });
+  });
 });
+
+/**
+ * Every registered route that runs with an authenticated, resolved user —
+ * i.e. everything not opted out via `@Public()` or `@SkipUserResolution()`.
+ * Read from controller metadata so a new route fails this sweep until it is
+ * added to `ROUTES` (or deliberately exempted above).
+ */
+type ControllerClass = (new () => unknown) & {
+  prototype: Record<string, unknown>;
+};
+
+function listGuardedRoutes(application: INestApplication): string[] {
+  const routes: string[] = [];
+
+  for (const module of application.get(ModulesContainer).values()) {
+    for (const wrapper of module.controllers.values()) {
+      routes.push(
+        ...guardedRoutesOf(wrapper.metatype as ControllerClass | undefined),
+      );
+    }
+  }
+
+  return routes;
+}
+
+function guardedRoutesOf(controller: ControllerClass | undefined): string[] {
+  if (!controller?.prototype || isOptedOut(controller)) {
+    return [];
+  }
+
+  const basePath = readMetadata<string>(PATH_METADATA, controller) ?? '';
+
+  return Object.getOwnPropertyNames(controller.prototype).flatMap((name) => {
+    const handler = controller.prototype[name];
+    if (typeof handler !== 'function' || name === 'constructor') {
+      return [];
+    }
+    const path = readMetadata<string>(PATH_METADATA, handler);
+    const method = readMetadata<number>(METHOD_METADATA, handler);
+    if (path === undefined || method === undefined || isOptedOut(handler)) {
+      return [];
+    }
+
+    const fullPath = `/${basePath}/${path}`
+      .replaceAll(/\/+/g, '/')
+      .replace(/\/$/, '');
+
+    return [`${RequestMethod[method]} ${fullPath || '/'}`];
+  });
+}
+
+function isOptedOut(target: object): boolean {
+  return (
+    readMetadata<boolean>(IS_PUBLIC_KEY, target) === true ||
+    readMetadata<boolean>(SKIP_USER_RESOLUTION_KEY, target) === true
+  );
+}
+
+function readMetadata<T>(key: string, target: object): T | undefined {
+  // eslint-disable-next-line unicorn/no-nonstandard-builtin-properties -- reflect-metadata is loaded by Nest
+  return Reflect.getMetadata(key, target) as T | undefined;
+}

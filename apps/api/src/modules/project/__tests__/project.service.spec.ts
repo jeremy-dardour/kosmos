@@ -7,13 +7,13 @@ import { ProblemDetailsException } from '@/shared/exceptions/problem-details.exc
 
 import type { Project } from '@/database/entities/project.entity';
 
-function buildActor(): User {
-  const actor = new User();
-  actor.id = 'user-1';
-  actor.email = 'someone@example.com';
-  actor.name = 'Someone';
+function buildCurrentUser(): User {
+  const currentUser = new User();
+  currentUser.id = 'user-1';
+  currentUser.email = 'someone@example.com';
+  currentUser.name = 'Someone';
 
-  return actor;
+  return currentUser;
 }
 
 function createService(ownedCount: number) {
@@ -35,22 +35,22 @@ function createService(ownedCount: number) {
 }
 
 describe('projectService.create', () => {
-  it('makes the actor the owner of the new project', async () => {
-    const actor = buildActor();
+  it('makes the currentUser the owner of the new project', async () => {
+    const currentUser = buildCurrentUser();
     const { service, projectRepository } = createService(19);
 
     const project = await service.create(
       { name: 'Wedding Prep', eventDate: '2027-06-12' },
-      actor,
+      currentUser,
     );
 
     expect(project).toMatchObject({
       name: 'Wedding Prep',
       eventDate: '2027-06-12',
-      owner: actor,
+      owner: currentUser,
     });
     expect(projectRepository.createOwned).toHaveBeenCalledWith(
-      actor,
+      currentUser,
       expect.any(Function),
     );
   });
@@ -58,7 +58,7 @@ describe('projectService.create', () => {
   it('refuses to exceed the owned-project cap', async () => {
     const { service } = createService(20);
 
-    const create = service.create({ name: 'One Too Many' }, buildActor());
+    const create = service.create({ name: 'One Too Many' }, buildCurrentUser());
 
     await expect(create).rejects.toThrow(ProblemDetailsException);
     await expect(create).rejects.toMatchObject({

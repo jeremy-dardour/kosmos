@@ -18,9 +18,12 @@ import type { OverviewDto } from '@/modules/project/dtos/output/overview.dto';
 export class OverviewService {
   constructor(private readonly overviewRepository: OverviewRepository) {}
 
-  async getOverview(projectId: string, actor: User): Promise<OverviewDto> {
+  async getOverview(
+    projectId: string,
+    currentUser: User,
+  ): Promise<OverviewDto> {
     const { project, groups, workstreams, users, noteCounts } =
-      await this.overviewRepository.load(projectId, actor.id);
+      await this.overviewRepository.load(projectId, currentUser.id);
 
     return {
       project: toProjectDto(project),

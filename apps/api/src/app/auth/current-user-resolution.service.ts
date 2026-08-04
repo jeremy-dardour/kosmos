@@ -12,7 +12,7 @@ import type { User } from '@/database/entities/user.entity';
  * identity has no row is acting on a stale session.
  */
 @Injectable()
-export class ActorResolutionService {
+export class CurrentUserResolutionService {
   constructor(private readonly userRepository: UserRepository) {}
 
   async resolve(authenticatedUser: AuthenticatedUser): Promise<User> {
