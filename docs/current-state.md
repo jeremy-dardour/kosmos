@@ -5,7 +5,7 @@ change — it always reflects _now_. History lives in
 [docs/sessions/](./sessions/); one line per merged PR below, details in the
 linked docs.
 
-_Last updated: 2026-08-04 (session 39)_
+_Last updated: 2026-08-04 (session 40)_
 
 ## What this is
 
@@ -55,9 +55,10 @@ progress.
 
 ## In flight
 
-- **Kosmos rename (`chore/kosmos-rename`)** — product identity, project-management
-  positioning, template cleanup, then GitHub/GCP/OAuth cutover; tracked in the
-  [implementation plan](./specs/kosmos-rename/implementation-plan.md).
+- **Draft PR #62 (`chore/kosmos-rename`)** — product identity,
+  project-management positioning, and template cleanup; tracked in the
+  [implementation plan](./specs/kosmos-rename/implementation-plan.md). The
+  GitHub/GCP/OAuth cutover follows after merge.
 
 ## Open questions
 
