@@ -15,7 +15,7 @@
   "app.errorDialog.title": "An error occurred",
   "app.errorDialog.description": "Please try again later.",
   "app.errorDialog.okButton": "Ok",
-  "app.logo.description": "Kosmos home",
+  "app.logo.homeLink": "Kosmos home",
   "app.userMenu.logout": "Sign out",
   "projects.list.title": "Your projects",
   "projects.list.loading": "Loading projects",

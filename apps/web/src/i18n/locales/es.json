@@ -15,7 +15,7 @@
   "app.errorDialog.title": "Se produjo un error",
   "app.errorDialog.description": "Por favor, inténtelo de nuevo más tarde.",
   "app.errorDialog.okButton": "Aceptar",
-  "app.logo.description": "Inicio de Kosmos",
+  "app.logo.homeLink": "Inicio de Kosmos",
   "app.userMenu.logout": "Cerrar sesión",
   "projects.list.title": "Tus proyectos",
   "projects.list.loading": "Cargando proyectos",

@@ -15,7 +15,7 @@
   "app.errorDialog.title": "Une erreur est survenue",
   "app.errorDialog.description": "Veuillez réessayer ultérieurement.",
   "app.errorDialog.okButton": "Ok",
-  "app.logo.description": "Accueil Kosmos",
+  "app.logo.homeLink": "Accueil Kosmos",
   "app.userMenu.logout": "Se déconnecter",
   "projects.list.title": "Vos projets",
   "projects.list.loading": "Chargement des projets",

@@ -1,5 +1,11 @@
 # Provisioning a production environment
 
+> **Cutover status:** this guide names the post-rename resources (`kosmos`
+> service, `kosmos-runtime` SA, `jeremy-dardour/kosmos` repo). Until the
+> [external cutover](./specs/kosmos-rename/implementation-plan.md#phase-5--external-cutover)
+> completes, the live environment still uses the `wedding-planner` names.
+> Remove this note after cutover.
+
 One-time setup of all infrastructure for a deployment environment (GCP +
 Neon + GitHub), as decided in
 [issue #26](https://github.com/jeremy-dardour/kosmos/issues/26).
@@ -10,6 +16,13 @@ these choices is recorded on the issue and in
 
 Substitute the `<...>` placeholders; everything else is decided and should
 be used as written.
+
+Steps 1–8 are automated as an idempotent script,
+[`deployment/provision.sh`](../deployment/provision.sh) — run it for a new
+environment or re-run it to converge an existing one (it is also the
+cutover path for the rename). This document remains the reference for what
+the script does and for the steps that stay manual (billing/budget, Neon,
+OAuth origins, custom domain).
 
 ## Prerequisites
 

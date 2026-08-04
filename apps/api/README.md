@@ -7,6 +7,9 @@ OpenAPI and uses MikroORM for PostgreSQL persistence.
 
 1. Copy `.env.example` to `.env` and configure variables
 2. Start database: `pnpm db:start`
+   > The database name changed from `nestjs` to `kosmos` in the rename. A
+   > Postgres volume created before that keeps its old name — recreate it once
+   > with `docker compose down -v` (from the repo root) before `db:start`.
 3. Run migrations: `pnpm db:migrate:up`
 4. Seed development data: `pnpm db:seed:local`
 5. Start API: `pnpm dev`

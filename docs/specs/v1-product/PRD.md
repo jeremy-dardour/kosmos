@@ -1,8 +1,8 @@
 # V1 Product PRD
 
-What the first version of the Kosmos project tracker does, how it behaves, and
-where the edges are. This is the **single reference** for what V1 delivers and
-why each choice was made.
+What the first version of the wedding-preparation tracker does, how it behaves,
+and where the edges are. This is the **single reference** for what V1 delivers
+and why each choice was made.
 
 Implementation PRDs (the per-increment build specs) reference this document for
 the full behavioral contract. For the domain glossary see
@@ -14,9 +14,8 @@ see [docs/prototype/overview-editing/](../../prototype/overview-editing/).
 ## Product in one sentence
 
 A visual pipeline tracker where a small group manages the 20–50 workstreams of
-a complex project — seeing every workstream's progress at a glance and
-advancing each one step by step. Wedding planning is the first use case, not a
-constraint of the product.
+wedding preparation — seeing every workstream's progress at a glance and
+advancing each one step by step.
 
 ---
 
@@ -44,15 +43,16 @@ constraint of the product.
 ### Project
 
 A top-level container. All Workstreams belong to a Project. In V1 exactly one
-Project exists, but the seam keeps the model reusable and avoids a later
-migration.
+Project exists (the wedding), but "wedding" is never hardcoded — the model uses
+the generic name "Project." Only one exists, but the seam keeps the model
+reusable and avoids a later migration.
 
 A Project has:
 
 - **Name.**
-- **Event date** (optional) — the project's target event or milestone. Powers a
-  global "N days to go" countdown on the overview and is often the last step's
-  deadline. Nullable so the model works without one.
+- **Event date** (optional) — the wedding day. Powers a global "N days to go"
+  countdown on the overview and is often the last step's deadline. Nullable so
+  the model works without one.
 
 A Project has no owner and no per-project User membership in V1. Access is
 external and all-equal, so there's no owner to model; one Project means Users
@@ -77,8 +77,8 @@ A Workstream has:
 ### Step
 
 An individual action within a Workstream's pipeline. Steps are **strictly
-ordered** by position. The work Kosmos targets is often sequential; "advance"
-is the core interaction.
+ordered** by position. Wedding prep is largely sequential; "advance" is the
+core interaction.
 
 A Step has:
 
@@ -186,7 +186,7 @@ drift-prone. The pair also disambiguates the two "no current step" cases
 | Complete   | Every step has been passed — completion date recorded                           |
 
 NotStarted is a **visible** status on the overview. "We haven't even opened
-this workstream yet" is a useful project-level glance signal.
+Flowers yet" is a useful glance signal for wedding prep.
 
 Transitions are **forward-only**:
 
@@ -563,18 +563,18 @@ Between them they support:
 These are explicitly **out of scope** — not forgotten, not deferred-until-later-
 in-V1, but ruled out of this version:
 
-| Excluded feature           | Why                                                                                     |
-| -------------------------- | --------------------------------------------------------------------------------------- |
-| File uploads               | URLs in notes cover Drive docs, vendor sites, contracts; uploads add storage/complexity |
-| Roles or permissions       | 2–6 trusted users; roles are premature                                                  |
-| Push notifications         | Pull-only via overview countdown badges; avoids email/scheduling infra                  |
-| Structured dependencies    | Unproven need; blocked flag + note is sufficient; cheap migration if needed later       |
-| Undo / backward movement   | Accepted trade-off for simplicity; smallest future fix is "undo last advance"           |
-| Multi-project              | One Project exists; the seam is there but not surfaced                                  |
-| Enforced checklists        | Consistent with no-hard-gates — tool informs, never obstructs                           |
-| In-app user management     | Allow-list in env config avoids building whitelist CRUD for a handful of users          |
-| Responsive / mobile layout | Desktop-first; tablet/mobile is not a V1 target                                         |
-| i18n                       | Language decision (French vs English) deferred; the application has i18n wired          |
+| Excluded feature              | Why                                                                                     |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| File uploads                  | URLs in notes cover Drive docs, vendor sites, contracts; uploads add storage/complexity |
+| Roles or permissions          | 2–6 trusted users; roles are premature                                                  |
+| Push notifications            | Pull-only via overview countdown badges; avoids email/scheduling infra                  |
+| Structured dependencies       | Unproven need; blocked flag + note is sufficient; cheap migration if needed later       |
+| Undo / backward movement      | Accepted trade-off for simplicity; smallest future fix is "undo last advance"           |
+| Multi-project / multi-wedding | One Project exists; the seam is there but not surfaced                                  |
+| Enforced checklists           | Consistent with no-hard-gates — tool informs, never obstructs                           |
+| In-app user management        | Allow-list in env config avoids building whitelist CRUD for a handful of users          |
+| Responsive / mobile layout    | Desktop-first; tablet/mobile is not a V1 target                                         |
+| i18n                          | Language decision (French vs English) deferred; template has i18n wired                 |
 
 ---
 

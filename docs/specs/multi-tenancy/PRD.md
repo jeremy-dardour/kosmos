@@ -93,8 +93,8 @@ person-to-person.
   membership), so that access ends when involvement ends.
 - As a member, I want to leave a project myself, so that I'm not stuck in
   projects I no longer care about.
-- As an owner, I want to transfer ownership to another member, so that the
-  other half of the couple can take over. An owner cannot leave their own
+- As an owner, I want to transfer ownership to another member, so that someone
+  else can take over running the project. An owner cannot leave their own
   project — transfer first, or delete the project.
 
 ### Project-bound permissions

@@ -79,16 +79,6 @@ dev server. The E2E test database port is handled separately — see
 
 ## Product and Platform
 
-### Item CRUD Example
-
-A complete working example demonstrating the full stack:
-
-- **API**: `GET/POST/PATCH/DELETE /api/items` with Swagger documentation
-- **Frontend**: Items list page with create/edit/delete dialogs (shadcn/ui)
-- **Type Safety**: OpenAPI contract → generated types → typed React Query hooks
-- **i18n**: Translations in English, French, and Spanish
-- **Tests**: Unit tests (Vitest) and E2E tests (supertest for API, Playwright for web)
-
 ### Authentication
 
 A Google Identity Services authentication system for a small allow-listed group:

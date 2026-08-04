@@ -8,11 +8,12 @@ export function KosmosLogo({
   markClassName = 'size-8',
 }: KosmosLogoProps): React.JSX.Element {
   return (
-    <span className={className} aria-hidden="true">
+    <span className={className}>
       <svg
         className={markClassName}
         viewBox="0 0 48 48"
         fill="none"
+        aria-hidden="true"
         xmlns="http://www.w3.org/2000/svg"
       >
         <rect width="48" height="48" rx="13" fill="#4F46E5" />
