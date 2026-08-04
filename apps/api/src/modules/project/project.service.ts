@@ -28,8 +28,8 @@ export class ProjectService {
     return this.projectRepository.findAllForActor(actor.id);
   }
 
-  async findOne(id: string): Promise<Project> {
-    return this.projectRepository.findOneOrFail(id);
+  async findOne(id: string, actor: User): Promise<Project> {
+    return this.projectRepository.findOneForActor(id, actor.id);
   }
 
   async create(dto: CreateProjectDto, actor: User): Promise<Project> {
@@ -50,8 +50,12 @@ export class ProjectService {
     });
   }
 
-  async update(id: string, dto: UpdateProjectDto): Promise<Project> {
-    const project = await this.findOne(id);
+  async update(
+    id: string,
+    dto: UpdateProjectDto,
+    actor: User,
+  ): Promise<Project> {
+    const project = await this.findOne(id, actor);
 
     if (dto.name !== undefined) {
       project.name = dto.name;

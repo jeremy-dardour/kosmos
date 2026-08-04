@@ -1,4 +1,5 @@
 import {
+  Check,
   Entity,
   Index,
   ManyToOne,
@@ -20,6 +21,10 @@ import type { Opt } from '@mikro-orm/core';
 @Unique({ properties: ['project', 'email'] })
 @Index({ properties: ['email'] })
 @Index({ properties: ['user'] })
+// Lowercase is seam-enforced at every write path; the constraint stops a
+// mixed-case row from dodging the attach-on-login claim or duplicating under
+// the case-sensitive (project, email) unique.
+@Check({ expression: 'email = lower(email)' })
 export class ProjectMember {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: Opt<string>;

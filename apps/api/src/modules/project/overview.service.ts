@@ -6,6 +6,7 @@ import { toUserSummaryDto } from '@/modules/project/dtos/output/user-summary.dto
 import { toWorkstreamDto } from '@/modules/project/dtos/output/workstream.dto';
 import { OverviewRepository } from '@/modules/project/repositories/overview.repository';
 
+import type { User } from '@/database/entities/user.entity';
 import type { OverviewDto } from '@/modules/project/dtos/output/overview.dto';
 
 /**
@@ -17,9 +18,9 @@ import type { OverviewDto } from '@/modules/project/dtos/output/overview.dto';
 export class OverviewService {
   constructor(private readonly overviewRepository: OverviewRepository) {}
 
-  async getOverview(projectId: string): Promise<OverviewDto> {
+  async getOverview(projectId: string, actor: User): Promise<OverviewDto> {
     const { project, groups, workstreams, users, noteCounts } =
-      await this.overviewRepository.load(projectId);
+      await this.overviewRepository.load(projectId, actor.id);
 
     return {
       project: toProjectDto(project),
