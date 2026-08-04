@@ -79,6 +79,9 @@ export interface Translations {
   'overview.stepStatus.blocked': string;
   'overview.empty.title': string;
   'overview.empty.description': string;
+  'overview.notFound.title': string;
+  'overview.notFound.description': string;
+  'overview.notFound.backToProjects': string;
   'overview.notes.showForStep': string;
   'overview.notes.hideForStep': string;
   'overview.notes.addToStep': string;

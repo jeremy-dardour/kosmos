@@ -7,7 +7,7 @@ import {
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React from 'react';
 
-import { queryConfig } from '@/api/react-query';
+import { isLocallyHandledError, queryConfig } from '@/api/react-query';
 import { env } from '@/config/env';
 import { useApiError } from '@/errors/use-api-error';
 
@@ -22,7 +22,8 @@ export const AppProvider = ({ children }: AppProviderProperties) => {
     () =>
       new QueryClient({
         queryCache: new QueryCache({
-          onError: (error) => {
+          onError: (error, query) => {
+            if (isLocallyHandledError(error, query.meta)) return;
             showError(error);
           },
         }),
