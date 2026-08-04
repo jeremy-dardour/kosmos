@@ -134,6 +134,13 @@ if ! gcloud secrets describe "$EMAILS_SECRET_NAME" >/dev/null 2>&1; then
   gcloud secrets create "$EMAILS_SECRET_NAME" --data-file=-
 fi
 for secret in "$SECRET_NAME" "$EMAILS_SECRET_NAME"; do
+  # A non-interactive run gives the paste prompt an empty stdin, creating a
+  # secret with zero versions — which only surfaces later, failing the deploy.
+  if ! gcloud secrets versions describe latest --secret "$secret" >/dev/null 2>&1; then
+    echo "ERROR: secret $secret has no version. Add one, then re-run:" >&2
+    echo "  gcloud secrets versions add $secret --data-file=-" >&2
+    exit 1
+  fi
   gcloud secrets add-iam-policy-binding "$secret" \
     --member="serviceAccount:$RUNTIME_SA" --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
 done
@@ -160,7 +167,7 @@ if [[ -n "$DEPLOY_IMAGE" ]]; then
     --image "$DEPLOY_IMAGE" \
     --region "$REGION" \
     --service-account "$RUNTIME_SA" \
-    --min-instances=0 --max-instances=1 --memory=256Mi --cpu=1 \
+    --min-instances=0 --max-instances=1 --memory=512Mi --cpu=1 \
     --port=3000 --allow-unauthenticated \
     --set-secrets "DATABASE_URL=$SECRET_NAME:latest,AUTH_ALLOWED_EMAILS=$EMAILS_SECRET_NAME:latest" \
     --set-env-vars "NODE_ENV=production,AUTH_CLIENT_ID=$OAUTH_CLIENT_ID,AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration"

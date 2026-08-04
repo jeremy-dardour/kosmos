@@ -210,7 +210,7 @@ gcloud run deploy kosmos \
   --image $REGION-docker.pkg.dev/$PROJECT_ID/$AR_REPO/app:<tag> \
   --region $REGION \
   --service-account $RUNTIME_SA \
-  --min-instances=0 --max-instances=1 --memory=256Mi --cpu=1 \
+  --min-instances=0 --max-instances=1 --memory=512Mi --cpu=1 \
   --port=3000 --allow-unauthenticated \
   --set-secrets DATABASE_URL=database-url:latest,AUTH_ALLOWED_EMAILS=allowed-emails:latest \
   --set-env-vars NODE_ENV=production,AUTH_CLIENT_ID=<oauth-client-id>,AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration
@@ -220,8 +220,8 @@ gcloud run deploy kosmos \
   sign-in + allow-list); Cloud Run IAM must not gate the browser.
 - `--max-instances=1` caps cost, bounds Neon connections, and prevents two
   containers racing `migration:up` at start.
-- If the container OOMs at startup, bump `--memory=512Mi` (still within
-  the free tier) before changing anything else.
+- 512Mi is the observed startup floor (still within the free tier): 256Mi
+  OOMs during boot-time migrations.
 - Migrations run at container start ([ADR 0001](./adr/0001-migrations-run-on-container-start.md));
   scale-to-zero means every cold start re-checks them — accepted.
 
