@@ -269,8 +269,8 @@ tracks.
 - **Workstream icon representation** — emoji string vs named icon set. The
   `icon` field is `varchar(255)` and accepts either. Visual refinement during
   UI slices.
-- **i18n language** — English-first (`en` primary, `fr` secondary). Template
-  has i18n wired; translation is a polish pass, not a blocker.
+- **i18n language** — English-first (`en` primary, `fr` secondary). The
+  application has i18n wired; translation is a polish pass, not a blocker.
 
 ---
 

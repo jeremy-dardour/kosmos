@@ -12,7 +12,7 @@ Translates the entity schema
 ([entity-schema-design.md](../../entity-schema-design.md)), pipeline state
 machine ([ADR 0005](../../adr/0005-workstream-pipeline-state-machine.md)), and
 the inline overview UI ([design](../../prototype/overview-editing/HANDOFF.md))
-into endpoints, DTOs, and a read model. Follows the template conventions in
+into endpoints, DTOs, and a read model. Follows the project conventions in
 [apps/api/STANDARDS.md](../../../apps/api/STANDARDS.md).
 
 ---
@@ -493,7 +493,7 @@ class CurrentUserDto {
 
 ## Error responses
 
-Follow the template's RFC 9457 format (`ProblemDetailsFilter`). Domain-specific
+Follow the application's RFC 9457 format (`ProblemDetailsFilter`). Domain-specific
 error cases:
 
 | Status | When                                                     | `type` slug                  |

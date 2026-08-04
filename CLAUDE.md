@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Production-ready fullstack monorepo template: NestJS API + React SPA + shared tooling.
+Kosmos is a visual project-management application built as a NestJS API and React SPA.
 
 See [README.md](./README.md) for project overview, setup, and CI pipeline.
 

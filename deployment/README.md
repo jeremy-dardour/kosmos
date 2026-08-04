@@ -43,10 +43,10 @@ List revisions and move all traffic back to a known-good revision:
 
 ```bash
 gcloud run revisions list \
-  --service wedding-planner \
+  --service kosmos \
   --region europe-west1
 
-gcloud run services update-traffic wedding-planner \
+gcloud run services update-traffic kosmos \
   --region europe-west1 \
   --to-revisions <previous-revision>=100
 ```
@@ -97,12 +97,12 @@ Use a disposable local database. Dumps contain personal data, so keep the
 download outside the repository and delete it after the drill.
 
 ```bash
-export RESTORE_DATABASE_URL=postgresql://postgres:postgres@localhost:<port>/wedding_planner_restore
+export RESTORE_DATABASE_URL=postgresql://postgres:postgres@localhost:<port>/kosmos_restore
 export DUMP_OBJECT=gs://<backup-bucket>/nightly/<timestamp>.sql.gz
 
-createdb --host localhost --port <port> --username postgres wedding_planner_restore
-gcloud storage cp "$DUMP_OBJECT" /tmp/wedding-planner-restore.sql.gz
-gunzip --stdout /tmp/wedding-planner-restore.sql.gz |
+createdb --host localhost --port <port> --username postgres kosmos_restore
+gcloud storage cp "$DUMP_OBJECT" /tmp/kosmos-restore.sql.gz
+gunzip --stdout /tmp/kosmos-restore.sql.gz |
   psql "$RESTORE_DATABASE_URL" --set ON_ERROR_STOP=on
 
 psql "$RESTORE_DATABASE_URL" --command '\dt'
@@ -113,8 +113,8 @@ Open the app locally and verify representative project, workstream, step, and
 note data. Then stop the app and clean up:
 
 ```bash
-dropdb --host localhost --port <port> --username postgres wedding_planner_restore
-rm /tmp/wedding-planner-restore.sql.gz
+dropdb --host localhost --port <port> --username postgres kosmos_restore
+rm /tmp/kosmos-restore.sql.gz
 ```
 
 First successful restore drill: 2026-08-04, using
@@ -126,7 +126,7 @@ credentials.
 ## Operational checks
 
 ```bash
-gcloud run services describe wedding-planner --region europe-west1
+gcloud run services describe kosmos --region europe-west1
 curl --fail https://<service-or-custom-domain>/health
 ```
 

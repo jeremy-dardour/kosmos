@@ -41,7 +41,7 @@ No cascade deletes _from_ User. All FKs pointing to User use
 
 ### Project
 
-One per deployment in V1. Generic container — "wedding" is not hardcoded.
+Top-level container for project work.
 
 | Column      | Type           | Constraints / Notes                   |
 | ----------- | -------------- | ------------------------------------- |
@@ -72,7 +72,7 @@ Visual/organizational label for clustering Workstreams on the overview.
 
 ### Workstream
 
-A named track of wedding preparation work. Owns the pipeline state machine
+A named track of project work. Owns the pipeline state machine
 (ADR 0005).
 
 | Column          | Type           | Constraints / Notes                                                           |

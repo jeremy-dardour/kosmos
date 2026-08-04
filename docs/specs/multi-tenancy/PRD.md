@@ -4,20 +4,20 @@ Status: agreed (grilled 2026-08-03) — tech design pending
 
 ## Context
 
-V1 is deliberately single-tenant: exactly one Project (the wedding), 2–6
-trusted users with equal access, gated entirely outside the app by a static
+V1 is deliberately single-tenant: exactly one Project, 2–6 trusted users with
+equal access, gated entirely outside the app by a static
 `.env` email allow-list. There is no Project↔User membership — Users are
 effectively global — and no roles beyond "note authors may edit/delete only
 their own entries".
 
 The seams for this feature were planned from the start: the Project entity is
-generic ("wedding" never hardcoded; multi-project listed in the V1 PRD as
-"the seam is there but not surfaced"), and Users are already created
+generic (multi-project is listed in the V1 PRD as "the seam is there but not
+surfaced"), and Users are already created
 automatically on first Google login.
 
-This feature surfaces that seam for a **trusted circle**: friends and family
-planning their own events. Allow-listed users create their own projects and
-work in projects shared with them. It is not an open product — entry stays
+This feature surfaces that seam for a **trusted circle**. Allow-listed users
+create their own projects and work in projects shared with them. It is not an
+open product — entry stays
 personally gated, and the polish/abuse bar is "works well for people who can
 reach the operator directly".
 

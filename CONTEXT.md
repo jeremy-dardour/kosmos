@@ -4,11 +4,11 @@
 
 ### Project
 
-The top-level container that all Workstreams (and Groups) belong to. Has a name and an optional **event date** (the wedding day) that anchors a global countdown on the overview. In V1 exactly one exists (the wedding), but "wedding" is not hardcoded — the seam keeps the model reusable. No owner and no per-project User membership in V1; no cross-project features.
+The top-level container that all Workstreams (and Groups) belong to. Has a name and an optional **event date** that anchors a global countdown on the overview. An event date may be a launch, ceremony, move, or any other project target. Projects have an owner and a member-scoped set of Users; there are no cross-project workstreams or groups.
 
 ### Workstream
 
-A named track of wedding preparation work (e.g., "Venue", "Catering", "Flowers"). Has a name and an icon for quick visual identification. Contains an ordered sequence of Steps forming a pipeline, with a current-position pointer. Belongs to a Project, has an optional default Owner, and optionally belongs to a Group. Moves through three lifecycle states — **NotStarted → Active → Complete** — via `start` and `advance` (see Key Rules).
+A named track of project work (e.g., "Venue", "Catering", "Launch content", or "Procurement"). Has a name and an icon for quick visual identification. Contains an ordered sequence of Steps forming a pipeline, with a current-position pointer. Belongs to a Project, has an optional default Owner, and optionally belongs to a Group. Moves through three lifecycle states — **NotStarted → Active → Complete** — via `start` and `advance` (see Key Rules).
 
 ### Step
 

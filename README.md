@@ -1,6 +1,8 @@
-# TypeScript Fullstack Template
+# Kosmos
 
-A production-ready fullstack monorepo template with a **NestJS** API, **React** frontend, and shared tooling — designed to be forked and adapted for real projects.
+Kosmos keeps project workstreams, steps, ownership, and deadlines together in
+one ordered view. The application is a **NestJS** API and **React** frontend in
+a shared TypeScript monorepo.
 
 ## Tech Stack
 
@@ -75,7 +77,7 @@ dev server. The E2E test database port is handled separately — see
 [PORTS.md](./PORTS.md) lists which file holds which port, and the gotchas
 (Vite's IPv6-only bind, its silent fallback to the next free port).
 
-## What's Included
+## Product and Platform
 
 ### Item CRUD Example
 
@@ -125,7 +127,7 @@ CI checks for contract drift to prevent frontend/backend type mismatches.
 
 ## CI Pipeline
 
-The template ships with a comprehensive GitHub Actions CI workflow (`.github/workflows/ci.yml`) that runs on every PR and push to `main`:
+The repository has a comprehensive GitHub Actions CI workflow (`.github/workflows/ci.yml`) that runs on every PR and push to `main`:
 
 | Job                    | What it checks                                                                                                                                            |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -162,15 +164,7 @@ For coding conventions, architecture patterns, and entity definitions, see the s
 - [Global standards](./STANDARDS.md) — TypeScript, imports, naming
 - [API standards](./apps/api/STANDARDS.md) — NestJS modules, MikroORM entities, DTOs
 - [Web standards](./apps/web/STANDARDS.md) — React components, API hooks, auth, i18n
-- [Architecture decisions](./docs/adr/) — compact ADRs for the trade-offs the template ships with
-
-## Adapting This Template
-
-1. **Fork or clone** this repository
-2. **Replace the Item example** with your own domain entities and features
-3. **Configure auth** by setting the three `AUTH_*` env vars to your OIDC provider
-4. **Generate a fresh migration** after modifying entities: `pnpm --filter api mikro-orm migration:create --name=initial`
-5. **Regenerate API contracts** after changing endpoints: `pnpm generate:api-types`
+- [Architecture decisions](./docs/adr/) — compact ADRs for the project's technical trade-offs
 
 ## License
 
