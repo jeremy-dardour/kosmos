@@ -14,6 +14,8 @@ export type ChecklistItem = dtos['ChecklistItemDto'];
 export type Group = dtos['GroupDto'];
 export type UserSummary = dtos['UserSummaryDto'];
 
+export const OVERVIEW_NOT_FOUND_STATUS = 404;
+
 /** The single home of the aggregate's query key — callers never rebuild it. */
 export function overviewQueryOptions(projectId: string) {
   return $api.queryOptions('get', '/api/projects/{projectId}/overview', {
@@ -28,6 +30,6 @@ export function useOverview(projectId: string | undefined) {
     enabled: Boolean(projectId),
     // The page renders 404 itself as the "project not found" state
     // (non-member or deleted project) — the global error dialog stays quiet.
-    meta: { localErrorStatuses: [404] },
+    meta: { localErrorStatuses: [OVERVIEW_NOT_FOUND_STATUS] },
   });
 }

@@ -20,7 +20,7 @@ import { ProjectRepository } from '@/modules/project/repositories/project.reposi
 import { WorkstreamRepository } from '@/modules/project/repositories/workstream.repository';
 import { conflict } from '@/modules/project/utils/conflict.util';
 import { isExactMembership } from '@/modules/project/utils/order-membership.util';
-import { unprocessable } from '@/modules/project/utils/unprocessable.util';
+import { resolveMemberOwner } from '@/modules/project/utils/resolve-member-owner.util';
 
 import type { User } from '@/database/entities/user.entity';
 import type { AdvanceWorkstreamDto } from '@/modules/project/dtos/input/advance-workstream.dto';
@@ -58,7 +58,11 @@ export class WorkstreamService {
       ? await this.findGroupInProject(dto.groupId, projectId)
       : null;
     workstream.owner = dto.ownerId
-      ? await this.resolveMemberOwner(dto.ownerId, project.id)
+      ? await resolveMemberOwner(
+          this.projectRepository,
+          dto.ownerId,
+          project.id,
+        )
       : null;
 
     await this.workstreamRepository.insertAtTop(workstream, actor.id);
@@ -84,7 +88,11 @@ export class WorkstreamService {
     }
     if (dto.ownerId !== undefined) {
       workstream.owner = dto.ownerId
-        ? await this.resolveMemberOwner(dto.ownerId, workstream.project.id)
+        ? await resolveMemberOwner(
+            this.projectRepository,
+            dto.ownerId,
+            workstream.project.id,
+          )
         : null;
     }
 
@@ -119,6 +127,8 @@ export class WorkstreamService {
     dto: ReorderWorkstreamsDto,
     actor: User,
   ): Promise<WorkstreamDto[]> {
+    await this.projectRepository.findOneForActor(projectId, actor.id);
+
     const group = dto.groupId
       ? await this.findGroupInProject(dto.groupId, projectId)
       : null;
@@ -265,25 +275,5 @@ export class WorkstreamService {
     }
 
     return group;
-  }
-
-  /** Owner assignment guard (ADR 0006): unknown ids and non-members 422 alike. */
-  private async resolveMemberOwner(
-    ownerId: string,
-    projectId: string,
-  ): Promise<User> {
-    const owner = await this.projectRepository.findJoinedMember(
-      projectId,
-      ownerId,
-    );
-
-    if (!owner) {
-      unprocessable(
-        'owner-not-member',
-        'The owner must be a member of this project',
-      );
-    }
-
-    return owner;
   }
 }

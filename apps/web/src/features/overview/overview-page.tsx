@@ -2,7 +2,10 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
-import { useOverview } from '@/api/hooks/use-overview';
+import {
+  OVERVIEW_NOT_FOUND_STATUS,
+  useOverview,
+} from '@/api/hooks/use-overview';
 import { useAuthState } from '@/auth/auth-context';
 import { formatToApiError } from '@/errors/format-error';
 import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
@@ -137,7 +140,10 @@ export const OverviewPage = () => {
     });
   }, []);
 
-  if (overview.isError && formatToApiError(overview.error)?.status === 404) {
+  if (
+    overview.isError &&
+    formatToApiError(overview.error)?.status === OVERVIEW_NOT_FOUND_STATUS
+  ) {
     return <ProjectNotFound />;
   }
 

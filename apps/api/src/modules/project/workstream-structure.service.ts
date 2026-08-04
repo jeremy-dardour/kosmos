@@ -21,6 +21,7 @@ import {
   closePositionGap,
   openPositionGap,
 } from '@/modules/project/utils/position-gap.util';
+import { resolveMemberOwner } from '@/modules/project/utils/resolve-member-owner.util';
 import {
   assertInsertablePosition,
   assertPipelineMutable,
@@ -28,7 +29,6 @@ import {
   assertStepEditable,
   futureSteps,
 } from '@/modules/project/utils/step-mutability.util';
-import { unprocessable } from '@/modules/project/utils/unprocessable.util';
 
 import type { User } from '@/database/entities/user.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
@@ -57,7 +57,8 @@ export class WorkstreamStructureService {
     actor: User,
   ): Promise<WorkstreamDto> {
     const owner = dto.ownerId
-      ? await this.resolveMemberOwner(
+      ? await resolveMemberOwner(
+          this.projectRepository,
           dto.ownerId,
           await this.workstreamRepository.findProjectIdForActor(
             workstreamId,
@@ -92,7 +93,8 @@ export class WorkstreamStructureService {
     actor: User,
   ): Promise<StepDto> {
     const owner = dto.ownerId
-      ? await this.resolveMemberOwner(
+      ? await resolveMemberOwner(
+          this.projectRepository,
           dto.ownerId,
           await this.workstreamRepository.findProjectIdForActorByStep(
             id,
@@ -243,26 +245,6 @@ export class WorkstreamStructureService {
       workstream,
       await this.workstreamRepository.countNotesByStep([workstream]),
     );
-  }
-
-  /** Owner assignment guard (ADR 0006): unknown ids and non-members 422 alike. */
-  private async resolveMemberOwner(
-    ownerId: string,
-    projectId: string,
-  ): Promise<User> {
-    const owner = await this.projectRepository.findJoinedMember(
-      projectId,
-      ownerId,
-    );
-
-    if (!owner) {
-      unprocessable(
-        'owner-not-member',
-        'The owner must be a member of this project',
-      );
-    }
-
-    return owner;
   }
 
   private nextChecklistPosition(step: Step): number {
