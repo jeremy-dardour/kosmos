@@ -312,7 +312,7 @@ describe('with frozen date', () => {
       );
       renderWithApp(<OverviewPage />);
 
-      await screen.findByText('Catering');
+      await screen.findByRole('button', { name: 'Rename Catering' });
       expect(screen.getByText('Jul 15')).toBeVisible();
       expect(screen.getByText('Aug 20')).toBeVisible();
       expect(screen.getByText('Oct 1, 25')).toBeVisible();

@@ -163,6 +163,29 @@ export interface Translations {
   'overview.manage.project.title': string;
   'overview.manage.project.nameLabel': string;
   'overview.manage.project.eventDateLabel': string;
+  'overview.widgets.untitledStep': string;
+  'overview.widgets.blockedStep': string;
+  'overview.widgets.railLabel': string;
+  'overview.widgets.showPanel': string;
+  'overview.widgets.hidePanel': string;
+  'overview.widgets.mirroring': string;
+  'overview.widgets.filterOwner': string;
+  // Plural key: `t('overview.widgets.groupsHidden', { count })` resolves the
+  // CLDR category suffix. `_many` exists in fr/es only, so it stays optional —
+  // required here it would force a category English never selects.
+  'overview.widgets.groupsHidden_one': string;
+  'overview.widgets.groupsHidden_many'?: string;
+  'overview.widgets.groupsHidden_other': string;
+  'overview.widgets.pulse.title': string;
+  'overview.widgets.pulse.summary': string;
+  'overview.widgets.pulse.progress': string;
+  'overview.widgets.pulse.total': string;
+  'overview.widgets.pulse.active': string;
+  'overview.widgets.pulse.queued': string;
+  'overview.widgets.pulse.done': string;
+  'overview.widgets.pulse.blocked': string;
+  'overview.widgets.pulse.overdue': string;
+  'overview.widgets.pulse.nextDeadline': string;
 }
 
 export interface Resources {

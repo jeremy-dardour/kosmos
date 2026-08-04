@@ -44,6 +44,8 @@ interface WorkstreamCardProperties {
   openNotesStepId: string | null;
   /** Set while this card holds the overview's unsaved step. */
   ghost?: GhostStepDraft;
+  /** Pointed at from elsewhere — a widget deadline row under the cursor. */
+  isHighlighted?: boolean;
   /** `null` closes the step editor; an id opens it on that step. */
   onOpenStep: (stepId: string | null) => void;
   /** `null` closes the note panel; an id opens it on that step. */
@@ -68,6 +70,7 @@ export const WorkstreamCard = ({
   openStepId,
   openNotesStepId,
   ghost,
+  isHighlighted = false,
   onOpenStep,
   onOpenNotes,
   onCloseEditors,
@@ -137,9 +140,11 @@ export const WorkstreamCard = ({
   return (
     <article
       ref={cardRef}
+      data-workstream-id={workstream.id}
+      data-highlighted={isHighlighted ? '' : undefined}
       className={cn(
         'group/card rounded-lg border p-4 transition-colors',
-        cardFrameClass(isLive, isAnyPanelOpen),
+        cardFrameClass(isLive, isAnyPanelOpen, isHighlighted),
       )}
     >
       {/* The dimming lives on the header rather than the card root, because a
@@ -316,13 +321,22 @@ export const WorkstreamCard = ({
 /**
  * The frame follows lifecycle: live work is a bordered card with a surface;
  * finished work keeps only a light frame so it stays findable in the
- * Completed section without competing. Anything open restores the full frame.
+ * Completed section without competing. Anything open restores the full frame,
+ * and a highlight ring rides on top of whichever frame is in play.
  */
-function cardFrameClass(isLive: boolean, isOpen: boolean): string {
-  if (isOpen) return 'border-step-in-progress/60 bg-card shadow-xs';
-  return isLive
-    ? 'border-border bg-card shadow-xs hover:border-muted-foreground/30'
-    : 'border-border/50 bg-transparent hover:bg-card/60';
+function cardFrameClass(
+  isLive: boolean,
+  isOpen: boolean,
+  isHighlighted: boolean,
+): string {
+  return cn(
+    isOpen && 'border-step-in-progress/60 bg-card shadow-xs',
+    !isOpen &&
+      (isLive
+        ? 'border-border bg-card shadow-xs hover:border-muted-foreground/30'
+        : 'border-border/50 bg-transparent hover:bg-card/60'),
+    isHighlighted && 'ring-2 ring-step-in-progress/50',
+  );
 }
 
 function deadlineStepOf(workstream: Workstream): Step | null {

@@ -5,7 +5,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { useReorderGroups } from '@/api/hooks/use-reorder-groups';
 import { CompletedSection } from '@/features/overview/completed-section';
@@ -19,53 +19,64 @@ import {
 import { useOverviewDndSensors } from '@/features/overview/use-overview-dnd-sensors';
 import { WorkstreamCard } from '@/features/overview/workstream-card/workstream-card';
 
-import type { Group, Overview, Workstream } from '@/api/hooks/use-overview';
+import type {
+  Group,
+  Overview,
+  UserSummary,
+  Workstream,
+} from '@/api/hooks/use-overview';
+import type { Selection } from '@/features/overview/selection.types';
 import type { DragEndEvent } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
 
 /** Group ids are prefixed so they can never collide with a workstream id. */
 const GROUP_DND_PREFIX = 'group:';
 
-/** Which card, and which of its steps, currently owns an open panel. */
-interface Selection {
-  workstreamId: string;
-  stepId: string;
-}
+const noSelectionHandler = (): void => undefined;
 
 interface OverviewListProperties {
   overview: Overview;
+  usersById: Map<string, UserSummary>;
   projectId: string | undefined;
   now: Date;
+  /** Card the widget panel is pointing at, if any. */
+  highlightedWorkstreamId?: string | null;
   /** Filtering hides cards, so a partial list has no unambiguous order to drag. */
   isDragDisabled?: boolean;
+  openStep?: Selection | null;
+  openNotes?: Selection | null;
+  onOpenStep?: (selection: Selection | null) => void;
+  onOpenNotes?: (selection: Selection | null) => void;
+  onCloseEditors?: () => void;
 }
 
 /**
  * The overview body: every workstream inline, grouped, manually ordered at both
  * levels, with finished work collapsed into the Completed section at the end.
- * It owns the one-open-panel-across-the-list rule for step editors, note
- * panels and the ghost alike — opening any of them closes the others.
+ * The page holds which step editor and note panel are open; the list routes
+ * that selection to the owning card and keeps the ghost under the same
+ * one-open-panel rule — opening any of them closes the others.
  */
 export const OverviewList = ({
   overview,
+  usersById,
   projectId,
   now,
+  highlightedWorkstreamId = null,
   isDragDisabled = false,
+  openStep = null,
+  openNotes = null,
+  onOpenStep = noSelectionHandler,
+  onOpenNotes = noSelectionHandler,
+  onCloseEditors = noSelectionHandler,
 }: OverviewListProperties) => {
   const sensors = useOverviewDndSensors();
   const reorderGroups = useReorderGroups(projectId);
   const groupOrder = useOptimisticReorder(projectId);
-  const [openStep, setOpenStep] = useState<Selection | null>(null);
-  const [openNotes, setOpenNotes] = useState<Selection | null>(null);
   // A committed ghost hands its place to the created step's editor (A8).
   const ghostStep = useGhostStep(projectId, (workstreamId, stepId) => {
-    setOpenStep({ workstreamId, stepId });
+    onOpenStep({ workstreamId, stepId });
   });
-
-  const usersById = useMemo(
-    () => new Map(overview.users.map((user) => [user.id, user])),
-    [overview.users],
-  );
 
   // Mutation responses are patched into the cached aggregate in place, so the
   // array order there goes stale while `position` stays authoritative.
@@ -113,6 +124,7 @@ export const OverviewList = ({
       projectId={projectId}
       now={now}
       dragHandle={dragHandle}
+      isHighlighted={workstream.id === highlightedWorkstreamId}
       openStepId={selectedStepId(openStep, workstream.id)}
       openNotesStepId={selectedStepId(openNotes, workstream.id)}
       ghost={
@@ -121,20 +133,16 @@ export const OverviewList = ({
           : undefined
       }
       onOpenStep={(stepId) =>
-        setOpenStep(stepId ? { workstreamId: workstream.id, stepId } : null)
+        onOpenStep(stepId ? { workstreamId: workstream.id, stepId } : null)
       }
       onOpenNotes={(stepId) =>
-        setOpenNotes(stepId ? { workstreamId: workstream.id, stepId } : null)
+        onOpenNotes(stepId ? { workstreamId: workstream.id, stepId } : null)
       }
-      onCloseEditors={() => {
-        setOpenStep(null);
-        setOpenNotes(null);
-      }}
+      onCloseEditors={onCloseEditors}
       onInsertStep={(position) => {
         // The ghost is the open editor now — the one-at-a-time rule (A12)
         // covers it too.
-        setOpenStep(null);
-        setOpenNotes(null);
+        onCloseEditors();
         ghostStep.insertAt(workstream.id, position);
       }}
     />

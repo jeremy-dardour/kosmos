@@ -6,7 +6,8 @@ Applies to all packages and apps in this monorepo.
 
 - Target: TypeScript 6, `strict: true`
 - Imports: use path aliases (`@/`), never relative `../` across module boundaries
-- File naming: kebab-case with purpose suffix (`auth.guard.ts`, `error-fallback.tsx`)
+- File naming: kebab-case with purpose suffix (`auth.guard.ts`, `error-fallback.tsx`);
+  modules holding only type declarations use `.types.ts` (`selection.types.ts`)
 
 ## Code style
 
