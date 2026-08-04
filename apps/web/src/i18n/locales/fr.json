@@ -182,5 +182,20 @@
   "overview.widgets.pulse.done": "Terminés",
   "overview.widgets.pulse.blocked": "bloqués",
   "overview.widgets.pulse.overdue": "en retard",
-  "overview.widgets.pulse.nextDeadline": "Prochaine échéance"
+  "overview.widgets.pulse.nextDeadline": "Prochaine échéance",
+  "overview.widgets.calendar.title": "Calendrier",
+  "overview.widgets.calendar.previousMonth": "Mois précédent",
+  "overview.widgets.calendar.nextMonth": "Mois suivant",
+  "overview.widgets.calendar.markedDays_one": "{{count}} jour marqué ce mois-ci",
+  "overview.widgets.calendar.markedDays_many": "{{count}} jours marqués ce mois-ci",
+  "overview.widgets.calendar.markedDays_other": "{{count}} jours marqués ce mois-ci",
+  "overview.widgets.calendar.dayDeadlines_one": "{{count}} échéance",
+  "overview.widgets.calendar.dayDeadlines_many": "{{count}} échéances",
+  "overview.widgets.calendar.dayDeadlines_other": "{{count}} échéances",
+  "overview.widgets.agenda.title": "Agenda",
+  "overview.widgets.agenda.pending_one": "{{count}} en attente",
+  "overview.widgets.agenda.pending_many": "{{count}} en attente",
+  "overview.widgets.agenda.pending_other": "{{count}} en attente",
+  "overview.widgets.agenda.overdue": "En retard",
+  "overview.widgets.agenda.empty": "Aucune échéance en attente."
 }

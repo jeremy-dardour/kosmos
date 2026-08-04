@@ -182,5 +182,20 @@
   "overview.widgets.pulse.done": "Completados",
   "overview.widgets.pulse.blocked": "bloqueados",
   "overview.widgets.pulse.overdue": "vencidos",
-  "overview.widgets.pulse.nextDeadline": "Próxima fecha límite"
+  "overview.widgets.pulse.nextDeadline": "Próxima fecha límite",
+  "overview.widgets.calendar.title": "Calendario",
+  "overview.widgets.calendar.previousMonth": "Mes anterior",
+  "overview.widgets.calendar.nextMonth": "Mes siguiente",
+  "overview.widgets.calendar.markedDays_one": "{{count}} día marcado este mes",
+  "overview.widgets.calendar.markedDays_many": "{{count}} días marcados este mes",
+  "overview.widgets.calendar.markedDays_other": "{{count}} días marcados este mes",
+  "overview.widgets.calendar.dayDeadlines_one": "{{count}} fecha límite",
+  "overview.widgets.calendar.dayDeadlines_many": "{{count}} fechas límite",
+  "overview.widgets.calendar.dayDeadlines_other": "{{count}} fechas límite",
+  "overview.widgets.agenda.title": "Agenda",
+  "overview.widgets.agenda.pending_one": "{{count}} pendiente",
+  "overview.widgets.agenda.pending_many": "{{count}} pendientes",
+  "overview.widgets.agenda.pending_other": "{{count}} pendientes",
+  "overview.widgets.agenda.overdue": "Vencidas",
+  "overview.widgets.agenda.empty": "No hay fechas límite pendientes."
 }

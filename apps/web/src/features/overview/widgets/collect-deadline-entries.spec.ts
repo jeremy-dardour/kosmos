@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { collectDeadlineEntries } from '@/features/overview/widgets/collect-deadline-entries';
+import {
+  collectDeadlineEntries,
+  groupEntriesByDate,
+} from '@/features/overview/widgets/collect-deadline-entries';
+import { deadlineEntry } from '@/testing/deadline-entries';
 
 import type { Step, Workstream } from '@/api/hooks/use-overview';
 
@@ -208,5 +212,28 @@ describe('collectDeadlineEntries', () => {
 
   it('returns an empty list when nothing is pending', () => {
     expect(collectDeadlineEntries([])).toEqual([]);
+  });
+});
+
+describe('groupEntriesByDate', () => {
+  it('keys the days in the order they arrive and keeps same-day entries together', () => {
+    const byDate = groupEntriesByDate([
+      deadlineEntry('2026-01-10', { stepId: 'a' }),
+      deadlineEntry('2026-01-10', { stepId: 'b' }),
+      deadlineEntry('2026-02-01', { stepId: 'c' }),
+    ]);
+
+    expect(byDate.keys().toArray()).toEqual(['2026-01-10', '2026-02-01']);
+    expect(byDate.get('2026-01-10')?.map((entry) => entry.stepId)).toEqual([
+      'a',
+      'b',
+    ]);
+    expect(byDate.get('2026-02-01')?.map((entry) => entry.stepId)).toEqual([
+      'c',
+    ]);
+  });
+
+  it('returns an empty map for an empty list', () => {
+    expect(groupEntriesByDate([]).size).toBe(0);
   });
 });

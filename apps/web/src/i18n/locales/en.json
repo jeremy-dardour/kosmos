@@ -181,5 +181,17 @@
   "overview.widgets.pulse.done": "Done",
   "overview.widgets.pulse.blocked": "blocked",
   "overview.widgets.pulse.overdue": "overdue",
-  "overview.widgets.pulse.nextDeadline": "Next deadline"
+  "overview.widgets.pulse.nextDeadline": "Next deadline",
+  "overview.widgets.calendar.title": "Calendar",
+  "overview.widgets.calendar.previousMonth": "Previous month",
+  "overview.widgets.calendar.nextMonth": "Next month",
+  "overview.widgets.calendar.markedDays_one": "{{count}} marked day this month",
+  "overview.widgets.calendar.markedDays_other": "{{count}} marked days this month",
+  "overview.widgets.calendar.dayDeadlines_one": "{{count}} deadline",
+  "overview.widgets.calendar.dayDeadlines_other": "{{count}} deadlines",
+  "overview.widgets.agenda.title": "Agenda",
+  "overview.widgets.agenda.pending_one": "{{count}} pending",
+  "overview.widgets.agenda.pending_other": "{{count}} pending",
+  "overview.widgets.agenda.overdue": "Overdue",
+  "overview.widgets.agenda.empty": "No pending deadlines."
 }

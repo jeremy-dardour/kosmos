@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { deadlineCountdown } from '@/features/overview/deadline-countdown';
 import { urgencyBand } from '@/features/overview/urgency';
-import { URGENCY_TEXT_CLASSES } from '@/features/overview/widgets/urgency-text-classes';
+import { URGENCY_TEXT_CLASSES } from '@/features/overview/urgency-classes';
 import { cn } from '@/lib/utils';
 
 import type { DeadlineEntry } from '@/features/overview/widgets/collect-deadline-entries';

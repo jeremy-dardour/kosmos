@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { collectDeadlineEntries } from '@/features/overview/widgets/collect-deadline-entries';
+import { bucketDeadlineEntries } from '@/features/overview/widgets/deadline-buckets';
 import { derivePulseStats } from '@/features/overview/widgets/project-pulse-stats';
 
 import type { Step, Workstream } from '@/api/hooks/use-overview';
@@ -40,8 +41,7 @@ function makeWorkstream(
 function statsOf(workstreams: Workstream[], now: Date = NOW) {
   return derivePulseStats(
     workstreams,
-    collectDeadlineEntries(workstreams),
-    now,
+    bucketDeadlineEntries(collectDeadlineEntries(workstreams), now),
   );
 }
 
@@ -152,14 +152,42 @@ describe('derivePulseStats', () => {
     ]);
 
     expect(stats.overdueCount).toBe(1);
-    expect(stats.nextEntry?.stepId).toBe('today');
+    expect(stats.nextEntry?.stepId).toBe('yesterday');
   });
 
-  it('has no next entry when every pending deadline has passed', () => {
+  it('surfaces the next upcoming deadline when nothing is overdue', () => {
     const stats = statsOf([
       makeWorkstream({
         id: 'venue',
         steps: [
+          makeStep({
+            id: 'today',
+            status: 'not_started',
+            deadline: '2026-07-25',
+          }),
+          makeStep({
+            id: 'tomorrow',
+            status: 'not_started',
+            deadline: '2026-07-26',
+          }),
+        ],
+      }),
+    ]);
+
+    expect(stats.overdueCount).toBe(0);
+    expect(stats.nextEntry?.stepId).toBe('today');
+  });
+
+  it('surfaces the oldest overdue deadline when every pending one has passed', () => {
+    const stats = statsOf([
+      makeWorkstream({
+        id: 'venue',
+        steps: [
+          makeStep({
+            id: 'later-late',
+            status: 'not_started',
+            deadline: '2026-07-10',
+          }),
           makeStep({
             id: 'late',
             status: 'in_progress',
@@ -169,8 +197,8 @@ describe('derivePulseStats', () => {
       }),
     ]);
 
-    expect(stats.overdueCount).toBe(1);
-    expect(stats.nextEntry).toBeNull();
+    expect(stats.overdueCount).toBe(2);
+    expect(stats.nextEntry?.stepId).toBe('late');
   });
 
   it('has no next entry when nothing is pending', () => {

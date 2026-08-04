@@ -1,8 +1,8 @@
-import { daysUntil } from '@/features/overview/days-until';
 import { isBlockedNow } from '@/features/overview/is-blocked-now';
 
 import type { Workstream, WorkstreamLifecycle } from '@/api/hooks/use-overview';
 import type { DeadlineEntry } from '@/features/overview/widgets/collect-deadline-entries';
+import type { DeadlineBuckets } from '@/features/overview/widgets/deadline-buckets';
 
 export interface PulseStats {
   total: number;
@@ -27,13 +27,13 @@ function countLifecycle(
 
 /**
  * Everything the stats widget renders, derived in one pass so the component
- * computes nothing beyond layout. `entries` is the already-collected pending
- * deadline list, so both widgets read the same set.
+ * computes nothing beyond layout. Late and next come from the same deadline
+ * buckets the agenda renders, so the pulse can never disagree with the list
+ * below it.
  */
 export function derivePulseStats(
   workstreams: Workstream[],
-  entries: DeadlineEntry[],
-  now: Date,
+  buckets: DeadlineBuckets,
 ): PulseStats {
   const steps = workstreams.flatMap((workstream) => workstream.steps);
   const settledSteps = steps.filter(
@@ -52,9 +52,8 @@ export function derivePulseStats(
     blockedWorkstreams: workstreams.filter((workstream) =>
       workstream.steps.some((step) => isBlockedNow(step)),
     ).length,
-    overdueCount: entries.filter((entry) => daysUntil(entry.deadline, now) < 0)
-      .length,
-    nextEntry:
-      entries.find((entry) => daysUntil(entry.deadline, now) >= 0) ?? null,
+    overdueCount: buckets.overdue.length,
+    // Earliest pending deadline — an overdue one outranks every upcoming one.
+    nextEntry: buckets.overdue[0] ?? buckets.months[0]?.entries[0] ?? null,
   };
 }

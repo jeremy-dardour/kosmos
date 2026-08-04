@@ -47,3 +47,21 @@ export function collectDeadlineEntries(
     .flatMap((workstream) => pendingDeadlinesOf(workstream))
     .sort((a, b) => a.deadline.localeCompare(b.deadline));
 }
+
+/** Entries by their raw `deadline`, each day keeping the order it arrived in. */
+export function groupEntriesByDate(
+  entries: DeadlineEntry[],
+): ReadonlyMap<string, DeadlineEntry[]> {
+  const byDate = new Map<string, DeadlineEntry[]>();
+
+  for (const entry of entries) {
+    const sameDay = byDate.get(entry.deadline);
+    if (sameDay) {
+      sameDay.push(entry);
+    } else {
+      byDate.set(entry.deadline, [entry]);
+    }
+  }
+
+  return byDate;
+}

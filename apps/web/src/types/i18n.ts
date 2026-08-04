@@ -186,6 +186,21 @@ export interface Translations {
   'overview.widgets.pulse.blocked': string;
   'overview.widgets.pulse.overdue': string;
   'overview.widgets.pulse.nextDeadline': string;
+  'overview.widgets.calendar.title': string;
+  'overview.widgets.calendar.previousMonth': string;
+  'overview.widgets.calendar.nextMonth': string;
+  'overview.widgets.calendar.markedDays_one': string;
+  'overview.widgets.calendar.markedDays_many'?: string;
+  'overview.widgets.calendar.markedDays_other': string;
+  'overview.widgets.calendar.dayDeadlines_one': string;
+  'overview.widgets.calendar.dayDeadlines_many'?: string;
+  'overview.widgets.calendar.dayDeadlines_other': string;
+  'overview.widgets.agenda.title': string;
+  'overview.widgets.agenda.pending_one': string;
+  'overview.widgets.agenda.pending_many'?: string;
+  'overview.widgets.agenda.pending_other': string;
+  'overview.widgets.agenda.overdue': string;
+  'overview.widgets.agenda.empty': string;
 }
 
 export interface Resources {
