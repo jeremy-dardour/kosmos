@@ -206,7 +206,7 @@ gcloud run deploy kosmos \
   --min-instances=0 --max-instances=1 --memory=256Mi --cpu=1 \
   --port=3000 --allow-unauthenticated \
   --set-secrets DATABASE_URL=database-url:latest \
-  --set-env-vars NODE_ENV=production,AUTH_CLIENT_ID=<oauth-client-id>,AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration,AUTH_ALLOWED_EMAILS=<comma-separated-emails>
+  --set-env-vars "^@^NODE_ENV=production@AUTH_CLIENT_ID=<oauth-client-id>@AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration@AUTH_ALLOWED_EMAILS=<comma-separated-emails>"
 ```
 
 - `--allow-unauthenticated` is intentional: auth is app-level (Google

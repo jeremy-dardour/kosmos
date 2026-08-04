@@ -15,7 +15,8 @@ slips. Weddings, launches, moves, and other event-driven projects all fit the
 same model.
 
 For how the concepts are defined, see [CONTEXT.md](../CONTEXT.md) (domain
-glossary); for the reasoning behind them, [docs/domain-decisions.md](./domain-decisions.md).
+glossary); for the reasoning behind them, the
+[V1 Product PRD](./specs/v1-product/PRD.md).
 For the current UI direction, see
 [docs/prototype/overview-editing/](./prototype/overview-editing/) — everything
 is edited inline in the overview, with no detail panel.

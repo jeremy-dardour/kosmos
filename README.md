@@ -77,7 +77,7 @@ dev server. The E2E test database port is handled separately — see
 [PORTS.md](./PORTS.md) lists which file holds which port, and the gotchas
 (Vite's IPv6-only bind, its silent fallback to the next free port).
 
-## Product and Platform
+## Platform
 
 ### Authentication
 

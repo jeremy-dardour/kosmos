@@ -11,6 +11,11 @@
 #     (step 2, console), Neon project creation (step 6), OAuth origins
 #     (step 9), custom domain (step 10).
 #
+# For the rename cutover: rename the GitHub repository FIRST, then run this
+# immediately after. The WIF condition update is atomic — the moment it runs,
+# only the new repo slug can mint GCP tokens, so CI is broken exactly between
+# the repo rename and this script.
+#
 # Usage:
 #   PROJECT_ID=<gcp-project> GITHUB_REPO=<owner/repo> AR_REPO=<ar-repo> \
 #     OAUTH_CLIENT_ID=<client-id> ALLOWED_EMAILS=<a@x,b@y> \
@@ -20,6 +25,7 @@ set -euo pipefail
 : "${PROJECT_ID:?set PROJECT_ID}"
 : "${GITHUB_REPO:?set GITHUB_REPO (owner/repo, used for WIF + gh env)}"
 : "${AR_REPO:?set AR_REPO (Artifact Registry repo name)}"
+: "${OAUTH_CLIENT_ID:?set OAUTH_CLIENT_ID (SPA builds are broken without it)}"
 REGION="${REGION:-europe-west1}"
 SERVICE="${SERVICE:-kosmos}"
 RUNTIME_SA_NAME="${RUNTIME_SA_NAME:-kosmos-runtime}"
@@ -31,8 +37,13 @@ WIF_POOL="${WIF_POOL:-github}"
 WIF_PROVIDER="${WIF_PROVIDER:-github-oidc}"
 
 DEPLOY_IMAGE=""
-if [[ "${1:-}" == "--deploy-image" ]]; then
-  DEPLOY_IMAGE="${2:?--deploy-image needs an image ref}"
+if [[ $# -gt 0 ]]; then
+  if [[ "$1" == "--deploy-image" ]]; then
+    DEPLOY_IMAGE="${2:?--deploy-image needs an image ref}"
+  else
+    echo "Unknown argument: $1" >&2
+    exit 1
+  fi
 fi
 
 RUNTIME_SA="$RUNTIME_SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"
@@ -40,7 +51,9 @@ DEPLOYER_SA="$DEPLOYER_SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"
 
 log() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
-gcloud config set project "$PROJECT_ID" --quiet
+# Scoped per invocation rather than gcloud config so the operator's global
+# config is untouched and a wrong PROJECT_ID fails on the first command.
+export CLOUDSDK_CORE_PROJECT="$PROJECT_ID"
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
 
 log "APIs"
@@ -94,14 +107,13 @@ WIF_PROVIDER_NAME=$(gcloud iam workload-identity-pools providers describe "$WIF_
   --location=global --workload-identity-pool="$WIF_POOL" --format='value(name)')
 
 log "Backup bucket: gs://$BACKUP_BUCKET"
-if ! gcloud storage buckets describe "gs://$BACKUP_BUCKET" >/dev/null 2>&1; then
+gcloud storage buckets describe "gs://$BACKUP_BUCKET" >/dev/null 2>&1 ||
   gcloud storage buckets create "gs://$BACKUP_BUCKET" \
     --location="$REGION" --uniform-bucket-level-access
-  lifecycle=$(mktemp)
-  printf '%s' '{"rule":[{"action":{"type":"Delete"},"condition":{"age":90}}]}' > "$lifecycle"
-  gcloud storage buckets update "gs://$BACKUP_BUCKET" --lifecycle-file="$lifecycle"
-  rm -f "$lifecycle"
-fi
+lifecycle=$(mktemp)
+printf '%s' '{"rule":[{"action":{"type":"Delete"},"condition":{"age":90}}]}' > "$lifecycle"
+gcloud storage buckets update "gs://$BACKUP_BUCKET" --lifecycle-file="$lifecycle"
+rm -f "$lifecycle"
 gcloud storage buckets add-iam-policy-binding "gs://$BACKUP_BUCKET" \
   --member="serviceAccount:$DEPLOYER_SA" --role="roles/storage.objectCreator" --quiet >/dev/null
 gcloud storage buckets add-iam-policy-binding "gs://$BACKUP_BUCKET" \
@@ -116,25 +128,26 @@ gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
   --member="serviceAccount:$RUNTIME_SA" --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
 
 log "GitHub environment: $GH_ENV on $GITHUB_REPO"
-gh api -X PUT "repos/$GITHUB_REPO/environments/$GH_ENV" >/dev/null
+# Create only if absent — a bodyless PUT on an existing environment would
+# reset its protection rules.
+gh api "repos/$GITHUB_REPO/environments/$GH_ENV" >/dev/null 2>&1 ||
+  gh api -X PUT "repos/$GITHUB_REPO/environments/$GH_ENV" >/dev/null
 gh variable set GCP_PROJECT_ID   --env "$GH_ENV" -R "$GITHUB_REPO" --body "$PROJECT_ID"
 gh variable set GCP_REGION       --env "$GH_ENV" -R "$GITHUB_REPO" --body "$REGION"
 gh variable set GCP_WIF_PROVIDER --env "$GH_ENV" -R "$GITHUB_REPO" --body "$WIF_PROVIDER_NAME"
 gh variable set GCP_DEPLOYER_SA  --env "$GH_ENV" -R "$GITHUB_REPO" --body "$DEPLOYER_SA"
 gh variable set AR_REPO          --env "$GH_ENV" -R "$GITHUB_REPO" --body "$AR_REPO"
-gh variable set RUN_SERVICE      --env "$GH_ENV" -R "$GITHUB_REPO" --body "$SERVICE"
 gh variable set BACKUP_BUCKET    --env "$GH_ENV" -R "$GITHUB_REPO" --body "$BACKUP_BUCKET"
-if [[ -n "${OAUTH_CLIENT_ID:-}" ]]; then
-  gh variable set VITE_GOOGLE_CLIENT_ID --env "$GH_ENV" -R "$GITHUB_REPO" --body "$OAUTH_CLIENT_ID"
-fi
+gh variable set VITE_GOOGLE_CLIENT_ID --env "$GH_ENV" -R "$GITHUB_REPO" --body "$OAUTH_CLIENT_ID"
 if ! gh api "repos/$GITHUB_REPO/environments/$GH_ENV/secrets/DATABASE_URL" >/dev/null 2>&1; then
   echo "Set the backup-job secret now: gh secret set DATABASE_URL --env $GH_ENV -R $GITHUB_REPO"
 fi
 
 if [[ -n "$DEPLOY_IMAGE" ]]; then
   log "Cloud Run service: $SERVICE"
-  : "${OAUTH_CLIENT_ID:?set OAUTH_CLIENT_ID for the service deploy}"
   : "${ALLOWED_EMAILS:?set ALLOWED_EMAILS for the service deploy}"
+  # ^@^ makes @ the list delimiter: ALLOWED_EMAILS is itself comma-separated,
+  # which would split into bogus keys under the default comma delimiter.
   gcloud run deploy "$SERVICE" \
     --image "$DEPLOY_IMAGE" \
     --region "$REGION" \
@@ -142,9 +155,19 @@ if [[ -n "$DEPLOY_IMAGE" ]]; then
     --min-instances=0 --max-instances=1 --memory=256Mi --cpu=1 \
     --port=3000 --allow-unauthenticated \
     --set-secrets "DATABASE_URL=$SECRET_NAME:latest" \
-    --set-env-vars "NODE_ENV=production,AUTH_CLIENT_ID=$OAUTH_CLIENT_ID,AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration,AUTH_ALLOWED_EMAILS=$ALLOWED_EMAILS"
+    --set-env-vars "^@^NODE_ENV=production@AUTH_CLIENT_ID=$OAUTH_CLIENT_ID@AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration@AUTH_ALLOWED_EMAILS=$ALLOWED_EMAILS"
 else
   log "Skipping Cloud Run deploy (pass --deploy-image <ref> to create the service)"
+fi
+
+# RUN_SERVICE last, and only when the service exists: CD only passes --image,
+# so pointing it at a nonexistent service would let it create a broken one
+# (default SA, port 8080, no secret).
+if gcloud run services describe "$SERVICE" --region "$REGION" >/dev/null 2>&1; then
+  gh variable set RUN_SERVICE --env "$GH_ENV" -R "$GITHUB_REPO" --body "$SERVICE"
+else
+  echo "WARNING: service $SERVICE does not exist yet — RUN_SERVICE left unset."
+  echo "Re-run with --deploy-image (or deploy manually) before pointing CD at it."
 fi
 
 log "Done"

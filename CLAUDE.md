@@ -15,23 +15,23 @@ own first name is acceptable. When in doubt, grep the change before committing.
 
 Project knowledge — one home per fact. Read these to get oriented:
 
-| Doc                                                                                              | Holds                                                                |
-| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| [docs/specs/v1-product/PRD.md](./docs/specs/v1-product/PRD.md)                                   | **V1 Product PRD** — what V1 does, behavior, edge cases, rationale   |
-| [docs/specs/v1-product/api-contract.md](./docs/specs/v1-product/api-contract.md)                 | V1 design-time API spec (OpenAPI is the live contract)               |
-| [docs/specs/v1-product/overview-rework-plan.md](./docs/specs/v1-product/overview-rework-plan.md) | Phased build plan for the #40 overview rework                        |
-| [docs/project-purpose.md](./docs/project-purpose.md)                                             | Why the project exists, who it's for, scope boundaries               |
-| [CONTEXT.md](./CONTEXT.md)                                                                       | Domain glossary — entities, statuses, rules                          |
-| [docs/current-state.md](./docs/current-state.md)                                                 | The live "where we are" — phase, status, next steps, open questions  |
-| [docs/sessions/](./docs/sessions/)                                                               | One dated summary per session (what was done, learnings, status)     |
-| [docs/reviews/](./docs/reviews/)                                                                 | PR review write-ups, point-in-time; deleted once fully actioned      |
-| [docs/prototype/overview-editing/](./docs/prototype/overview-editing/)                           | UI direction — inline overview editing, decisions and rejected ideas |
-| [docs/entity-schema-design.md](./docs/entity-schema-design.md)                                   | Concrete MikroORM schema spec (entities, columns, constraints)       |
-| [apps/api/module-layout.md](./apps/api/module-layout.md)                                         | NestJS module structure and boundary rules                           |
-| [docs/specs/v1-tech-design.md](./docs/specs/v1-tech-design.md)                                   | V1 technical design — links schema, API, state machine, auth, deploy |
-| [docs/adr/](./docs/adr/)                                                                         | Technical/architectural decisions                                    |
-| [docs/provisioning.md](./docs/provisioning.md)                                                   | One-time production infrastructure provisioning                      |
-| [deployment/README.md](./deployment/README.md)                                                   | Production deploy, rollback, backup, and restore operations          |
+| Doc                                                                                              | Holds                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [docs/specs/v1-product/PRD.md](./docs/specs/v1-product/PRD.md)                                   | **V1 Product PRD** — what V1 does, behavior, edge cases, rationale (point-in-time record: keeps its original wedding framing; current positioning lives in project-purpose.md) |
+| [docs/specs/v1-product/api-contract.md](./docs/specs/v1-product/api-contract.md)                 | V1 design-time API spec (OpenAPI is the live contract)                                                                                                                         |
+| [docs/specs/v1-product/overview-rework-plan.md](./docs/specs/v1-product/overview-rework-plan.md) | Phased build plan for the #40 overview rework                                                                                                                                  |
+| [docs/project-purpose.md](./docs/project-purpose.md)                                             | Why the project exists, who it's for, scope boundaries                                                                                                                         |
+| [CONTEXT.md](./CONTEXT.md)                                                                       | Domain glossary — entities, statuses, rules                                                                                                                                    |
+| [docs/current-state.md](./docs/current-state.md)                                                 | The live "where we are" — phase, status, next steps, open questions                                                                                                            |
+| [docs/sessions/](./docs/sessions/)                                                               | One dated summary per session (what was done, learnings, status)                                                                                                               |
+| [docs/reviews/](./docs/reviews/)                                                                 | PR review write-ups, point-in-time; deleted once fully actioned                                                                                                                |
+| [docs/prototype/overview-editing/](./docs/prototype/overview-editing/)                           | UI direction — inline overview editing, decisions and rejected ideas                                                                                                           |
+| [docs/entity-schema-design.md](./docs/entity-schema-design.md)                                   | Concrete MikroORM schema spec (entities, columns, constraints)                                                                                                                 |
+| [apps/api/module-layout.md](./apps/api/module-layout.md)                                         | NestJS module structure and boundary rules                                                                                                                                     |
+| [docs/specs/v1-tech-design.md](./docs/specs/v1-tech-design.md)                                   | V1 technical design — links schema, API, state machine, auth, deploy                                                                                                           |
+| [docs/adr/](./docs/adr/)                                                                         | Technical/architectural decisions                                                                                                                                              |
+| [docs/provisioning.md](./docs/provisioning.md)                                                   | One-time production infrastructure provisioning                                                                                                                                |
+| [deployment/README.md](./deployment/README.md)                                                   | Production deploy, rollback, backup, and restore operations                                                                                                                    |
 
 **Always loaded at session start** (imported so they're in context from the start):
 

@@ -68,4 +68,7 @@ A Step's status is derived from its position relative to the current pointer (it
 ---
 
 For the full behavioral spec — including rationale behind every rule — see the
-[V1 Product PRD](./docs/specs/v1-product/PRD.md).
+[V1 Product PRD](./docs/specs/v1-product/PRD.md). The PRD is a point-in-time
+record and keeps its original wedding framing; the behavior it specifies is
+current, the positioning is not (see
+[project-purpose.md](./docs/project-purpose.md)).

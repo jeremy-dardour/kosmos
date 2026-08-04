@@ -51,6 +51,8 @@ interface GoogleIdTokenPayload {
 
 const GSI_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 const ID_TOKEN_STORAGE_KEY = 'kosmos.google-id-token';
+// Pre-rename key — clear the orphaned token from existing browsers.
+const LEGACY_ID_TOKEN_STORAGE_KEY = 'wedding-planner.google-id-token';
 
 const SIGN_IN_BUTTON_OPTIONS = {
   shape: 'rectangular',
@@ -380,7 +382,9 @@ export class GoogleAuthProvider implements AuthSession {
 
   private readStoredToken(): string | null {
     try {
-      return this.getStorage()?.getItem(ID_TOKEN_STORAGE_KEY) ?? null;
+      const storage = this.getStorage();
+      storage?.removeItem(LEGACY_ID_TOKEN_STORAGE_KEY);
+      return storage?.getItem(ID_TOKEN_STORAGE_KEY) ?? null;
     } catch {
       return null;
     }
