@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { Group } from '@/database/entities/group.entity';
 import { Note } from '@/database/entities/note.entity';
+import { ProjectMember } from '@/database/entities/project-member.entity';
 import { Project } from '@/database/entities/project.entity';
 import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
@@ -35,6 +36,7 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
   imports: [
     MikroOrmModule.forFeature([
       Project,
+      ProjectMember,
       Group,
       Workstream,
       Step,

@@ -1,6 +1,7 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Global, Module } from '@nestjs/common';
 
+import { ActorResolutionService } from '@/app/auth/actor-resolution.service';
 import { AuthInitializerService } from '@/app/auth/auth-initializer.service';
 import { AuthUserProvisionerService } from '@/app/auth/auth-user-provisioner.service';
 import { AuthGuard } from '@/app/auth/auth.guard';
@@ -20,8 +21,14 @@ import { User } from '@/database/entities/user.entity';
     MockAuthStrategy,
     AuthInitializerService,
     AuthUserProvisionerService,
+    ActorResolutionService,
     AuthGuard,
   ],
-  exports: [AuthInitializerService, AuthUserProvisionerService, AuthGuard],
+  exports: [
+    AuthInitializerService,
+    AuthUserProvisionerService,
+    ActorResolutionService,
+    AuthGuard,
+  ],
 })
 export class AuthModule {}

@@ -12,6 +12,12 @@ export class ProjectDto {
   @ApiPropertyOptional({ format: 'date', nullable: true })
   eventDate?: string | null;
 
+  @ApiProperty({ format: 'uuid' })
+  ownerId!: string;
+
+  @ApiPropertyOptional({ format: 'date-time', nullable: true })
+  deletedAt?: Date | null;
+
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
 
@@ -24,6 +30,8 @@ export function toProjectDto(project: Project): ProjectDto {
     id: project.id,
     name: project.name,
     eventDate: project.eventDate ?? null,
+    ownerId: project.owner.id,
+    deletedAt: project.deletedAt ?? null,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
   };

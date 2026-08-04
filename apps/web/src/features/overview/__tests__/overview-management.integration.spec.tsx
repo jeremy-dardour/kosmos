@@ -5,12 +5,12 @@ import { describe, expect, it } from 'vitest';
 import { defaultOverview } from '@/features/overview/__tests__/overview-integration.fixtures';
 import { OverviewPage } from '@/features/overview/overview-page';
 import { setupOverviewApi } from '@/testing/mock-api';
-import { renderWithApp } from '@/testing/render-with-app';
+import { renderAtProjectRoute } from '@/testing/render-with-app';
 
 async function openManagementReady() {
   setupOverviewApi(defaultOverview);
   const agent = userEvent.setup();
-  renderWithApp(<OverviewPage />);
+  renderAtProjectRoute(<OverviewPage />);
   await screen.findByRole('heading', { name: 'Our Wedding' });
   return agent;
 }

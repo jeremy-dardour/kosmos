@@ -20,7 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { AuthUserProvisionerService } from '@/app/auth/auth-user-provisioner.service';
+import { ActorResolutionService } from '@/app/auth/actor-resolution.service';
 import {
   ApiCommonErrorResponses,
   ApiForbiddenResponse,
@@ -43,7 +43,7 @@ import type { AuthenticatedRequest } from '@/app/auth/types/token.types';
 export class NoteController {
   constructor(
     private readonly noteService: NoteService,
-    private readonly authUserProvisioner: AuthUserProvisionerService,
+    private readonly actorResolution: ActorResolutionService,
   ) {}
 
   @Get('workstreams/:workstreamId/notes')
@@ -63,9 +63,9 @@ export class NoteController {
     @Body() dto: CreateNoteDto,
     @Req() request: AuthenticatedRequest,
   ): Promise<NoteDto> {
-    const actor = await this.authUserProvisioner.provision(request.user);
+    const actor = await this.actorResolution.resolve(request.user);
 
-    return this.noteService.create(stepId, actor.id!, dto);
+    return this.noteService.create(stepId, actor.id, dto);
   }
 
   @Patch('notes/:id')
@@ -77,9 +77,9 @@ export class NoteController {
     @Body() dto: UpdateNoteDto,
     @Req() request: AuthenticatedRequest,
   ): Promise<NoteDto> {
-    const actor = await this.authUserProvisioner.provision(request.user);
+    const actor = await this.actorResolution.resolve(request.user);
 
-    return this.noteService.update(id, actor.id!, dto);
+    return this.noteService.update(id, actor.id, dto);
   }
 
   @Delete('notes/:id')
@@ -91,8 +91,8 @@ export class NoteController {
     @Param('id', ParseUUIDPipe) id: string,
     @Req() request: AuthenticatedRequest,
   ): Promise<void> {
-    const actor = await this.authUserProvisioner.provision(request.user);
+    const actor = await this.actorResolution.resolve(request.user);
 
-    await this.noteService.remove(id, actor.id!);
+    await this.noteService.remove(id, actor.id);
   }
 }

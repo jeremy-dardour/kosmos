@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -15,8 +16,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { ActorResolutionService } from '@/app/auth/actor-resolution.service';
 import {
   ApiCommonErrorResponses,
+  ApiConflictResponse,
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
 } from '@/app/decorators/api-problem-responses.decorator';
@@ -28,23 +31,29 @@ import {
 } from '@/modules/project/dtos/output/project.dto';
 import { ProjectService } from '@/modules/project/project.service';
 
+import type { AuthenticatedRequest } from '@/app/auth/types/token.types';
+
 @Controller('projects')
 @ApiTags('projects')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()
 @ApiUnauthorizedResponse()
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(
+    private readonly projectService: ProjectService,
+    private readonly actorResolution: ActorResolutionService,
+  ) {}
 
   @Get()
   @ApiOperation({
-    summary: 'List projects',
+    summary: 'List the projects the current user belongs to',
     description:
-      'V1 holds a single project; the client uses this to discover its id on first load.',
+      'Projects the user is a member of, plus their own soft-deleted ones.',
   })
   @ApiOkResponse({ type: [ProjectDto] })
-  async findAll(): Promise<ProjectDto[]> {
-    const projects = await this.projectService.findAll();
+  async findAll(@Req() request: AuthenticatedRequest): Promise<ProjectDto[]> {
+    const actor = await this.actorResolution.resolve(request.user);
+    const projects = await this.projectService.findAllForActor(actor);
 
     return projects.map((project) => toProjectDto(project));
   }
@@ -58,10 +67,19 @@ export class ProjectController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a project' })
+  @ApiOperation({
+    summary: 'Create a project',
+    description: 'The current user becomes its owner and first member.',
+  })
   @ApiCreatedResponse({ type: ProjectDto })
-  async create(@Body() dto: CreateProjectDto): Promise<ProjectDto> {
-    return toProjectDto(await this.projectService.create(dto));
+  @ApiConflictResponse('The owned-project limit is reached')
+  async create(
+    @Body() dto: CreateProjectDto,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ProjectDto> {
+    const actor = await this.actorResolution.resolve(request.user);
+
+    return toProjectDto(await this.projectService.create(dto, actor));
   }
 
   @Patch(':id')

@@ -166,6 +166,23 @@ upsert: claim all pending memberships for the normalized email
 NULL`). Idempotent, concurrent-safe (plain UPDATE), and the only place
 pending → joined happens.
 
+Constraints for later tickets (from the T-1 security review):
+
+- **Unlink ≠ revoke.** The claim runs on every login, so a member row with
+  `user = null` and a matching email is always (re)claimable. Membership
+  removal must **delete** the row; unsetting `user` would be silently undone
+  at the target's next login.
+- **`set null` on user deletion reopens the claim.** If a User row is ever
+  deleted, `deleteRule: 'set null'` reverts their memberships to
+  pending-by-email — a recycled (Workspace) address then inherits them at
+  first login. When user deletion becomes a feature, delete member rows
+  instead (re-invite is cheap; silent inheritance is not).
+- **`ProjectMember.email` lowercase is seam-enforced, not DB-enforced.**
+  `upsertProfile` normalizes; the invite endpoint must lowercase before
+  writing, and the T-2 migration should add a check constraint
+  (`email = lower(email)`) so a mixed-case row can't dodge the claim or
+  duplicate under the case-sensitive `(project, email)` unique.
+
 ---
 
 ## API changes

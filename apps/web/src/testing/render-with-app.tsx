@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import i18n from 'i18next';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
+import { MemoryRouter, Route, Routes } from 'react-router';
 
 import { setApiClient } from '@/api/api-client';
 import { configureApiClient } from '@/api/configure-api-client';
@@ -40,5 +41,16 @@ export function renderWithApp(ui: ReactElement) {
         </ApiErrorProvider>
       </AuthContext>
     </I18nextProvider>,
+  );
+}
+
+/** Renders a page that reads `:projectId` from the route, e.g. `OverviewPage`. */
+export function renderAtProjectRoute(ui: ReactElement, projectId = 'p1') {
+  return renderWithApp(
+    <MemoryRouter initialEntries={[`/projects/${projectId}`]}>
+      <Routes>
+        <Route path="/projects/:projectId" element={ui} />
+      </Routes>
+    </MemoryRouter>,
   );
 }

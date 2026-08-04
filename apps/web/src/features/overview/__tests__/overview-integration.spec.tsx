@@ -13,7 +13,7 @@ import {
   user,
   workstream,
 } from '@/testing/mock-overview-data';
-import { renderWithApp } from '@/testing/render-with-app';
+import { renderAtProjectRoute } from '@/testing/render-with-app';
 import { STUB_USER } from '@/testing/stub-auth';
 
 const BASE = 'http://localhost:3000';
@@ -52,7 +52,7 @@ function renderWithDeadline(deadline: string) {
       }),
     ),
   );
-  renderWithApp(<OverviewPage />);
+  renderAtProjectRoute(<OverviewPage />);
 }
 
 describe('overview page — golden path', () => {
@@ -62,7 +62,7 @@ describe('overview page — golden path', () => {
       authorization = request.headers.get('Authorization');
     });
     const agent = userEvent.setup();
-    renderWithApp(<OverviewPage />);
+    renderAtProjectRoute(<OverviewPage />);
 
     expect(await screen.findByText('Our Wedding')).toBeVisible();
     expect(authorization).toBe('Bearer mockAccessToken');
@@ -97,16 +97,9 @@ describe('overview page — empty states', () => {
         HttpResponse.json({ ...defaultOverview, workstreams: [] }),
       ),
     );
-    renderWithApp(<OverviewPage />);
+    renderAtProjectRoute(<OverviewPage />);
 
     expect(await screen.findByText('No workstreams yet')).toBeVisible();
-  });
-
-  it('shows no-project state when projects list is empty', async () => {
-    server.use(http.get(`${BASE}/api/projects`, () => HttpResponse.json([])));
-    renderWithApp(<OverviewPage />);
-
-    expect(await screen.findByText('No project yet')).toBeVisible();
   });
 });
 
@@ -121,7 +114,7 @@ describe('overview page — loading and error states', () => {
         return HttpResponse.json(defaultOverview);
       }),
     );
-    renderWithApp(<OverviewPage />);
+    renderAtProjectRoute(<OverviewPage />);
 
     expect(
       await screen.findByRole('status', { name: 'Loading overview' }),
@@ -149,7 +142,7 @@ describe('overview page — loading and error states', () => {
         ),
       ),
     );
-    renderWithApp(<OverviewPage />);
+    renderAtProjectRoute(<OverviewPage />);
 
     expect(await screen.findByText('An error occurred')).toBeVisible();
   });
@@ -191,7 +184,7 @@ describe('with frozen date', () => {
           }),
         ),
       );
-      renderWithApp(<OverviewPage />);
+      renderAtProjectRoute(<OverviewPage />);
 
       const badge = await screen.findByTitle('Book caterer due 2026-08-10');
       expect(badge).toHaveTextContent('Book caterer');
@@ -240,7 +233,7 @@ describe('with frozen date', () => {
           }),
         ),
       );
-      renderWithApp(<OverviewPage />);
+      renderAtProjectRoute(<OverviewPage />);
 
       await screen.findByText('Catering');
       expect(screen.queryByTitle(/ due /)).not.toBeInTheDocument();
@@ -270,7 +263,7 @@ describe('with frozen date', () => {
           }),
         ),
       );
-      renderWithApp(<OverviewPage />);
+      renderAtProjectRoute(<OverviewPage />);
 
       const badge = await screen.findByTitle('Book caterer due 2026-07-28');
       expect(badge).toHaveClass('bg-urgency-passed');
@@ -310,7 +303,7 @@ describe('with frozen date', () => {
           }),
         ),
       );
-      renderWithApp(<OverviewPage />);
+      renderAtProjectRoute(<OverviewPage />);
 
       await screen.findByRole('button', { name: 'Rename Catering' });
       expect(screen.getByText('Jul 15')).toBeVisible();
@@ -359,7 +352,7 @@ describe('with frozen date', () => {
         ),
       );
       const agent = userEvent.setup();
-      renderWithApp(<OverviewPage />);
+      renderAtProjectRoute(<OverviewPage />);
 
       await screen.findByText('Catering');
       expect(screen.getByText('Flowers')).toBeVisible();
@@ -422,7 +415,7 @@ describe('with frozen date', () => {
         ),
       );
       const agent = userEvent.setup();
-      renderWithApp(<OverviewPage />);
+      renderAtProjectRoute(<OverviewPage />);
 
       await screen.findByText('Catering');
       expect(screen.getByText('Flowers')).toBeVisible();
@@ -491,7 +484,7 @@ describe('with frozen date', () => {
         ),
       );
       const agent = userEvent.setup();
-      renderWithApp(<OverviewPage />);
+      renderAtProjectRoute(<OverviewPage />);
 
       await screen.findByText('Catering');
       expect(screen.getByText('Flowers')).toBeVisible();

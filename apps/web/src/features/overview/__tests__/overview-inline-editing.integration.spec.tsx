@@ -11,7 +11,7 @@ import {
   user,
   workstream,
 } from '@/testing/mock-overview-data';
-import { renderWithApp } from '@/testing/render-with-app';
+import { renderAtProjectRoute } from '@/testing/render-with-app';
 
 import type { Overview } from '@/api/hooks/use-overview';
 
@@ -67,7 +67,7 @@ function overviewOf(): Overview {
 function renderPage() {
   const api = setupOverviewApi(overviewOf());
   const agent = userEvent.setup();
-  renderWithApp(<OverviewPage />);
+  renderAtProjectRoute(<OverviewPage />);
   return { api, agent };
 }
 
@@ -386,7 +386,7 @@ describe('inline overview editing — keyboard paths', () => {
       ),
     }));
     const agent = userEvent.setup();
-    renderWithApp(<OverviewPage />);
+    renderAtProjectRoute(<OverviewPage />);
     await screen.findByRole('button', { name: 'Rename Catering' });
 
     const marker = within(cardOf('Catering')).getByRole('button', {

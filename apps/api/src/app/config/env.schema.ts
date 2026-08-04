@@ -41,6 +41,14 @@ export const envSchema = baseEnvSchema
         message: 'SERVE_STATIC_DIR must be an absolute path',
       }),
 
+    MAX_OWNED_PROJECTS: z
+      .string()
+      .default('20')
+      .transform(Number)
+      .refine((value) => Number.isSafeInteger(value) && value > 0, {
+        message: 'MAX_OWNED_PROJECTS must be a positive integer',
+      }),
+
     AUTH_CLIENT_ID: z.string().optional(),
     AUTH_OIDC_DISCOVERY_URL: z.url().optional(),
     AUTH_ALLOWED_EMAILS: allowedEmailsSchema,
@@ -83,5 +91,22 @@ export const envSchema = baseEnvSchema
 export type Env = z.infer<typeof envSchema>;
 
 export function validateEnv(config: Record<string, unknown>): Env {
-  return validateEnvSchema(envSchema, config, 'App');
+  const env = validateEnvSchema(envSchema, config, 'App');
+
+  // Checked against the raw config, not the parsed env: NODE_ENV defaults to
+  // 'development', and mock auth must never activate because the default —
+  // rather than an explicit choice — satisfied its environment gate.
+  if (
+    env.FAKE_AUTH &&
+    config.NODE_ENV !== 'development' &&
+    config.NODE_ENV !== 'test'
+  ) {
+    throw new Error(
+      'App environment validation failed:\n' +
+        'FAKE_AUTH: FAKE_AUTH=true requires NODE_ENV to be explicitly set to development or test\n\n' +
+        'Check .env file or environment variables',
+    );
+  }
+
+  return env;
 }
