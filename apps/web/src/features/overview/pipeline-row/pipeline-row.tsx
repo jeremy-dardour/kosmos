@@ -10,6 +10,7 @@ import { ChecklistPreview } from '@/features/overview/pipeline-row/checklist-pre
 import { InsertStepPoint } from '@/features/overview/pipeline-row/insert-step-point';
 import { STEP_STATUS_LABELS } from '@/features/overview/step-status-labels';
 import { urgencyBand } from '@/features/overview/urgency';
+import { URGENCY_TEXT_CLASSES } from '@/features/overview/urgency-classes';
 import { cn } from '@/lib/utils';
 
 import type {
@@ -37,33 +38,21 @@ const DOT_CLASSES: Record<StepVisual, string> = {
 
 const STATUS_LABELS = STEP_STATUS_LABELS satisfies Record<StepVisual, string>;
 
-/**
- * Red → orange → yellow → grey. The ring reads `currentColor`, so one class per
- * band drives both the dot's ring and its date — they can never disagree.
- */
-const BAND_COLORS: Record<UrgencyBand, string> = {
-  passed: 'text-urgency-passed',
-  week: 'text-urgency-week-foreground',
-  fortnight: 'text-urgency-fortnight-foreground',
-  month: 'text-urgency-month-foreground',
-  far: 'text-urgency-far',
-};
-
 const BAND_DATE_CLASSES: Record<UrgencyBand, string> = {
-  passed: `font-semibold ${BAND_COLORS.passed}`,
-  week: `font-medium ${BAND_COLORS.week}`,
-  fortnight: BAND_COLORS.fortnight,
-  month: BAND_COLORS.month,
-  far: BAND_COLORS.far,
+  passed: `font-semibold ${URGENCY_TEXT_CLASSES.passed}`,
+  week: `font-medium ${URGENCY_TEXT_CLASSES.week}`,
+  fortnight: URGENCY_TEXT_CLASSES.fortnight,
+  month: URGENCY_TEXT_CLASSES.month,
+  far: URGENCY_TEXT_CLASSES.far,
 };
 
 /** Every dated step ahead of the pointer is ringed; only the weight varies. */
 const BAND_RING_CLASSES: Record<UrgencyBand, string> = {
-  passed: `ring-[3px] ${BAND_COLORS.passed}`,
-  week: `ring-2 ${BAND_COLORS.week}`,
-  fortnight: `ring-2 ${BAND_COLORS.fortnight}`,
-  month: `ring-2 ${BAND_COLORS.month}`,
-  far: `ring-2 ${BAND_COLORS.far}`,
+  passed: `ring-[3px] ${URGENCY_TEXT_CLASSES.passed}`,
+  week: `ring-2 ${URGENCY_TEXT_CLASSES.week}`,
+  fortnight: `ring-2 ${URGENCY_TEXT_CLASSES.fortnight}`,
+  month: `ring-2 ${URGENCY_TEXT_CLASSES.month}`,
+  far: `ring-2 ${URGENCY_TEXT_CLASSES.far}`,
 };
 
 interface PipelineRowProperties {

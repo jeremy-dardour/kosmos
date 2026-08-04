@@ -1,9 +1,19 @@
 import { FilterIcon } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  agendaAnchorId,
+  agendaSectionOf,
+} from '@/features/overview/widgets/agenda-anchors';
+import { AgendaWidget } from '@/features/overview/widgets/agenda-widget';
+import { CalendarWidget } from '@/features/overview/widgets/calendar-widget';
 import { CollapsibleSection } from '@/features/overview/widgets/collapsible-section';
-import { collectDeadlineEntries } from '@/features/overview/widgets/collect-deadline-entries';
+import {
+  collectDeadlineEntries,
+  groupEntriesByDate,
+} from '@/features/overview/widgets/collect-deadline-entries';
+import { bucketDeadlineEntries } from '@/features/overview/widgets/deadline-buckets';
 import { derivePulseStats } from '@/features/overview/widgets/project-pulse-stats';
 import { StatsWidget } from '@/features/overview/widgets/stats-widget';
 import { WidgetRail } from '@/features/overview/widgets/widget-rail';
@@ -32,6 +42,8 @@ interface PanelState {
 const DEFAULT_STATE: PanelState = { open: true, collapsedSections: [] };
 const DEFAULT_STORAGE_KEY = 'overview.widget-panel';
 const PULSE_SECTION = 'stats';
+const CALENDAR_SECTION = 'calendar';
+const AGENDA_SECTION = 'agenda';
 
 function isPanelState(value: unknown): value is PanelState {
   if (typeof value !== 'object' || value === null) return false;
@@ -58,6 +70,9 @@ export const WidgetSidebar = ({
   storageKey = DEFAULT_STORAGE_KEY,
 }: WidgetSidebarProperties) => {
   const { t } = useTranslation();
+  const sidebarId = useId();
+  // A fresh object per pick, so picking the same day twice scrolls twice.
+  const [jump, setJump] = useState<{ anchorId: string } | null>(null);
 
   const [storedState, setStoredState] = useLocalStorageState<PanelState>(
     storageKey,
@@ -71,10 +86,19 @@ export const WidgetSidebar = ({
     () => collectDeadlineEntries(workstreams),
     [workstreams],
   );
-  const stats = useMemo(
-    () => derivePulseStats(workstreams, entries, now),
-    [workstreams, entries, now],
-  );
+  const entriesByDate = useMemo(() => groupEntriesByDate(entries), [entries]);
+  // `now` is a fresh Date every render, so memoizing on it would never hit.
+  const buckets = bucketDeadlineEntries(entries, now);
+  const stats = derivePulseStats(workstreams, buckets);
+
+  useEffect(() => {
+    if (!jump) return;
+
+    // The panel is its own scroll container, so this moves the panel alone.
+    document
+      .querySelector(`#${CSS.escape(jump.anchorId)}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [jump]);
 
   const togglePanel = () => {
     setStoredState({ ...panel, open: !panel.open });
@@ -86,6 +110,18 @@ export const WidgetSidebar = ({
       collapsedSections: panel.collapsedSections.includes(key)
         ? panel.collapsedSections.filter((collapsed) => collapsed !== key)
         : [...panel.collapsedSections, key],
+    });
+  };
+
+  const handleSelectDay = (iso: string) => {
+    setStoredState({
+      ...panel,
+      collapsedSections: panel.collapsedSections.filter(
+        (collapsed) => collapsed !== AGENDA_SECTION,
+      ),
+    });
+    setJump({
+      anchorId: agendaAnchorId(sidebarId, agendaSectionOf(buckets, iso)),
     });
   };
 
@@ -114,6 +150,35 @@ export const WidgetSidebar = ({
             <StatsWidget
               stats={stats}
               now={now}
+              onEntryClick={onEntryClick}
+              onEntryHover={onEntryHover}
+            />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title={t('overview.widgets.calendar.title')}
+            isOpen={!panel.collapsedSections.includes(CALENDAR_SECTION)}
+            onToggle={() => toggleSection(CALENDAR_SECTION)}
+          >
+            <CalendarWidget
+              entriesByDate={entriesByDate}
+              now={now}
+              onSelectDay={handleSelectDay}
+            />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title={t('overview.widgets.agenda.title')}
+            summary={t('overview.widgets.agenda.pending', {
+              count: entries.length,
+            })}
+            isOpen={!panel.collapsedSections.includes(AGENDA_SECTION)}
+            onToggle={() => toggleSection(AGENDA_SECTION)}
+          >
+            <AgendaWidget
+              buckets={buckets}
+              now={now}
+              anchorPrefix={sidebarId}
               onEntryClick={onEntryClick}
               onEntryHover={onEntryHover}
             />

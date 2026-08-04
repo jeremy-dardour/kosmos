@@ -22,6 +22,11 @@ src/
   i18n/           → Translations (i18next, JSON files per locale)
 ```
 
+The overview's `widgets/` subsystem additionally follows
+[ADR 0010](../../docs/adr/0010-presentational-widgets-client-side-derivation.md):
+widgets are presentational (derived data + injected callbacks, inert without
+them) and all widget data derives client-side.
+
 ## Components
 
 - Function components with named exports

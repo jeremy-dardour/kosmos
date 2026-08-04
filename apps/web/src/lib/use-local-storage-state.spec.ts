@@ -2,29 +2,9 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useLocalStorageState } from '@/lib/use-local-storage-state';
+import { createMemoryStorage } from '@/testing/memory-storage';
 
 const KEY = 'widget-panel:test';
-
-// Node 25 defines its own (unusable) `localStorage` global, which shadows the
-// jsdom one, so tests supply the storage instead of relying on the environment.
-function createMemoryStorage(): Storage {
-  const entries = new Map<string, string>();
-
-  return {
-    get length() {
-      return entries.size;
-    },
-    clear: () => entries.clear(),
-    getItem: (key) => entries.get(key) ?? null,
-    key: (index) => entries.keys().toArray()[index] ?? null,
-    removeItem: (key) => {
-      entries.delete(key);
-    },
-    setItem: (key, value) => {
-      entries.set(key, value);
-    },
-  };
-}
 
 describe('useLocalStorageState', () => {
   let storage: Storage;

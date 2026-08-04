@@ -5,24 +5,30 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-08-03 (session 35)_
+_Last updated: 2026-08-03 (session 36)_
 
 ## Phase
 
-**#49 (widget rail + panel shell + Project pulse) implemented — PR #52 open
-for review.** All twelve plan commits (C1–C12) landed green on
-`feat/49-widget-panel` via orchestrated implementer agents, each diff
-reviewed and gated (`check-types`/`lint`/full web suite) before committing.
-Two independent review batches came back with three Low findings, all
-actioned in-branch; the five inline PR questions are answered on PR #52.
-Visual verification passed in light and dark (panel toggle + persistence,
-stats vs seed, filter mirroring, cross-links, C11 button restyle).
-Placeholder PR #51 is closed; `temp-from-proto-2` stays as prototype
-reference until #50. Next: user review of PR #52, then **deployment
+**Both widget tickets (#49 + #50) implemented — PR #52 open for review.**
+On top of #49's rail/panel/Project pulse, #50 added the Calendar month grid
+and Agenda sections on the same branch: eight plan commits (C13–C20, plan
+recorded as a [PR comment](https://github.com/jeremy-dardour/wedding-planner/pull/52#issuecomment-5170525804))
+plus two review commits, all orchestrator-gated
+(`check-types`/`lint`/full web suite; 405 web tests at tip). Four review
+passes ran after implementation — two-axis `/code-review`, a whole-diff
+security review (clean), and a codebase-design simplification review —
+with one spec bug fixed and eight refactors actioned in-branch
+(`derivePulseStats` consumes agenda buckets; anchor scheme owned by
+`agenda-buckets.ts`; one `urgency-classes.ts` at the feature root). Visual
+verification passed in light and dark (grid marks/today ring, month nav,
+overdue-month jump, entry cross-links, filter mirroring).
+`docs/prototype/widget-panel/` is deleted; PR #52 now closes both tickets;
+`temp-from-proto-2` dies after the squash-merge. Next: user review of
+PR #52, then **deployment
 ([#26](https://github.com/jeremy-dardour/wedding-planner/issues/26))** —
 which should also pick up the noted `NULLS NOT DISTINCT` migration for the
 ungrouped position scope. Session log:
-[session 35](./sessions/session-35-2026-08-03-49-widget-panel-implementation.md).
+[session 36](./sessions/session-36-2026-08-03-50-calendar-agenda-widgets.md).
 
 ## Done
 
@@ -208,11 +214,27 @@ ungrouped position scope. Session log:
   suffix for type-only modules; feature-hosted subsystem folders. Eight
   integration scenarios cover the panel end-to-end; test-env caveat: Node
   25 shadows jsdom `localStorage`, specs stub an in-memory Storage.
+- **#50 — calendar + agenda widgets** — implemented on the same branch
+  (PR #52). Two more collapsible panel sections off one shared
+  pending-deadline derivation: a Monday-first month grid
+  (`calendar-grid.ts` pure matrix math, `Intl`-based
+  `calendar-locale.ts` names, urgency dots capped at 3 with full `title`
+  tooltips, today ring, free month nav) and the agenda list
+  (`agenda-buckets.ts` overdue split + contiguous month buckets, which
+  also owns section anchor identity — `agendaAnchorId`/`agendaSectionOf`;
+  `DeadlineRow` reused untouched). Grid→agenda jump = pending-anchor
+  state + post-commit effect, anchors namespaced per sidebar via
+  `useId()`; `derivePulseStats` consumes the buckets so pulse and agenda
+  agree by construction; band colour maps unified in
+  `features/overview/urgency-classes.ts`; shared `deadlineEntry` factory
+  and `createMemoryStorage` extracted to `src/testing/`. Four-way review
+  (code-review both axes, security, simplification) actioned in-branch
+  ([session 36](./sessions/session-36-2026-08-03-50-calendar-agenda-widgets.md)).
 
 ## In flight
 
-- **PR #52 (`feat/49-widget-panel`)** — implementation complete, awaiting
-  the user's review.
+- **PR #52 (`feat/49-widget-panel`)** — #49 + #50 both implemented and
+  reviewed, awaiting the user's review and squash-merge.
 
 ## Open questions
 
@@ -220,10 +242,8 @@ ungrouped position scope. Session log:
 
 ## Next steps
 
-1. User review + squash-merge of PR #52.
+1. User review + squash-merge of PR #52 (closes #49 and #50); delete the
+   `temp-from-proto-2` branch after the merge.
 2. **Deployment (#26)** — the last V1 milestone. Include the noted
    `NULLS NOT DISTINCT` migration for the ungrouped workstream position
    scope while a migration PR is open anyway.
-3. **#50 — calendar + agenda widgets** (post-V1), building on the #49 shell;
-   delete `docs/prototype/widget-panel/` and the `temp-from-proto-2` branch
-   when it lands.
