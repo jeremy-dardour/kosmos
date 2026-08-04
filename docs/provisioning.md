@@ -1,11 +1,5 @@
 # Provisioning a production environment
 
-> **Cutover status:** this guide names the post-rename resources (`kosmos`
-> service, `kosmos-runtime` SA, `jeremy-dardour/kosmos` repo). Until the
-> [external cutover](./specs/kosmos-rename/implementation-plan.md#phase-5--external-cutover)
-> completes, the live environment still uses the `wedding-planner` names.
-> Remove this note after cutover.
-
 One-time setup of all infrastructure for a deployment environment (GCP +
 Neon + GitHub), as decided in
 [issue #26](https://github.com/jeremy-dardour/kosmos/issues/26).
@@ -16,6 +10,12 @@ these choices is recorded on the issue and in
 
 Substitute the `<...>` placeholders; everything else is decided and should
 be used as written.
+
+The production GCP project keeps its historical ID `wedding-planner-503413`
+(project IDs are immutable), so names derived from it — the backup bucket,
+the Artifact Registry repo — carry it too. Only the project's display name
+says Kosmos. This is internal-only and deliberate; a matching ID would have
+required migrating every resource to a new project.
 
 Steps 1–8 are automated as an idempotent script,
 [`deployment/provision.sh`](../deployment/provision.sh) — run it for a new

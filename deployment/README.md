@@ -1,14 +1,5 @@
 # Production deployment runbook
 
-> **Cutover status:** this runbook names the post-rename resources (`kosmos`
-> service, `kosmos-runtime` SA, `jeremy-dardour/kosmos` repo). Until the
-> [external cutover](../docs/specs/kosmos-rename/implementation-plan.md#phase-5--external-cutover)
-> completes, the live resources still carry the `wedding-planner` names —
-> substitute accordingly. The cutover itself is [`provision.sh`](./provision.sh)
-> (converges the kosmos resources) followed, after verification, by
-> [`cutover-teardown-old-name.sh`](./cutover-teardown-old-name.sh) (deletes the
-> old-name resources). Remove this note after cutover.
-
 The production deployment is one Cloud Run service in `europe-west1`. It
 serves the API and built SPA from the same container and connects directly to
 Neon in AWS `eu-central-1`. The single-container web-serving decision and its

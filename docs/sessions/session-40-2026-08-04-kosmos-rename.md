@@ -52,10 +52,12 @@
 
 ## Status at end of session
 
-Draft PR #62 contains the repository-safe Kosmos rename, reviewed and with all
-findings actioned; validation is green apart from browser visual inspection
-(now tracked as the PRD's open question on brand-mark theming plus a
-post-merge visual pass). After merge, the remaining work is the external
-cutover: `deployment/provision.sh` right after the repository rename, manual
-OAuth console steps, verification, then
-`deployment/cutover-teardown-old-name.sh`.
+PR #62 merged and the **external cutover completed live in this session**:
+repository renamed to `jeremy-dardour/kosmos`, `provision.sh` run against the
+existing project (WIF converged, `kosmos-runtime` created, `allowed-emails`
+secret created, `kosmos` service deployed), OAuth consent and origins updated,
+CD and the nightly backup verified end-to-end, old-name resources torn down
+and the temporary teardown script deleted. Two cutover lessons were folded
+back into `provision.sh`: fail fast on version-less secrets (empty stdin on a
+non-interactive run) and 512Mi as the observed startup memory floor. The
+browser visual pass remains open (brand-mark theming question in the PRD).
