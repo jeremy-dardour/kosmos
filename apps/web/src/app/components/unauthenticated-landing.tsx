@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { KosmosLogo } from '@/app/components/brand/kosmos-logo';
 import { SignInButton, useAuth } from '@/auth';
 import { Button } from '@/components/ui/button';
 
@@ -22,6 +23,10 @@ export function UnauthenticatedLanding({
     <div className="min-h-screen bg-[linear-gradient(135deg,#f8f7f3_0%,#ffffff_44%,#eef3ef_100%)] text-foreground">
       <div className="mx-auto grid min-h-screen w-full max-w-5xl items-center gap-10 px-6 py-10 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="space-y-7">
+          <KosmosLogo
+            className="flex items-center gap-3 text-2xl font-semibold tracking-tight"
+            markClassName="size-11"
+          />
           <div className="w-fit border border-border bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             {t('auth.landing.badge')}
           </div>

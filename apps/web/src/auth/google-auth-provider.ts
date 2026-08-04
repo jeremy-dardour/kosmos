@@ -50,7 +50,7 @@ interface GoogleIdTokenPayload {
 }
 
 const GSI_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
-const ID_TOKEN_STORAGE_KEY = 'wedding-planner.google-id-token';
+const ID_TOKEN_STORAGE_KEY = 'kosmos.google-id-token';
 
 const SIGN_IN_BUTTON_OPTIONS = {
   shape: 'rectangular',

@@ -28,7 +28,7 @@ const googleAuthTestState: {
 } = {};
 
 describe('googleAuthProvider', () => {
-  const storageKey = 'wedding-planner.google-id-token';
+  const storageKey = 'kosmos.google-id-token';
   const googleGlobal = globalThis as GoogleTestGlobal;
   const fetchMock = vi.fn<typeof fetch>();
   let token: string;

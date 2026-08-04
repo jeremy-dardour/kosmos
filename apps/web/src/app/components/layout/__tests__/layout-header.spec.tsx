@@ -39,7 +39,7 @@ describe('layoutHeader', () => {
   });
 
   it('should render the app title', () => {
-    const title = screen.getByText('app.logo.description');
+    const title = screen.getByText('Kosmos');
     expect(title).toBeInTheDocument();
   });
 

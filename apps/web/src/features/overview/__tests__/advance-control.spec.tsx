@@ -323,7 +323,7 @@ describe('advanceControl', () => {
   it('surfaces the server detail and keeps the action after a rejected advance', async () => {
     const api = setupOverviewApi(overviewOf(catering));
     api.mockAdvanceError('w-catering', 409, {
-      type: 'https://wedding-planner.dev/errors/workstream-not-advanceable',
+      type: 'https://kosmos.dev/errors/workstream-not-advanceable',
       title: 'Workstream cannot be advanced',
       status: 409,
       detail: 'This workstream is already complete.',

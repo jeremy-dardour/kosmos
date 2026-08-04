@@ -1,7 +1,7 @@
 {
   "auth.landing.badge": "Espace privé",
-  "auth.landing.title": "Wedding planner",
-  "auth.landing.subtitle": "Connectez-vous avec un compte Google autorisé pour accéder au tableau de bord.",
+  "auth.landing.title": "Des projets ordonnés, toujours en mouvement.",
+  "auth.landing.subtitle": "Réunissez chantiers, étapes, responsables et échéances dans une vue projet claire.",
   "auth.landing.access.title": "Accès",
   "auth.landing.status.checking": "Vérification d'une session valide dans cet onglet...",
   "auth.landing.status.signIn": "Aucune session active n'a été trouvée.",
@@ -15,7 +15,7 @@
   "app.errorDialog.title": "Une erreur est survenue",
   "app.errorDialog.description": "Veuillez réessayer ultérieurement.",
   "app.errorDialog.okButton": "Ok",
-  "app.logo.description": "Application",
+  "app.logo.description": "Accueil Kosmos",
   "app.userMenu.logout": "Se déconnecter",
   "projects.list.title": "Vos projets",
   "projects.list.loading": "Chargement des projets",

@@ -42,7 +42,7 @@ function problemDetails(
   overrides: ProblemOverrides = {},
 ): Record<string, unknown> {
   return {
-    type: 'https://wedding-planner.dev/problems/not-found',
+    type: 'https://kosmos.dev/problems/not-found',
     title: 'Not Found',
     status,
     detail: 'The requested resource was not found',
@@ -70,7 +70,7 @@ function conflict(slug: string, detail: string) {
   return problemResponse(
     409,
     problemDetails(409, {
-      type: `https://wedding-planner.dev/errors/${slug}`,
+      type: `https://kosmos.dev/errors/${slug}`,
       title: 'Conflict',
       detail,
     }),
@@ -82,7 +82,7 @@ function emptyName() {
   return problemResponse(
     422,
     problemDetails(422, {
-      type: 'https://wedding-planner.dev/errors/validation-failed',
+      type: 'https://kosmos.dev/errors/validation-failed',
       title: 'Validation Failed',
       detail: 'name: name should not be empty',
     }),
@@ -787,7 +787,7 @@ export function setupNotesApi(
         return problemResponse(
           403,
           problemDetails(403, {
-            type: 'https://wedding-planner.dev/errors/not-note-author',
+            type: 'https://kosmos.dev/errors/not-note-author',
             title: 'Forbidden',
             detail: 'Only the note author can change this note',
           }),

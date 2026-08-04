@@ -1,5 +1,5 @@
 // Kept for reference: items was template scaffolding, not part of the
-// wedding-planner domain. See e2e/smoke.spec.ts for the current placeholder.
+// Kosmos domain. See e2e/smoke.spec.ts for the current placeholder.
 /* eslint-disable unicorn/no-empty-file, vitest/no-commented-out-tests */
 //
 // import { test, expect } from './fixtures';

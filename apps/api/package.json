@@ -2,7 +2,7 @@
   "name": "api",
   "version": "0.0.1",
   "private": true,
-  "description": "Template API",
+  "description": "Kosmos API",
   "license": "MIT",
   "scripts": {
     "build": "nest build",

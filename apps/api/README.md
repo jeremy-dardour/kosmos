@@ -1,6 +1,7 @@
-# Template API
+# Kosmos API
 
-NestJS backend for the fullstack template. Exposes a typed, contract-first REST API with OpenAPI and uses MikroORM for PostgreSQL persistence.
+NestJS backend for Kosmos. It exposes a typed, contract-first REST API with
+OpenAPI and uses MikroORM for PostgreSQL persistence.
 
 ## Setup
 
@@ -64,7 +65,7 @@ directly via the workflow, and never reads either file.
 
 ## CLI Commands
 
-The template includes a `nest-commander` CLI shell for background jobs or one-off scripts:
+The API includes a `nest-commander` CLI shell for background jobs or one-off scripts:
 
 ```bash
 pnpm command:build-and-run:example
