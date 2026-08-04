@@ -60,8 +60,11 @@ export class ProjectController {
   @ApiOperation({ summary: 'Get a project' })
   @ApiOkResponse({ type: ProjectDto })
   @ApiNotFoundResponse()
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<ProjectDto> {
-    return toProjectDto(await this.projectService.findOne(id));
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Actor() actor: User,
+  ): Promise<ProjectDto> {
+    return toProjectDto(await this.projectService.findOne(id, actor));
   }
 
   @Post()
@@ -85,7 +88,8 @@ export class ProjectController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProjectDto,
+    @Actor() actor: User,
   ): Promise<ProjectDto> {
-    return toProjectDto(await this.projectService.update(id, dto));
+    return toProjectDto(await this.projectService.update(id, dto, actor));
   }
 }

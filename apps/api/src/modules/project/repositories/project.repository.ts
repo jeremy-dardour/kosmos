@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 
 import { ProjectMember } from '@/database/entities/project-member.entity';
 import { Project } from '@/database/entities/project.entity';
+import { memberProject } from '@/modules/project/repositories/membership.query';
 
 import type { User } from '@/database/entities/user.entity';
 
@@ -27,6 +28,15 @@ export class ProjectRepository extends EntityRepository<Project> {
       },
       { orderBy: { createdAt: 'asc' } },
     );
+  }
+
+  /**
+   * The single-project read/write root: members only, and a soft-deleted
+   * project 404s even for its owner — content routes never see the trash
+   * (only the list above and T-4's restore do).
+   */
+  async findOneForActor(id: string, actorId: string): Promise<Project> {
+    return this.findOneOrFail({ id, ...memberProject(actorId) });
   }
 
   /**

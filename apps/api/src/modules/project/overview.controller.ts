@@ -13,6 +13,7 @@ import {
 } from '@nestjs/swagger';
 
 import { ActorInterceptor } from '@/app/auth/actor.interceptor';
+import { Actor } from '@/app/auth/decorators';
 import {
   ApiCommonErrorResponses,
   ApiNotFoundResponse,
@@ -20,6 +21,8 @@ import {
 } from '@/app/decorators/api-problem-responses.decorator';
 import { OverviewDto } from '@/modules/project/dtos/output/overview.dto';
 import { OverviewService } from '@/modules/project/overview.service';
+
+import type { User } from '@/database/entities/user.entity';
 
 @Controller('projects/:projectId/overview')
 @UseInterceptors(ActorInterceptor)
@@ -40,7 +43,8 @@ export class OverviewController {
   @ApiOkResponse({ type: OverviewDto })
   async getOverview(
     @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Actor() actor: User,
   ): Promise<OverviewDto> {
-    return this.overviewService.getOverview(projectId);
+    return this.overviewService.getOverview(projectId, actor);
   }
 }

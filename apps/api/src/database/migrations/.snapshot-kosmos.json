@@ -760,7 +760,13 @@
           "unique": false
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "project_member_check",
+          "expression": "email = lower(email)",
+          "definition": "check (email = lower(email))"
+        }
+      ],
       "triggers": [],
       "foreignKeys": {
         "project_member_project_id_foreign": {
