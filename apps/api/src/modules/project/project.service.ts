@@ -24,16 +24,16 @@ export class ProjectService {
     });
   }
 
-  async findAllForActor(actor: User): Promise<Project[]> {
-    return this.projectRepository.findAllForActor(actor.id);
+  async findAllForUser(currentUser: User): Promise<Project[]> {
+    return this.projectRepository.findAllForUser(currentUser.id);
   }
 
-  async findOne(id: string, actor: User): Promise<Project> {
-    return this.projectRepository.findOneForActor(id, actor.id);
+  async findOne(id: string, currentUser: User): Promise<Project> {
+    return this.projectRepository.findOneForUser(id, currentUser.id);
   }
 
-  async create(dto: CreateProjectDto, actor: User): Promise<Project> {
-    return this.projectRepository.createOwned(actor, (ownedCount) => {
+  async create(dto: CreateProjectDto, currentUser: User): Promise<Project> {
+    return this.projectRepository.createOwned(currentUser, (ownedCount) => {
       if (ownedCount >= this.maxOwnedProjects) {
         conflict(
           'project-limit-reached',
@@ -44,7 +44,7 @@ export class ProjectService {
       const project = new Project();
       project.name = dto.name;
       project.eventDate = dto.eventDate ?? null;
-      project.owner = actor;
+      project.owner = currentUser;
 
       return project;
     });
@@ -53,9 +53,9 @@ export class ProjectService {
   async update(
     id: string,
     dto: UpdateProjectDto,
-    actor: User,
+    currentUser: User,
   ): Promise<Project> {
-    const project = await this.findOne(id, actor);
+    const project = await this.findOne(id, currentUser);
 
     if (dto.name !== undefined) {
       project.name = dto.name;

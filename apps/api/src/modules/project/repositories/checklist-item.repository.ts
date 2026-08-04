@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 
 import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { lockWorkstreamGraphOfStep } from '@/modules/project/repositories/lock-workstream-graph.query';
-import { memberProject } from '@/modules/project/repositories/membership.query';
+import { projectVisibleTo } from '@/modules/project/repositories/membership.query';
 
 import type { Step } from '@/database/entities/step.entity';
 import type { Workstream } from '@/database/entities/workstream.entity';
@@ -28,14 +28,14 @@ export class ChecklistItemRepository extends EntityRepository<ChecklistItem> {
    */
   async createLocked(
     stepId: string,
-    actorId: string,
+    currentUserId: string,
     build: (step: Step, workstream: Workstream) => ChecklistItem,
   ): Promise<ChecklistItem> {
     return this.em.transactional(async (em) => {
       const { workstream, step } = await lockWorkstreamGraphOfStep(
         em,
         stepId,
-        actorId,
+        currentUserId,
       );
 
       const item = build(step, workstream);
@@ -49,11 +49,15 @@ export class ChecklistItemRepository extends EntityRepository<ChecklistItem> {
 
   async updateLocked(
     id: string,
-    actorId: string,
+    currentUserId: string,
     apply: ApplyToItem,
   ): Promise<ChecklistItem> {
     return this.em.transactional(async (em) => {
-      const { workstream, item } = await this.lockGraphOf(em, id, actorId);
+      const { workstream, item } = await this.lockGraphOf(
+        em,
+        id,
+        currentUserId,
+      );
 
       apply(item, workstream);
       workstream.touch();
@@ -66,11 +70,15 @@ export class ChecklistItemRepository extends EntityRepository<ChecklistItem> {
   /** Same lock as `updateLocked`; `apply` renumbers the siblings left behind. */
   async removeLocked(
     id: string,
-    actorId: string,
+    currentUserId: string,
     apply: ApplyToItem,
   ): Promise<void> {
     await this.em.transactional(async (em) => {
-      const { workstream, item } = await this.lockGraphOf(em, id, actorId);
+      const { workstream, item } = await this.lockGraphOf(
+        em,
+        id,
+        currentUserId,
+      );
 
       apply(item, workstream);
       workstream.touch();
@@ -82,19 +90,22 @@ export class ChecklistItemRepository extends EntityRepository<ChecklistItem> {
   private async lockGraphOf(
     em: SqlEntityManager,
     id: string,
-    actorId: string,
+    currentUserId: string,
   ): Promise<{ workstream: Workstream; item: ChecklistItem }> {
     // Scoped like the step lookup in lockWorkstreamGraphOfStep: a non-member
     // must get the same "ChecklistItem not found" as a nonexistent id.
     const unlocked = await em.findOneOrFail(
       ChecklistItem,
-      { id, step: { workstream: { project: memberProject(actorId) } } },
+      {
+        id,
+        step: { workstream: { project: projectVisibleTo(currentUserId) } },
+      },
       { populate: ['step'] },
     );
     const { workstream, step } = await lockWorkstreamGraphOfStep(
       em,
       unlocked.step.id,
-      actorId,
+      currentUserId,
     );
     const item = step.getChecklistItems().find((sibling) => sibling.id === id);
 

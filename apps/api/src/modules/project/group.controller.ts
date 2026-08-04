@@ -10,7 +10,6 @@ import {
   Patch,
   Post,
   Put,
-  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -21,8 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ActorInterceptor } from '@/app/auth/actor.interceptor';
-import { Actor } from '@/app/auth/decorators';
+import { CurrentUser } from '@/app/auth/decorators';
 import {
   ApiCommonErrorResponses,
   ApiConflictResponse,
@@ -38,7 +36,6 @@ import { GroupService } from '@/modules/project/group.service';
 import type { User } from '@/database/entities/user.entity';
 
 @Controller()
-@UseInterceptors(ActorInterceptor)
 @ApiTags('groups')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()
@@ -52,9 +49,12 @@ export class GroupController {
   @ApiOkResponse({ type: [GroupDto] })
   async findAll(
     @Param('projectId', ParseUUIDPipe) projectId: string,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<GroupDto[]> {
-    const groups = await this.groupService.findAllByProject(projectId, actor);
+    const groups = await this.groupService.findAllByProject(
+      projectId,
+      currentUser,
+    );
 
     return groups.map((group) => toGroupDto(group));
   }
@@ -65,9 +65,11 @@ export class GroupController {
   async create(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() dto: CreateGroupDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<GroupDto> {
-    return toGroupDto(await this.groupService.create(projectId, dto, actor));
+    return toGroupDto(
+      await this.groupService.create(projectId, dto, currentUser),
+    );
   }
 
   @Put('projects/:projectId/group-order')
@@ -81,9 +83,9 @@ export class GroupController {
   async reorder(
     @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() dto: ReorderGroupsDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<GroupDto[]> {
-    const groups = await this.groupService.reorder(projectId, dto, actor);
+    const groups = await this.groupService.reorder(projectId, dto, currentUser);
 
     return groups.map((group) => toGroupDto(group));
   }
@@ -94,9 +96,9 @@ export class GroupController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateGroupDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<GroupDto> {
-    return toGroupDto(await this.groupService.update(id, dto, actor));
+    return toGroupDto(await this.groupService.update(id, dto, currentUser));
   }
 
   @Delete('groups/:id')
@@ -108,8 +110,8 @@ export class GroupController {
   @ApiNoContentResponse()
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<void> {
-    await this.groupService.remove(id, actor);
+    await this.groupService.remove(id, currentUser);
   }
 }

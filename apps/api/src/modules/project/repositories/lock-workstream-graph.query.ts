@@ -2,7 +2,10 @@ import { LockMode, NotFoundError } from '@mikro-orm/core';
 
 import { Step } from '@/database/entities/step.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
-import { memberProject } from '@/modules/project/repositories/membership.query';
+import {
+  assertWorkstreamVisible,
+  projectVisibleTo,
+} from '@/modules/project/repositories/membership.query';
 
 import type { EntityManager } from '@mikro-orm/core';
 
@@ -21,22 +24,14 @@ export const WORKSTREAM_GRAPH = [
  * caller already touched one of these entities before taking the lock.
  *
  * The locked root is also the tenancy root — children are trusted via it
- * (ADR 0009). Membership is verified on an unlocked pre-read because
- * `FOR UPDATE` cannot ride the member join's outer join; a revoke racing the
- * lock is an accepted authorization race.
+ * (ADR 0009). The pre-read 404s a non-member before the lock is taken.
  */
 export async function lockWorkstreamGraph(
   em: EntityManager,
   workstreamId: string,
-  actorId: string,
+  currentUserId: string,
 ): Promise<Workstream> {
-  const visible = await em.count(Workstream, {
-    id: workstreamId,
-    project: memberProject(actorId),
-  });
-  if (!visible) {
-    throw new NotFoundError(`Workstream ${workstreamId} not found`);
-  }
+  await assertWorkstreamVisible(em, workstreamId, currentUserId);
 
   const workstream = await em.findOneOrFail(
     Workstream,
@@ -60,17 +55,17 @@ export async function lockWorkstreamGraph(
 export async function lockWorkstreamGraphOfStep(
   em: EntityManager,
   stepId: string,
-  actorId: string,
+  currentUserId: string,
 ): Promise<{ workstream: Workstream; step: Step }> {
   const unlocked = await em.findOneOrFail(
     Step,
-    { id: stepId, workstream: { project: memberProject(actorId) } },
+    { id: stepId, workstream: { project: projectVisibleTo(currentUserId) } },
     { populate: ['workstream'] },
   );
   const workstream = await lockWorkstreamGraph(
     em,
     unlocked.workstream.id,
-    actorId,
+    currentUserId,
   );
   const step = workstream.getSteps().find((sibling) => sibling.id === stepId);
 

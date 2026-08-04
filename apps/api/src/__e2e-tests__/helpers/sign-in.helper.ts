@@ -4,7 +4,7 @@ import type { CurrentUserDto } from '@/modules/user/dtos/output/current-user.dto
 import type { INestApplication } from '@nestjs/common';
 
 /**
- * Actor-scoped routes resolve a persisted user and 401 without one; the real
+ * User-scoped routes resolve a persisted user and 401 without one; the real
  * client always establishes its session through `/users/me` first.
  */
 export async function signIn(

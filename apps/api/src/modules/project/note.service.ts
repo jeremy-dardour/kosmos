@@ -15,11 +15,11 @@ export class NoteService {
 
   async getWorkstreamNotes(
     workstreamId: string,
-    actor: User,
+    currentUser: User,
   ): Promise<NoteDto[]> {
     const notes = await this.noteRepository.findByWorkstream(
       workstreamId,
-      actor.id,
+      currentUser.id,
     );
 
     return notes.map((note) => toNoteDto(note));
@@ -27,13 +27,16 @@ export class NoteService {
 
   async create(
     stepId: string,
-    actor: User,
+    currentUser: User,
     dto: CreateNoteDto,
   ): Promise<NoteDto> {
-    const step = await this.noteRepository.findStepOrFail(stepId, actor.id);
+    const step = await this.noteRepository.findStepOrFail(
+      stepId,
+      currentUser.id,
+    );
     const note = new Note();
     note.step = step;
-    note.author = actor;
+    note.author = currentUser;
     note.content = dto.content;
 
     await this.noteRepository.save(note);
@@ -41,9 +44,16 @@ export class NoteService {
     return toNoteDto(note);
   }
 
-  async update(id: string, actor: User, dto: UpdateNoteDto): Promise<NoteDto> {
-    const note = await this.noteRepository.findDetailsOrFail(id, actor.id);
-    this.assertAuthor(note, actor.id);
+  async update(
+    id: string,
+    currentUser: User,
+    dto: UpdateNoteDto,
+  ): Promise<NoteDto> {
+    const note = await this.noteRepository.findDetailsOrFail(
+      id,
+      currentUser.id,
+    );
+    this.assertAuthor(note, currentUser.id);
     note.content = dto.content;
 
     await this.noteRepository.save(note);
@@ -51,15 +61,18 @@ export class NoteService {
     return toNoteDto(note);
   }
 
-  async remove(id: string, actor: User): Promise<void> {
-    const note = await this.noteRepository.findDetailsOrFail(id, actor.id);
-    this.assertAuthor(note, actor.id);
+  async remove(id: string, currentUser: User): Promise<void> {
+    const note = await this.noteRepository.findDetailsOrFail(
+      id,
+      currentUser.id,
+    );
+    this.assertAuthor(note, currentUser.id);
 
     await this.noteRepository.removeAndFlush(note);
   }
 
-  private assertAuthor(note: Note, actorId: string): void {
-    if (note.author?.id !== actorId) {
+  private assertAuthor(note: Note, currentUserId: string): void {
+    if (note.author?.id !== currentUserId) {
       throw new ProblemDetailsException(
         HttpStatus.FORBIDDEN,
         'not-note-author',

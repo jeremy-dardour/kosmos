@@ -1,11 +1,12 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Global, Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
-import { ActorResolutionService } from '@/app/auth/actor-resolution.service';
-import { ActorInterceptor } from '@/app/auth/actor.interceptor';
 import { AuthInitializerService } from '@/app/auth/auth-initializer.service';
 import { AuthUserProvisionerService } from '@/app/auth/auth-user-provisioner.service';
 import { AuthGuard } from '@/app/auth/auth.guard';
+import { CurrentUserResolutionService } from '@/app/auth/current-user-resolution.service';
+import { CurrentUserInterceptor } from '@/app/auth/current-user.interceptor';
 import { JwtAuthStrategy } from '@/app/auth/strategies/jwt/jwt-auth.strategy';
 import { JwtVerificationService } from '@/app/auth/strategies/jwt/jwt-verification.service';
 import { OidcDiscoveryService } from '@/app/auth/strategies/jwt/oidc-discovery.service';
@@ -22,15 +23,14 @@ import { User } from '@/database/entities/user.entity';
     MockAuthStrategy,
     AuthInitializerService,
     AuthUserProvisionerService,
-    ActorResolutionService,
-    ActorInterceptor,
+    CurrentUserResolutionService,
+    { provide: APP_INTERCEPTOR, useClass: CurrentUserInterceptor },
     AuthGuard,
   ],
   exports: [
     AuthInitializerService,
     AuthUserProvisionerService,
-    ActorResolutionService,
-    ActorInterceptor,
+    CurrentUserResolutionService,
     AuthGuard,
   ],
 })

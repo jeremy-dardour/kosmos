@@ -88,3 +88,6 @@ playwright/.cache/
 .npmrc
 # personal scratch notes — never commit
 /todo.md
+
+# Claude Code agent worktrees
+.claude/worktrees/

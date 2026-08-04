@@ -6,7 +6,6 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -16,8 +15,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ActorInterceptor } from '@/app/auth/actor.interceptor';
-import { Actor } from '@/app/auth/decorators';
+import { CurrentUser } from '@/app/auth/decorators';
 import {
   ApiCommonErrorResponses,
   ApiConflictResponse,
@@ -35,7 +33,6 @@ import { ProjectService } from '@/modules/project/project.service';
 import type { User } from '@/database/entities/user.entity';
 
 @Controller('projects')
-@UseInterceptors(ActorInterceptor)
 @ApiTags('projects')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()
@@ -50,8 +47,8 @@ export class ProjectController {
       'Projects the user is a member of, plus their own soft-deleted ones.',
   })
   @ApiOkResponse({ type: [ProjectDto] })
-  async findAll(@Actor() actor: User): Promise<ProjectDto[]> {
-    const projects = await this.projectService.findAllForActor(actor);
+  async findAll(@CurrentUser() currentUser: User): Promise<ProjectDto[]> {
+    const projects = await this.projectService.findAllForUser(currentUser);
 
     return projects.map((project) => toProjectDto(project));
   }
@@ -62,9 +59,9 @@ export class ProjectController {
   @ApiNotFoundResponse()
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<ProjectDto> {
-    return toProjectDto(await this.projectService.findOne(id, actor));
+    return toProjectDto(await this.projectService.findOne(id, currentUser));
   }
 
   @Post()
@@ -76,9 +73,9 @@ export class ProjectController {
   @ApiConflictResponse('The owned-project limit is reached')
   async create(
     @Body() dto: CreateProjectDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<ProjectDto> {
-    return toProjectDto(await this.projectService.create(dto, actor));
+    return toProjectDto(await this.projectService.create(dto, currentUser));
   }
 
   @Patch(':id')
@@ -88,8 +85,8 @@ export class ProjectController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProjectDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<ProjectDto> {
-    return toProjectDto(await this.projectService.update(id, dto, actor));
+    return toProjectDto(await this.projectService.update(id, dto, currentUser));
   }
 }

@@ -43,11 +43,11 @@ export class WorkstreamService {
   async create(
     projectId: string,
     dto: CreateWorkstreamDto,
-    actor: User,
+    currentUser: User,
   ): Promise<WorkstreamDto> {
-    const project = await this.projectRepository.findOneForActor(
+    const project = await this.projectRepository.findOneForUser(
       projectId,
-      actor.id,
+      currentUser.id,
     );
 
     const workstream = new Workstream();
@@ -65,19 +65,19 @@ export class WorkstreamService {
         )
       : null;
 
-    await this.workstreamRepository.insertAtTop(workstream, actor.id);
+    await this.workstreamRepository.insertAtTop(workstream, currentUser.id);
 
-    return this.buildDto(workstream.id, actor.id);
+    return this.buildDto(workstream.id, currentUser.id);
   }
 
   async update(
     id: string,
     dto: UpdateWorkstreamDto,
-    actor: User,
+    currentUser: User,
   ): Promise<WorkstreamDto> {
     const workstream = await this.workstreamRepository.findDetails(
       id,
-      actor.id,
+      currentUser.id,
     );
 
     if (dto.name !== undefined) {
@@ -112,22 +112,22 @@ export class WorkstreamService {
       await this.workstreamRepository.moveToGroup(
         workstream,
         sourceGroupId,
-        actor.id,
+        currentUser.id,
       );
     } else {
       await this.workstreamRepository.save(workstream);
     }
 
-    return this.buildDto(id, actor.id);
+    return this.buildDto(id, currentUser.id);
   }
 
   /** Reorders the live workstreams of one group scope (`groupId: null` = ungrouped). */
   async reorderWithinGroup(
     projectId: string,
     dto: ReorderWorkstreamsDto,
-    actor: User,
+    currentUser: User,
   ): Promise<WorkstreamDto[]> {
-    await this.projectRepository.findOneForActor(projectId, actor.id);
+    await this.projectRepository.findOneForUser(projectId, currentUser.id);
 
     const group = dto.groupId
       ? await this.findGroupInProject(dto.groupId, projectId)
@@ -136,7 +136,7 @@ export class WorkstreamService {
     const ordered = await this.workstreamRepository.reorderScope(
       projectId,
       group?.id ?? null,
-      actor.id,
+      currentUser.id,
       (scope) => {
         const live = scope.filter((workstream) => !workstream.isComplete());
         const byId = new Map(
@@ -166,18 +166,18 @@ export class WorkstreamService {
     return live.map((workstream) => toWorkstreamDto(workstream, noteCounts));
   }
 
-  async remove(id: string, actor: User): Promise<void> {
-    await this.workstreamRepository.remove(id, actor.id);
+  async remove(id: string, currentUser: User): Promise<void> {
+    await this.workstreamRepository.remove(id, currentUser.id);
   }
 
   async progress(
     id: string,
     dto: AdvanceWorkstreamDto,
-    actor: User,
+    currentUser: User,
   ): Promise<WorkstreamDto> {
     const workstream = await this.workstreamRepository.updateLockedDetails(
       id,
-      actor.id,
+      currentUser.id,
       (lockedWorkstream) => {
         const lifecycle = lockedWorkstream.getLifecycle();
 
@@ -249,8 +249,14 @@ export class WorkstreamService {
     workstream.completedAt = now;
   }
 
-  private async buildDto(id: string, actorId: string): Promise<WorkstreamDto> {
-    const workstream = await this.workstreamRepository.findDetails(id, actorId);
+  private async buildDto(
+    id: string,
+    currentUserId: string,
+  ): Promise<WorkstreamDto> {
+    const workstream = await this.workstreamRepository.findDetails(
+      id,
+      currentUserId,
+    );
 
     return toWorkstreamDto(
       workstream,

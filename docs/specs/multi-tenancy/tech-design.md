@@ -146,29 +146,40 @@ It now checks the target is a **joined member of the same project** → 422
 `owner-not-member` otherwise. (Same-parent integrity in the service layer,
 per ADR 0006.)
 
-### Actor resolution
+### Current-user resolution
 
-Every endpoint that touches project data needs the persisted actor's User id.
-Per the auth PRD, the global guard stays read-only and provisioning stays in
-`/users/me` — so actor resolution is a **read-only lookup**: a small
-`ActorResolutionService` (in `app/auth`) resolves `request.user.email` →
+Every endpoint that touches project data needs the persisted current user's
+id. Per the auth PRD, the global guard stays read-only and provisioning stays
+in `/users/me` — so resolution is a **read-only lookup**: a small
+`CurrentUserResolutionService` (in `app/auth`) resolves `request.user.email` →
 persisted User via the existing user repository. The web always establishes a
 session through `/users/me` first, so the row exists; a miss is a 401 (stale
 session).
 
 **Amended for T-2 (decision with Jeremy, 2026-08-04).** T-1 had controllers
 call `resolve()` per handler with `@Req()` — right while only three handlers
-needed an actor, and a param decorator can't await a DB lookup anyway. With
-T-2 every project-module route is actor-scoped, so the seam moves up one
-level: an `ActorInterceptor` (in `app/auth`) resolves the actor once per
-request and stashes it on the request; an `@Actor()` param decorator reads
-the stash and **fails closed** — it throws (500) if the interceptor wasn't
-bound, never yielding an unscoped pass. The interceptor is bound **per
-controller class** on the seven project-module controllers; the user
-controller stays unbound because `/users/me` is what provisions the row
-(a global binding would 401 first logins). Services keep requiring the
-`actor` argument, so the compiler remains the backstop that no scoped path
-forgets it; the e2e sweep catches an unbound controller.
+needed the persisted user, and a param decorator can't await a DB lookup
+anyway. With T-2 every project-module route is user-scoped, so the seam moves
+up one level: a `CurrentUserInterceptor` (in `app/auth`) resolves the current
+user once per request and stashes it on the request; a `@CurrentUser()` param
+decorator reads the stash and **fails closed** — it throws (500) on a route
+where resolution didn't run, never yielding an unscoped pass. Services keep
+requiring the `currentUser` argument, so the compiler remains the backstop
+that no scoped path forgets it.
+
+**Amended in PR #61 review (2026-08-04).** The interceptor moved from
+per-controller binding to a **global binding** (`APP_INTERCEPTOR` in
+`AuthModule`) with explicit opt-out: it skips routes marked
+`@SkipUserResolution()` (only `/users/me`, which provisions the very row the
+resolution requires) and requests with no authenticated principal (`@Public()`
+routes). A new route is therefore user-resolved by default — forgetting a
+binding is no longer possible. The tenancy e2e sweep gained a coverage
+meta-test that enumerates the app's guarded routes from controller metadata
+and fails when one is missing from the sweep's route table, so every new
+route must prove its non-member 404 (or be explicitly exempted with a
+justification). Naming was also unified: "actor" in code became the current
+user (`@CurrentUser()`, `currentUserId`), and the tenancy predicate
+`memberProject` became `projectVisibleTo`.
 
 ### Attach-on-login
 

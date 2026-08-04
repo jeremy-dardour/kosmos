@@ -18,10 +18,13 @@ export class GroupService {
     private readonly projectRepository: ProjectRepository,
   ) {}
 
-  async findAllByProject(projectId: string, actor: User): Promise<Group[]> {
-    const project = await this.projectRepository.findOneForActor(
+  async findAllByProject(
+    projectId: string,
+    currentUser: User,
+  ): Promise<Group[]> {
+    const project = await this.projectRepository.findOneForUser(
       projectId,
-      actor.id,
+      currentUser.id,
     );
 
     return this.groupRepository.findAllByProject(project);
@@ -30,11 +33,11 @@ export class GroupService {
   async create(
     projectId: string,
     dto: CreateGroupDto,
-    actor: User,
+    currentUser: User,
   ): Promise<Group> {
-    const project = await this.projectRepository.findOneForActor(
+    const project = await this.projectRepository.findOneForUser(
       projectId,
-      actor.id,
+      currentUser.id,
     );
 
     const group = new Group();
@@ -42,13 +45,17 @@ export class GroupService {
     group.name = dto.name;
     group.color = dto.color;
 
-    await this.groupRepository.insertAtEnd(group, actor.id);
+    await this.groupRepository.insertAtEnd(group, currentUser.id);
 
     return group;
   }
 
-  async update(id: string, dto: UpdateGroupDto, actor: User): Promise<Group> {
-    const group = await this.groupRepository.findOneForActor(id, actor.id);
+  async update(
+    id: string,
+    dto: UpdateGroupDto,
+    currentUser: User,
+  ): Promise<Group> {
+    const group = await this.groupRepository.findOneForUser(id, currentUser.id);
 
     if (dto.name !== undefined) {
       group.name = dto.name;
@@ -65,9 +72,9 @@ export class GroupService {
   async reorder(
     projectId: string,
     dto: ReorderGroupsDto,
-    actor: User,
+    currentUser: User,
   ): Promise<Group[]> {
-    return this.groupRepository.reorder(projectId, actor.id, (groups) => {
+    return this.groupRepository.reorder(projectId, currentUser.id, (groups) => {
       const byId = new Map(groups.map((group) => [group.id, group]));
       const memberIds = groups.map((group) => group.id);
 
@@ -83,9 +90,9 @@ export class GroupService {
   }
 
   /** Ungroups the group's workstreams — the FK is ON DELETE SET NULL. */
-  async remove(id: string, actor: User): Promise<void> {
+  async remove(id: string, currentUser: User): Promise<void> {
     await this.groupRepository.remove(
-      await this.groupRepository.findOneForActor(id, actor.id),
+      await this.groupRepository.findOneForUser(id, currentUser.id),
     );
   }
 }

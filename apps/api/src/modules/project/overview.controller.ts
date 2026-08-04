@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -12,8 +6,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ActorInterceptor } from '@/app/auth/actor.interceptor';
-import { Actor } from '@/app/auth/decorators';
+import { CurrentUser } from '@/app/auth/decorators';
 import {
   ApiCommonErrorResponses,
   ApiNotFoundResponse,
@@ -25,7 +18,6 @@ import { OverviewService } from '@/modules/project/overview.service';
 import type { User } from '@/database/entities/user.entity';
 
 @Controller('projects/:projectId/overview')
-@UseInterceptors(ActorInterceptor)
 @ApiTags('overview')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()
@@ -43,8 +35,8 @@ export class OverviewController {
   @ApiOkResponse({ type: OverviewDto })
   async getOverview(
     @Param('projectId', ParseUUIDPipe) projectId: string,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<OverviewDto> {
-    return this.overviewService.getOverview(projectId, actor);
+    return this.overviewService.getOverview(projectId, currentUser);
   }
 }

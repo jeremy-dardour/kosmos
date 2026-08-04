@@ -9,7 +9,6 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,8 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ActorInterceptor } from '@/app/auth/actor.interceptor';
-import { Actor } from '@/app/auth/decorators';
+import { CurrentUser } from '@/app/auth/decorators';
 import {
   ApiCommonErrorResponses,
   ApiForbiddenResponse,
@@ -36,7 +34,6 @@ import { NoteService } from '@/modules/project/note.service';
 import type { User } from '@/database/entities/user.entity';
 
 @Controller()
-@UseInterceptors(ActorInterceptor)
 @ApiTags('notes')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()
@@ -50,9 +47,9 @@ export class NoteController {
   @ApiOkResponse({ type: [NoteDto] })
   async getWorkstreamNotes(
     @Param('workstreamId', ParseUUIDPipe) workstreamId: string,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<NoteDto[]> {
-    return this.noteService.getWorkstreamNotes(workstreamId, actor);
+    return this.noteService.getWorkstreamNotes(workstreamId, currentUser);
   }
 
   @Post('steps/:stepId/notes')
@@ -61,9 +58,9 @@ export class NoteController {
   async create(
     @Param('stepId', ParseUUIDPipe) stepId: string,
     @Body() dto: CreateNoteDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<NoteDto> {
-    return this.noteService.create(stepId, actor, dto);
+    return this.noteService.create(stepId, currentUser, dto);
   }
 
   @Patch('notes/:id')
@@ -73,9 +70,9 @@ export class NoteController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateNoteDto,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<NoteDto> {
-    return this.noteService.update(id, actor, dto);
+    return this.noteService.update(id, currentUser, dto);
   }
 
   @Delete('notes/:id')
@@ -85,8 +82,8 @@ export class NoteController {
   @ApiForbiddenResponse('Only the note author can delete it')
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @Actor() actor: User,
+    @CurrentUser() currentUser: User,
   ): Promise<void> {
-    await this.noteService.remove(id, actor);
+    await this.noteService.remove(id, currentUser);
   }
 }
