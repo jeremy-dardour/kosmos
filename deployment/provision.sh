@@ -18,8 +18,12 @@
 #
 # Usage:
 #   PROJECT_ID=<gcp-project> GITHUB_REPO=<owner/repo> AR_REPO=<ar-repo> \
-#     OAUTH_CLIENT_ID=<client-id> ALLOWED_EMAILS=<a@x,b@y> \
+#     OAUTH_CLIENT_ID=<client-id> \
 #     deployment/provision.sh [--deploy-image <full-image-ref>]
+#
+# The database URL and the sign-in allow-list live in Secret Manager
+# (database-url, allowed-emails); the script prompts for each only when the
+# secret does not exist yet.
 set -euo pipefail
 
 : "${PROJECT_ID:?set PROJECT_ID}"
@@ -32,6 +36,7 @@ RUNTIME_SA_NAME="${RUNTIME_SA_NAME:-kosmos-runtime}"
 DEPLOYER_SA_NAME="${DEPLOYER_SA_NAME:-github-deployer}"
 GH_ENV="${GH_ENV:-production}"
 SECRET_NAME="${SECRET_NAME:-database-url}"
+EMAILS_SECRET_NAME="${EMAILS_SECRET_NAME:-allowed-emails}"
 BACKUP_BUCKET="${BACKUP_BUCKET:-$PROJECT_ID-backups}"
 WIF_POOL="${WIF_POOL:-github}"
 WIF_PROVIDER="${WIF_PROVIDER:-github-oidc}"
@@ -119,13 +124,19 @@ gcloud storage buckets add-iam-policy-binding "gs://$BACKUP_BUCKET" \
 gcloud storage buckets add-iam-policy-binding "gs://$BACKUP_BUCKET" \
   --member="serviceAccount:$DEPLOYER_SA" --role="roles/storage.objectViewer" --quiet >/dev/null
 
-log "Secret: $SECRET_NAME"
+log "Secrets: $SECRET_NAME, $EMAILS_SECRET_NAME"
 if ! gcloud secrets describe "$SECRET_NAME" >/dev/null 2>&1; then
   echo "Paste the direct (non-pooler) Neon connection string, then Enter + Ctrl-D:"
   gcloud secrets create "$SECRET_NAME" --data-file=-
 fi
-gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
-  --member="serviceAccount:$RUNTIME_SA" --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
+if ! gcloud secrets describe "$EMAILS_SECRET_NAME" >/dev/null 2>&1; then
+  echo "Paste the comma-separated sign-in allow-list emails, then Enter + Ctrl-D:"
+  gcloud secrets create "$EMAILS_SECRET_NAME" --data-file=-
+fi
+for secret in "$SECRET_NAME" "$EMAILS_SECRET_NAME"; do
+  gcloud secrets add-iam-policy-binding "$secret" \
+    --member="serviceAccount:$RUNTIME_SA" --role="roles/secretmanager.secretAccessor" --quiet >/dev/null
+done
 
 log "GitHub environment: $GH_ENV on $GITHUB_REPO"
 # Create only if absent — a bodyless PUT on an existing environment would
@@ -145,17 +156,14 @@ fi
 
 if [[ -n "$DEPLOY_IMAGE" ]]; then
   log "Cloud Run service: $SERVICE"
-  : "${ALLOWED_EMAILS:?set ALLOWED_EMAILS for the service deploy}"
-  # ^@^ makes @ the list delimiter: ALLOWED_EMAILS is itself comma-separated,
-  # which would split into bogus keys under the default comma delimiter.
   gcloud run deploy "$SERVICE" \
     --image "$DEPLOY_IMAGE" \
     --region "$REGION" \
     --service-account "$RUNTIME_SA" \
     --min-instances=0 --max-instances=1 --memory=256Mi --cpu=1 \
     --port=3000 --allow-unauthenticated \
-    --set-secrets "DATABASE_URL=$SECRET_NAME:latest" \
-    --set-env-vars "^@^NODE_ENV=production@AUTH_CLIENT_ID=$OAUTH_CLIENT_ID@AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration@AUTH_ALLOWED_EMAILS=$ALLOWED_EMAILS"
+    --set-secrets "DATABASE_URL=$SECRET_NAME:latest,AUTH_ALLOWED_EMAILS=$EMAILS_SECRET_NAME:latest" \
+    --set-env-vars "NODE_ENV=production,AUTH_CLIENT_ID=$OAUTH_CLIENT_ID,AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration"
 else
   log "Skipping Cloud Run deploy (pass --deploy-image <ref> to create the service)"
 fi

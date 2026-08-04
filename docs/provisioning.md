@@ -78,13 +78,13 @@ Two accounts, least privilege:
 
 | Account           | Purpose                                 | Permissions                                                                                                                                                          |
 | ----------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kosmos-runtime`  | Cloud Run workload identity             | `secretmanager.secretAccessor` on the `database-url` secret only (step 6)                                                                                            |
+| `kosmos-runtime`  | Cloud Run workload identity             | `secretmanager.secretAccessor` on the `database-url` and `allowed-emails` secrets only (step 6)                                                                      |
 | `github-deployer` | CI: push images, deploy, upload backups | `run.admin` + `artifactregistry.writer` (project), `iam.serviceAccountUser` on the runtime SA, `storage.objectCreator` + `storage.objectViewer` on the backup bucket |
 
 The runtime SA deliberately has nothing else: the app's database is
 external (Neon) and Cloud Run captures logs/metrics without IAM grants, so
-a fully compromised container yields only the database URL it already
-holds.
+a fully compromised container yields only the database URL and allow-list
+it already holds.
 
 ```bash
 gcloud iam service-accounts create kosmos-runtime --display-name="Kosmos Cloud Run runtime"
@@ -158,13 +158,20 @@ gcloud storage buckets add-iam-policy-binding gs://$PROJECT_ID-backups \
   trade-off).
 
 Store the string in Secret Manager — run, paste the string, Enter, Ctrl-D
-(keeps it out of shell history):
+(keeps it out of shell history). The sign-in allow-list lives in Secret
+Manager the same way (`allowed-emails`, comma-separated): it is personal
+data, so it belongs in neither the repo, the service spec, nor a command
+line. To change the allow-list later, add a new secret version — the next
+instance start (frequent with scale-to-zero) picks it up.
 
 ```bash
 gcloud secrets create database-url --data-file=-
+gcloud secrets create allowed-emails --data-file=-
 
-gcloud secrets add-iam-policy-binding database-url \
-  --member="serviceAccount:$RUNTIME_SA" --role="roles/secretmanager.secretAccessor"
+for secret in database-url allowed-emails; do
+  gcloud secrets add-iam-policy-binding "$secret" \
+    --member="serviceAccount:$RUNTIME_SA" --role="roles/secretmanager.secretAccessor"
+done
 ```
 
 ## 7. GitHub environment
@@ -205,8 +212,8 @@ gcloud run deploy kosmos \
   --service-account $RUNTIME_SA \
   --min-instances=0 --max-instances=1 --memory=256Mi --cpu=1 \
   --port=3000 --allow-unauthenticated \
-  --set-secrets DATABASE_URL=database-url:latest \
-  --set-env-vars "^@^NODE_ENV=production@AUTH_CLIENT_ID=<oauth-client-id>@AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration@AUTH_ALLOWED_EMAILS=<comma-separated-emails>"
+  --set-secrets DATABASE_URL=database-url:latest,AUTH_ALLOWED_EMAILS=allowed-emails:latest \
+  --set-env-vars NODE_ENV=production,AUTH_CLIENT_ID=<oauth-client-id>,AUTH_OIDC_DISCOVERY_URL=https://accounts.google.com/.well-known/openid-configuration
 ```
 
 - `--allow-unauthenticated` is intentional: auth is app-level (Google
@@ -241,6 +248,7 @@ misbehaves, the free fallback is a Cloudflare DNS proxy in front of the
 
 ```bash
 gcloud secrets versions list database-url                  # one enabled version
+gcloud secrets versions list allowed-emails                # one enabled version
 gh variable list --env production -R $REPO                 # 8 variables
 curl -s https://<domain>/health                            # health JSON
 curl -s https://<domain>/ | head -3                        # SPA index.html
