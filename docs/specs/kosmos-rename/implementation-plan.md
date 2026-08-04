@@ -1,5 +1,8 @@
 # Kosmos Rename — Implementation Plan
 
+Product rationale and scope live in the [PRD](./PRD.md); this plan is the
+phasing.
+
 ## Objective
 
 Rename and reposition the application as **Kosmos**, drawing on the Greek sense
