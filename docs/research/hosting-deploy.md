@@ -14,7 +14,7 @@ since been made and recorded (as an ADR, per convention).
 ## 1. Existing CI pipeline — what's there, what's missing for CD
 
 Read from `.github/workflows/ci.yml`, `.github/actions/ci-setup/action.yml`,
-`apps/api/deployment/Dockerfile`, `apps/api/deployment/entrypoint.app.sh`, and
+`deployment/Dockerfile`, `deployment/entrypoint.app.sh`, and
 `docker-compose.yml`.
 
 **What CI already does** (all on PR + push to `main`/`ci/**`, no deploy trigger):
@@ -35,7 +35,7 @@ Read from `.github/workflows/ci.yml`, `.github/actions/ci-setup/action.yml`,
 **What's missing for CD** — there is currently **no CD at all**:
 
 - No workflow builds or pushes a container image (the `Dockerfile` under
-  `apps/api/deployment/` is never invoked by CI — it's only used for local
+  `deployment/` is never invoked by CI — it's only used for local
   `docker-compose --profile api-local-container up`).
 - No image registry target (no GHCR/ECR/Docker Hub push step).
 - No deploy step to any host, and no environment/secrets wiring for one.
@@ -186,7 +186,7 @@ needed at all.
 A minimal CD pipeline for this app, regardless of which host is chosen:
 
 1. **Build** — `docker build` the (single, per §4) image from
-   `apps/api/deployment/Dockerfile` (extended to also build+copy the web
+   `deployment/Dockerfile` (extended to also build+copy the web
    app's `dist/`), tagged with the git SHA.
 2. **Push** — push to a registry: GHCR (free, zero setup, lives next to the
    repo) is the natural default over ECR/Artifact Registry/Docker Hub unless

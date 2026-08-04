@@ -62,4 +62,24 @@ describe('ordered position constraints', () => {
     );
     expect(reordered.map((step) => step.name)).toEqual(['Book', 'Research']);
   });
+
+  it('rejects a duplicate position within the ungrouped Workstream scope', async () => {
+    const project = em.create(Project, { name: 'Wedding Prep' });
+    em.create(Workstream, {
+      project,
+      position: 0,
+      name: 'Catering',
+      icon: '🍽️',
+    });
+    em.create(Workstream, {
+      project,
+      position: 0,
+      name: 'Flowers',
+      icon: '💐',
+    });
+
+    await expect(em.flush()).rejects.toThrow(
+      'workstream_project_id_group_id_position_unique',
+    );
+  });
 });

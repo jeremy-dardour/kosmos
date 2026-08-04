@@ -27,7 +27,9 @@ packages/
 ### Single deployable
 
 One Docker container serves both the API and the Vite-built SPA
-(`ServeStaticModule`). One origin, no CORS, one deploy target.
+(`ServeStaticModule`). One origin, no CORS, one deploy target. The rationale
+and trade-offs are recorded in
+[ADR 0011](../adr/0011-spa-served-by-nest.md).
 
 ### Module layout
 
@@ -207,16 +209,16 @@ rationale are documented in
 
 Hosting research in [hosting-deploy.md](../research/hosting-deploy.md).
 
-| Concern    | Decision                                                                          |
-| ---------- | --------------------------------------------------------------------------------- |
-| App host   | Google Cloud Run (scale-to-zero, free tier)                                       |
-| Database   | Neon (managed Postgres, free tier, connection pooling)                            |
-| Frontend   | Single deployable — SPA served from same container                                |
-| CD         | GitHub Actions → GHCR → `gcloud run deploy`                                       |
-| Migrations | At container start ([ADR 0001](../adr/0001-migrations-run-on-container-start.md)) |
-| Secrets    | Cloud Run env vars / Secret Manager                                               |
-| TLS        | Cloud Run automatic HTTPS + custom domain                                         |
-| Cost       | ~$0/mo steady state                                                               |
+| Concern    | Decision                                                                                           |
+| ---------- | -------------------------------------------------------------------------------------------------- |
+| App host   | Google Cloud Run (scale-to-zero, free tier)                                                        |
+| Database   | Neon (managed Postgres, free tier, direct connection)                                              |
+| Frontend   | Single deployable — SPA served from same container ([ADR 0011](../adr/0011-spa-served-by-nest.md)) |
+| CD         | GitHub Actions → Artifact Registry → `gcloud run deploy`                                           |
+| Migrations | At container start ([ADR 0001](../adr/0001-migrations-run-on-container-start.md))                  |
+| Secrets    | Cloud Run env vars / Secret Manager                                                                |
+| TLS        | Cloud Run automatic HTTPS + custom domain                                                          |
+| Cost       | ~$0/mo steady state                                                                                |
 
 ---
 

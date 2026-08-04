@@ -5,7 +5,7 @@ change — it always reflects _now_. History lives in
 [docs/sessions/](./sessions/); one line per merged PR below, details in the
 linked docs.
 
-_Last updated: 2026-08-04 (session 37)_
+_Last updated: 2026-08-04 (session 38)_
 
 ## What this is
 
@@ -25,10 +25,10 @@ inline. The specs are the source of truth:
 
 ## Phase
 
-**V1 is feature-complete on main** — all build slices, the inline overview
-rework, and the widget panel are merged. Remaining before "done":
-**deployment ([#26](https://github.com/jeremy-dardour/wedding-planner/issues/26))**.
-Next feature: multi-tenancy.
+**V1 product work is feature-complete on main.** Deployment implementation is
+green in PR #58 and awaits review, merge, and live production verification for
+[#26](https://github.com/jeremy-dardour/wedding-planner/issues/26). Next
+feature: multi-tenancy.
 
 ## Shipped (one line per PR)
 
@@ -45,11 +45,12 @@ Next feature: multi-tenancy.
   [overview-rework-plan](./specs/v1-product/overview-rework-plan.md)
 - PR #52 — widget panel: rail, Project pulse, calendar + agenda (#49, #50);
   ADR 0010
+- PR #57 — multi-tenancy PRD + technical design; tickets #53–#56
 
 ## In flight
 
-- **PR #57 (`docs/multi-tenancy-specs`)** — this docs PR (multi-tenancy
-  specs and session 37 log), open.
+- **PR #58 (`feat/deploy`)** — Cloud Run + Neon deployment implementation for
+  #26; CI green at `52e8aae`, awaiting user review, deliberately unmerged.
 
 ## Open questions
 
@@ -57,8 +58,9 @@ Next feature: multi-tenancy.
 
 ## Next steps
 
-1. **Deployment (#26)** — the last V1 milestone. Include the noted
-   `NULLS NOT DISTINCT` migration for the ungrouped workstream position
-   scope while a migration PR is open anyway.
-2. **Multi-tenancy T-1 ([#53](https://github.com/jeremy-dardour/wedding-planner/issues/53))**
-   — unblocked now that PR #52 is merged; then #54 → #55 → #56.
+1. Review and merge PR #58. Its first successful `main` CI run activates CD;
+   then verify production health, OAuth, backup creation, and the restore
+   drill before closing #26.
+2. **Multi-tenancy T-1
+   ([#53](https://github.com/jeremy-dardour/wedding-planner/issues/53))**,
+   then #54 → #55 → #56.

@@ -1,0 +1,75 @@
+name: CD
+run-name: Deploy production
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.AR_REPO }}/app
+
+    steps:
+      - name: Check out the CI-validated commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Configure Artifact Registry authentication
+        run: gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+
+      - name: Build production image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --file deployment/Dockerfile \
+            --build-arg VITE_GOOGLE_CLIENT_ID="${{ vars.VITE_GOOGLE_CLIENT_ID }}" \
+            --build-arg VITE_FAKE_AUTH=false \
+            --tag "$IMAGE:git-$DEPLOY_SHA" \
+            --tag "$IMAGE:latest" \
+            .
+
+      - name: Push production image
+        run: |
+          docker push "$IMAGE:git-$DEPLOY_SHA"
+          docker push "$IMAGE:latest"
+
+      - name: Deploy validated image
+        run: |
+          gcloud run deploy "${{ vars.RUN_SERVICE }}" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --image "$IMAGE:git-$DEPLOY_SHA" \
+            --quiet

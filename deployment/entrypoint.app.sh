@@ -16,7 +16,7 @@ done
 # 2. Run database migrations (idempotent)
 #######################################
 echo "Running MikroORM migrations..."
-cd /app/apps/api && MIKRO_ORM_CLI_USE_TS_NODE=0 pnpm mikro-orm migration:up \
+cd /app/apps/api && MIKRO_ORM_CLI_PREFER_TS=false pnpm mikro-orm migration:up \
   --config dist/src/database/mikro-orm.cli.config.js || {
   echo "Migration failed"
   exit 1
@@ -24,7 +24,7 @@ cd /app/apps/api && MIKRO_ORM_CLI_USE_TS_NODE=0 pnpm mikro-orm migration:up \
 echo "Migrations completed"
 
 #######################################
-# 3. Start application
+# 3. Start the API application
 #######################################
 echo "Starting NestJS..."
 cd /app && exec node apps/api/dist/src/main.js

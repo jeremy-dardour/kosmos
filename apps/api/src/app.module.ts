@@ -8,6 +8,7 @@ import { AuthModule, AuthGuard } from '@/app/auth';
 import { createClsConfig } from '@/app/config/cls.config';
 import { validateEnv } from '@/app/config/env.schema';
 import { throttlerConfig } from '@/app/config/security.config';
+import { createStaticAssetsImports } from '@/app/config/static-assets.config';
 import { AllExceptionsFilter } from '@/app/filters/all-exceptions.filter';
 import { ProblemDetailsFilter } from '@/app/filters/problem-details.filter';
 import { ThrottlerExceptionFilter } from '@/app/filters/throttler-exception.filter';
@@ -41,6 +42,10 @@ import type { NestModule, MiddlewareConsumer } from '@nestjs/common';
     HealthModule,
     UserModule,
     ProjectModule,
+    // Read straight from the process environment: module metadata is evaluated
+    // before ConfigModule loads any .env file. Deployments set this as a real
+    // env var; env.schema.ts still validates it at boot.
+    ...createStaticAssetsImports(process.env.SERVE_STATIC_DIR),
   ],
   controllers: [
     ...(process.env.NODE_ENV === 'production' ? [] : [SwaggerDevController]),

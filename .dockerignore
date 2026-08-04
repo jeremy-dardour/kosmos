@@ -1,1 +1,15 @@
+# Local secrets. Vite inlines app env files at build time.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Rebuilt inside the image.
 node_modules
+**/node_modules
+**/dist
+**/.turbo
+
+.git
