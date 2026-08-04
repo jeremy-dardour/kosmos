@@ -345,12 +345,12 @@ hidden (not disabled) for non-owners; the API re-enforces regardless.
 Four vertical slices, each an end-to-end increment with a visible result
 (confirmed 2026-08-04). Strictly sequential — each depends on the previous.
 
-| #   | Issue                                                              | Scope                                                                                                                                                                   |
-| --- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T-1 | [#53](https://github.com/jeremy-dardour/wedding-planner/issues/53) | Walking skeleton: entities + migration + seeder + attach-on-login, scoped `GET/POST /projects`, actor resolution, `/` list + `/projects/:id` routes, create dialog      |
-| T-2 | [#54](https://github.com/jeremy-dardour/wedding-planner/issues/54) | Enforcement everywhere: membership predicate in every repository, member-scoped users directory, `owner-not-member`, full non-member-404 e2e sweep, web not-found state |
-| T-3 | [#55](https://github.com/jeremy-dardour/wedding-planner/issues/55) | Members management: members endpoints + caps/duplicates, pending badge, members dialog, leave                                                                           |
-| T-4 | [#56](https://github.com/jeremy-dardour/wedding-planner/issues/56) | Governance: transfer ownership, soft delete + restore, settings danger zone, Deleted list section                                                                       |
+| #   | Issue                                                     | Scope                                                                                                                                                                   |
+| --- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-1 | [#53](https://github.com/jeremy-dardour/kosmos/issues/53) | Walking skeleton: entities + migration + seeder + attach-on-login, scoped `GET/POST /projects`, actor resolution, `/` list + `/projects/:id` routes, create dialog      |
+| T-2 | [#54](https://github.com/jeremy-dardour/kosmos/issues/54) | Enforcement everywhere: membership predicate in every repository, member-scoped users directory, `owner-not-member`, full non-member-404 e2e sweep, web not-found state |
+| T-3 | [#55](https://github.com/jeremy-dardour/kosmos/issues/55) | Members management: members endpoints + caps/duplicates, pending badge, members dialog, leave                                                                           |
+| T-4 | [#56](https://github.com/jeremy-dardour/kosmos/issues/56) | Governance: transfer ownership, soft delete + restore, settings danger zone, Deleted list section                                                                       |
 
 ```
 PR #52 (widget panel — merged 2026-08-04; prerequisite satisfied)

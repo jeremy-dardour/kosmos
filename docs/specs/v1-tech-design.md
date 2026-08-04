@@ -230,24 +230,24 @@ tracks.
 
 ### End-to-end slices (sequential)
 
-| #   | Issue                                                                                                | Scope                                                                                                   |
-| --- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 0   | [#17 — Entities + migration](https://github.com/jeremy-dardour/wedding-planner/issues/17)            | All MikroORM entities, initial migration (foundation)                                                   |
-| 1   | [#18 — Layout shell + overview + cards](https://github.com/jeremy-dardour/wedding-planner/issues/18) | Overview endpoint + two-panel layout + grouped cards with pipeline dots + UI foundation (design tokens) |
-| 2   | [#19 — Detail slide-over (read-only)](https://github.com/jeremy-dardour/wedding-planner/issues/19)   | Notes read endpoint + detail panel with step pipeline, checklist, notes                                 |
-| 3   | [#20 — Advance + start](https://github.com/jeremy-dardour/wedding-planner/issues/20)                 | Unified advance endpoint + card buttons + blocked resolve                                               |
-| 4   | [#21 — Deadline badges + filters](https://github.com/jeremy-dardour/wedding-planner/issues/21)       | Countdown badges, urgency thresholds, owner/group filter dropdowns (frontend only)                      |
-| 5   | [#22 — Notes write actions](https://github.com/jeremy-dardour/wedding-planner/issues/22)             | Note CRUD endpoints (author-guarded) + add/edit/delete in detail panel                                  |
-| 6   | [#23 — Checklist + step edits](https://github.com/jeremy-dardour/wedding-planner/issues/23)          | Step + checklist CRUD endpoints + mutability enforcement + toggles + inline editing                     |
-| 7   | [#24 — Workstream + group management](https://github.com/jeremy-dardour/wedding-planner/issues/24)   | Create/edit/delete workstreams and groups from UI                                                       |
+| #   | Issue                                                                                       | Scope                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 0   | [#17 — Entities + migration](https://github.com/jeremy-dardour/kosmos/issues/17)            | All MikroORM entities, initial migration (foundation)                                                   |
+| 1   | [#18 — Layout shell + overview + cards](https://github.com/jeremy-dardour/kosmos/issues/18) | Overview endpoint + two-panel layout + grouped cards with pipeline dots + UI foundation (design tokens) |
+| 2   | [#19 — Detail slide-over (read-only)](https://github.com/jeremy-dardour/kosmos/issues/19)   | Notes read endpoint + detail panel with step pipeline, checklist, notes                                 |
+| 3   | [#20 — Advance + start](https://github.com/jeremy-dardour/kosmos/issues/20)                 | Unified advance endpoint + card buttons + blocked resolve                                               |
+| 4   | [#21 — Deadline badges + filters](https://github.com/jeremy-dardour/kosmos/issues/21)       | Countdown badges, urgency thresholds, owner/group filter dropdowns (frontend only)                      |
+| 5   | [#22 — Notes write actions](https://github.com/jeremy-dardour/kosmos/issues/22)             | Note CRUD endpoints (author-guarded) + add/edit/delete in detail panel                                  |
+| 6   | [#23 — Checklist + step edits](https://github.com/jeremy-dardour/kosmos/issues/23)          | Step + checklist CRUD endpoints + mutability enforcement + toggles + inline editing                     |
+| 7   | [#24 — Workstream + group management](https://github.com/jeremy-dardour/kosmos/issues/24)   | Create/edit/delete workstreams and groups from UI                                                       |
 
 ### Technical (independent)
 
-| #   | Issue                                                                                                        | Scope                                                         | Blocking?                  |
-| --- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | -------------------------- |
-| 8   | [#25 — Auth: Google OAuth](https://github.com/jeremy-dardour/wedding-planner/issues/25)                      | GIS wiring, allow-list, user upsert                           | Required before production |
-| 9   | [#30 — Auth: backend-validated session restore](https://github.com/jeremy-dardour/wedding-planner/issues/30) | `/api/users/me`, local ID-token restore, explicit auth states | Required before production |
-| 10  | [#26 — Deployment: Cloud Run + Neon](https://github.com/jeremy-dardour/wedding-planner/issues/26)            | Infra, CD pipeline, custom domain                             | Non-blocking               |
+| #   | Issue                                                                                               | Scope                                                         | Blocking?                  |
+| --- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | -------------------------- |
+| 8   | [#25 — Auth: Google OAuth](https://github.com/jeremy-dardour/kosmos/issues/25)                      | GIS wiring, allow-list, user upsert                           | Required before production |
+| 9   | [#30 — Auth: backend-validated session restore](https://github.com/jeremy-dardour/kosmos/issues/30) | `/api/users/me`, local ID-token restore, explicit auth states | Required before production |
+| 10  | [#26 — Deployment: Cloud Run + Neon](https://github.com/jeremy-dardour/kosmos/issues/26)            | Infra, CD pipeline, custom domain                             | Non-blocking               |
 
 ### Dependency graph
 

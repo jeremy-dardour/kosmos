@@ -26,7 +26,7 @@ overview where everything is edited inline. The specs are the source of truth:
 ## Phase
 
 **V1 is feature-complete and deployed** — Cloud Run + Neon shipped via PR #58,
-[#26](https://github.com/jeremy-dardour/wedding-planner/issues/26) closed.
+[#26](https://github.com/jeremy-dardour/kosmos/issues/26) closed.
 Current feature: multi-tenancy (T-1 shipped, then #54 → #56). Deployment
 hardening shipped in PR #60; the Kosmos product and infrastructure rename is in
 progress.
@@ -69,7 +69,7 @@ progress.
 1. Complete the [Kosmos rename](./specs/kosmos-rename/implementation-plan.md),
    including repository and production infrastructure cutover.
 2. **T-2
-   ([#54](https://github.com/jeremy-dardour/wedding-planner/issues/54))** — the
+   ([#54](https://github.com/jeremy-dardour/kosmos/issues/54))** — the
    security boundary: enforcement on flat routes, project get/patch and
    overview, honoring the constraints recorded in the
    [tech design's Attach-on-login section](./specs/multi-tenancy/tech-design.md#attach-on-login);
