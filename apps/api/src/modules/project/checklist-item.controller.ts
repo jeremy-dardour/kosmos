@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -16,6 +17,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { ActorInterceptor } from '@/app/auth/actor.interceptor';
 import {
   ApiCommonErrorResponses,
   ApiConflictResponse,
@@ -27,6 +29,7 @@ import { ChecklistItemDto } from '@/modules/project/dtos/output/checklist-item.d
 import { WorkstreamStructureService } from '@/modules/project/workstream-structure.service';
 
 @Controller()
+@UseInterceptors(ActorInterceptor)
 @ApiTags('checklist items')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()

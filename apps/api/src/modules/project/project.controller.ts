@@ -6,7 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Req,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -16,7 +16,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ActorResolutionService } from '@/app/auth/actor-resolution.service';
+import { ActorInterceptor } from '@/app/auth/actor.interceptor';
+import { Actor } from '@/app/auth/decorators';
 import {
   ApiCommonErrorResponses,
   ApiConflictResponse,
@@ -31,18 +32,16 @@ import {
 } from '@/modules/project/dtos/output/project.dto';
 import { ProjectService } from '@/modules/project/project.service';
 
-import type { AuthenticatedRequest } from '@/app/auth/types/token.types';
+import type { User } from '@/database/entities/user.entity';
 
 @Controller('projects')
+@UseInterceptors(ActorInterceptor)
 @ApiTags('projects')
 @ApiBearerAuth()
 @ApiCommonErrorResponses()
 @ApiUnauthorizedResponse()
 export class ProjectController {
-  constructor(
-    private readonly projectService: ProjectService,
-    private readonly actorResolution: ActorResolutionService,
-  ) {}
+  constructor(private readonly projectService: ProjectService) {}
 
   @Get()
   @ApiOperation({
@@ -51,8 +50,7 @@ export class ProjectController {
       'Projects the user is a member of, plus their own soft-deleted ones.',
   })
   @ApiOkResponse({ type: [ProjectDto] })
-  async findAll(@Req() request: AuthenticatedRequest): Promise<ProjectDto[]> {
-    const actor = await this.actorResolution.resolve(request.user);
+  async findAll(@Actor() actor: User): Promise<ProjectDto[]> {
     const projects = await this.projectService.findAllForActor(actor);
 
     return projects.map((project) => toProjectDto(project));
@@ -75,10 +73,8 @@ export class ProjectController {
   @ApiConflictResponse('The owned-project limit is reached')
   async create(
     @Body() dto: CreateProjectDto,
-    @Req() request: AuthenticatedRequest,
+    @Actor() actor: User,
   ): Promise<ProjectDto> {
-    const actor = await this.actorResolution.resolve(request.user);
-
     return toProjectDto(await this.projectService.create(dto, actor));
   }
 
