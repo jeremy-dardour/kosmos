@@ -13,6 +13,10 @@ import type { FilterQuery } from '@mikro-orm/core';
  * implementations and their `.query.ts` helpers may use it.
  */
 export function memberProject(actorId: string) {
+  if (!actorId) {
+    throw new Error('memberProject requires an actor id');
+  }
+
   return {
     deletedAt: null,
     members: { user: actorId },

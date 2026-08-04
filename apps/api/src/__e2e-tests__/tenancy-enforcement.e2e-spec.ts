@@ -35,6 +35,7 @@ import type TestAgent from 'supertest/lib/agent';
  * same table, so a new route added there is automatically swept by both.
  * Feature specs stay the proof of member-path behavior; this spec only proves
  * the authorization boundary.
+ * T-4 will need per-axis expectations for restore and owner-only routes.
  */
 
 const TENANT_A_EMAIL = 'tenant-a@example.com';
@@ -369,6 +370,18 @@ describe('Tenancy Enforcement E2E Tests', () => {
           .expect(route.memberStatus);
       },
     );
+
+    it('does not reveal that a submitted group belongs to the project', async () => {
+      const response = await createRequest()
+        .put(`/projects/${fixture.projectId}/workstream-order`)
+        .set('Authorization', authB)
+        .send({ groupId: fixture.groupId, ids: [] })
+        .expect(404);
+
+      expect((response.body as { detail: string }).detail).not.toContain(
+        'Group',
+      );
+    });
   });
 
   describe('soft-deleted project is invisible even to its owner', () => {
