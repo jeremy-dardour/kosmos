@@ -46,7 +46,7 @@ const BAND_COLORS: Record<UrgencyBand, string> = {
   week: 'text-urgency-week-foreground',
   fortnight: 'text-urgency-fortnight-foreground',
   month: 'text-urgency-month-foreground',
-  far: 'text-muted-foreground/60',
+  far: 'text-urgency-far',
 };
 
 const BAND_DATE_CLASSES: Record<UrgencyBand, string> = {

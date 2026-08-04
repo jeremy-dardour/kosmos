@@ -21,9 +21,8 @@ interface AdvanceControlProperties {
 }
 
 /**
- * The card's primary action, and the only solid button on it. It owns its
- * mutations so the pending state is row-local: one card advancing never locks
- * the rest of the list.
+ * The card's primary action. It owns its mutations so the pending state is
+ * row-local: one card advancing never locks the rest of the list.
  */
 export const AdvanceControl = ({
   workstream,
@@ -121,9 +120,10 @@ export const AdvanceControl = ({
   }
 
   return (
-    <span className="flex items-center">
+    <span className="ml-2 flex items-center">
       <Button
         size="xs"
+        variant="secondary"
         className="rounded-r-none"
         disabled={isPending}
         aria-label={t('overview.action.advanceLabel', {
@@ -139,7 +139,8 @@ export const AdvanceControl = ({
           render={
             <Button
               size="xs"
-              className="rounded-l-none border-l border-l-background/30 px-1"
+              variant="secondary"
+              className="rounded-l-none border-l border-l-border px-1"
               aria-label={t('overview.action.moreOptionsLabel', {
                 name: workstream.name,
               })}

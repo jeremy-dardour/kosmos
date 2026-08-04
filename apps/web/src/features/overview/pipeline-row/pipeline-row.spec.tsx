@@ -217,7 +217,7 @@ describe('pipelineRow', () => {
     });
 
     it('rings a far-off step in muted grey', () => {
-      expect(ringOf('2026-12-20')).toHaveClass('text-muted-foreground/60');
+      expect(ringOf('2026-12-20')).toHaveClass('text-urgency-far');
     });
 
     it('leaves a settled step its date but no ring', () => {

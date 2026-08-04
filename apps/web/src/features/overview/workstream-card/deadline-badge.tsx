@@ -1,15 +1,12 @@
 import { useTranslation } from 'react-i18next';
 
-import { daysUntil } from '@/features/overview/days-until';
+import { deadlineCountdown } from '@/features/overview/deadline-countdown';
 import { formatDeadlineDate } from '@/features/overview/format-deadline-date';
 import { urgencyBand } from '@/features/overview/urgency';
 import { cn } from '@/lib/utils';
 
 import type { Step } from '@/api/hooks/use-overview';
 import type { UrgencyBand } from '@/features/overview/urgency';
-
-/** Under this horizon the badge counts days; beyond it, a plain date reads better. */
-const COUNTDOWN_HORIZON_DAYS = 14;
 
 const BAND_BADGE_CLASSES: Record<UrgencyBand, string> = {
   passed: 'bg-urgency-passed text-urgency-passed-foreground',
@@ -28,17 +25,10 @@ export const DeadlineBadge = ({ step, now }: DeadlineBadgeProperties) => {
   const { t, i18n } = useTranslation();
   if (!step.deadline) return null;
 
-  const days = daysUntil(step.deadline, now);
-  const label =
-    days < 0
-      ? t('overview.deadline.late', { count: -days })
-      : days === 0
-        ? t('overview.deadline.today')
-        : days === 1
-          ? t('overview.deadline.tomorrow')
-          : days < COUNTDOWN_HORIZON_DAYS
-            ? t('overview.deadline.upcoming', { count: days })
-            : formatDeadlineDate(step.deadline, now, i18n.language);
+  const countdown = deadlineCountdown(step.deadline, now);
+  const label = countdown
+    ? t(countdown.key, { count: countdown.count })
+    : formatDeadlineDate(step.deadline, now, i18n.language);
 
   return (
     <span

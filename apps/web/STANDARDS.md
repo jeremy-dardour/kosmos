@@ -9,9 +9,12 @@ src/
   features/       → Feature folders by domain
     <feature>/    → Page component + components, one file each, flat —
                     except that a composite component and its subcomponents
-                    share one folder named after the composite. A component
-                    used by several parents is shared, not a subcomponent:
-                    it stays at the feature root. No barrel/index files.
+                    share one folder named after the composite, and a
+                    reusable subsystem the feature hosts (components plus
+                    their derivations, e.g. the overview's widgets/) shares
+                    one folder named after the subsystem. A component used
+                    by several parents is shared, not a subcomponent: it
+                    stays at the feature root. No barrel/index files.
   components/ui/  → shadcn/ui primitives
   app/components/ → App-level components (layout, error boundaries)
   api/            → API client and hooks

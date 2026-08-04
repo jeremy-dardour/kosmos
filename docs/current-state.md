@@ -5,26 +5,24 @@ change — it always reflects _now_. For the history of how we got here, see
 [docs/sessions/](./sessions/); for the full behavioral spec and rationale, see
 the [V1 Product PRD](./specs/v1-product/PRD.md).
 
-_Last updated: 2026-08-03 (session 34)_
+_Last updated: 2026-08-03 (session 35)_
 
 ## Phase
 
-**#40 (inline overview rework) complete — PR #48 merge-ready.** All of
-C1–C20 landed green on `feat/40-overview-rework`; the four-way final review
-(spec/standards/security/simplicity) and an independent design review both
-came back clean; every commit-by-commit review comment is addressed and its
-thread resolved; the deviations log was persisted into the standards/ADRs
-and deleted (closeout posted on PR #48). Post-review refactors landed
-in-PR: aggregate-root write ownership
-([ADR 0009](./adr/0009-workstream-aggregate-root-write-ownership.md),
-`WorkstreamStructureService`), composite-component folders on the web,
-free-text emoji icons, framework-free persistence seam, locked writes
-touching the root in the repositories. Remaining mechanics: squash-merge
-with a curated message + archive tag, then **deployment
+**#49 (widget rail + panel shell + Project pulse) implemented — PR #52 open
+for review.** All twelve plan commits (C1–C12) landed green on
+`feat/49-widget-panel` via orchestrated implementer agents, each diff
+reviewed and gated (`check-types`/`lint`/full web suite) before committing.
+Two independent review batches came back with three Low findings, all
+actioned in-branch; the five inline PR questions are answered on PR #52.
+Visual verification passed in light and dark (panel toggle + persistence,
+stats vs seed, filter mirroring, cross-links, C11 button restyle).
+Placeholder PR #51 is closed; `temp-from-proto-2` stays as prototype
+reference until #50. Next: user review of PR #52, then **deployment
 ([#26](https://github.com/jeremy-dardour/wedding-planner/issues/26))** —
 which should also pick up the noted `NULLS NOT DISTINCT` migration for the
 ungrouped position scope. Session log:
-[session 34](./sessions/session-34-2026-08-03-c19-c20-review-close-out.md).
+[session 35](./sessions/session-35-2026-08-03-49-widget-panel-implementation.md).
 
 ## Done
 
@@ -192,21 +190,40 @@ ungrouped position scope. Session log:
   [overview-rework-plan.md](./specs/v1-product/overview-rework-plan.md)
   ([session 32](./sessions/session-32-2026-07-31-prototype-2-and-b-decisions.md)).
 
+- **#40 — inline overview rework** merged as PR #48 (squash commit `6bec1b3`
+  on main).
+- **#49 — widget rail, panel shell, Project pulse** — implemented on
+  `feat/49-widget-panel` (PR #52). New `features/overview/widgets/`
+  subsystem: pure derivations (`collectDeadlineEntries` — #50 lifts it
+  wholesale — and `derivePulseStats`), presentational
+  CollapsibleSection/DeadlineRow/StatsWidget/WidgetRail/WidgetSidebar
+  (inert without injected callbacks), persisted open/collapsed state via a
+  new generic `useLocalStorageState` behind a narrow shape guard, a new
+  tooltip primitive over Base UI, the `--urgency-far` token completing the
+  five-band set, a shared `deadlineCountdown` wording helper, selection
+  state hoisted to `OverviewPage` (controlled list), localized filter
+  mirroring with the repo's first CLDR plural keys, next-deadline
+  cross-links (open step editor + scroll, hover highlight ring), and the
+  C11 advance-button secondary restyle. Standards additions: `.types.ts`
+  suffix for type-only modules; feature-hosted subsystem folders. Eight
+  integration scenarios cover the panel end-to-end; test-env caveat: Node
+  25 shadows jsdom `localStorage`, specs stub an in-memory Storage.
+
 ## In flight
 
-- **PR #48 (`feat/40-overview-rework`)** — merge-ready; squash-merge + archive
-  tag are the only remaining mechanics.
+- **PR #52 (`feat/49-widget-panel`)** — implementation complete, awaiting
+  the user's review.
 
 ## Open questions
 
-- None. The last open items were settled in session 34: aggregate-root write
-  ownership (ADR 0009, implemented in-PR), positions kept over order-arrays
-  (Default group explored and rejected for V1), free-text icons, and the
-  deviations-log dispositions.
+- None.
 
 ## Next steps
 
-1. Squash-merge PR #48 (curated message, archive tag on the branch head).
-2. **Deployment (#26)** — the last milestone. Include the noted
+1. User review + squash-merge of PR #52.
+2. **Deployment (#26)** — the last V1 milestone. Include the noted
    `NULLS NOT DISTINCT` migration for the ungrouped workstream position
    scope while a migration PR is open anyway.
+3. **#50 — calendar + agenda widgets** (post-V1), building on the #49 shell;
+   delete `docs/prototype/widget-panel/` and the `temp-from-proto-2` branch
+   when it lands.
