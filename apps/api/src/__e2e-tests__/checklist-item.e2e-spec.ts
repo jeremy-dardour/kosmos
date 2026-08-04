@@ -7,6 +7,7 @@ import {
   resetDatabase,
   testEntityManager,
 } from '@/__e2e-tests__/helpers/reset-database.helper';
+import { signIn } from '@/__e2e-tests__/helpers/sign-in.helper';
 import { MockOidcService } from '@/__e2e-tests__/mocks/mock-oidc.service';
 import { ChecklistItem } from '@/database/entities/checklist-item.entity';
 import { Step, StepOutcome } from '@/database/entities/step.entity';
@@ -39,6 +40,7 @@ describe('Checklist item E2E Tests', () => {
     em = testEntityManager(app);
     authorization = `Bearer ${await tokenFactory.validToken()}`;
     await resetDatabase(em);
+    await signIn(app, authorization);
   });
 
   afterEach(async () => {
@@ -52,7 +54,7 @@ describe('Checklist item E2E Tests', () => {
     current: Step;
     future: Step;
   }> {
-    const project = createProjectFixture(em);
+    const project = await createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,

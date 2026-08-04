@@ -25,7 +25,7 @@ describe('ordered position constraints', () => {
   });
 
   it('defers Step position uniqueness until a reorder transaction commits', async () => {
-    const project = createProjectFixture(em);
+    const project = await createProjectFixture(em);
     const workstream = em.create(Workstream, {
       project,
       position: 0,
@@ -64,7 +64,7 @@ describe('ordered position constraints', () => {
   });
 
   it('rejects a duplicate position within the ungrouped Workstream scope', async () => {
-    const project = createProjectFixture(em);
+    const project = await createProjectFixture(em);
     em.create(Workstream, {
       project,
       position: 0,

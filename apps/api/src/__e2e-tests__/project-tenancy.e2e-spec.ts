@@ -132,7 +132,7 @@ describe('Project Tenancy E2E Tests', () => {
   });
 
   it('claims a pending membership when the invited email first signs in', async () => {
-    const project = createProjectFixture(em);
+    const project = await createProjectFixture(em);
     await em.flush();
     em.create(ProjectMember, { project, email: PENDING_EMAIL, user: null });
     await em.flush();

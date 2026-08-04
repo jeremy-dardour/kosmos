@@ -71,7 +71,7 @@ describe('Notes E2E Tests', () => {
       avatarUrl: null,
     });
 
-    const project = createProjectFixture(em);
+    const project = await createProjectFixture(em);
 
     const workstream = em.create(Workstream, {
       project,

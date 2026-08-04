@@ -2,6 +2,7 @@ import request from 'supertest';
 
 import { createTestApp } from '@/__e2e-tests__/helpers/create-app.helper';
 import { MockTokenFactory } from '@/__e2e-tests__/helpers/mock-token.factory';
+import { addJoinedMember } from '@/__e2e-tests__/helpers/project-fixture.helper';
 import {
   resetDatabase,
   testEntityManager,
@@ -290,6 +291,7 @@ describe('Project CRUD E2E Tests', () => {
         name: 'Owner One',
         avatarUrl: null,
       });
+      addJoinedMember(em, project.id, owner);
       await em.flush();
 
       const workstream = await createWorkstream(project.id, {
@@ -339,6 +341,7 @@ describe('Project CRUD E2E Tests', () => {
         name: 'Owner One',
         avatarUrl: null,
       });
+      addJoinedMember(em, project.id, owner);
       await em.flush();
 
       const workstream = await createWorkstream(project.id, {
@@ -399,6 +402,7 @@ describe('Project CRUD E2E Tests', () => {
         name: 'Owner One',
         avatarUrl: null,
       });
+      addJoinedMember(em, project.id, owner);
       await em.flush();
 
       const created = await createWorkstream(project.id, { ownerId: owner.id });
