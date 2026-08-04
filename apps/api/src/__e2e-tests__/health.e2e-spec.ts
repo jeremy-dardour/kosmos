@@ -1,4 +1,6 @@
+import { MemoryHealthIndicator } from '@nestjs/terminus';
 import request from 'supertest';
+import { vi } from 'vitest';
 
 import { createTestApp } from '@/__e2e-tests__/helpers/create-app.helper';
 
@@ -27,6 +29,9 @@ describe('Health E2E Tests', () => {
 
   beforeEach(async () => {
     app = await createTestApp({});
+    vi.spyOn(app.get(MemoryHealthIndicator), 'checkHeap').mockResolvedValue({
+      memory_heap: { status: 'up' },
+    });
   });
 
   afterEach(async () => {

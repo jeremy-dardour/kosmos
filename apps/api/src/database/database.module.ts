@@ -48,6 +48,13 @@ export class DatabaseModule {
               autoLoadEntities: true, // prevents needing to register entities manually in mikro orm module
 
               metadataProvider: TsMorphMetadataProvider,
+              // Keep TsMorph's metadata cache in every environment. Production
+              // runs as an unprivileged user, so its writable cache lives in /tmp.
+              ...(isProduction && {
+                metadataCache: {
+                  options: { cacheDir: '/tmp/mikro-orm-metadata' },
+                },
+              }),
               // Connection pool
               pool: {
                 min: configService.get('DB_POOL_MIN', { infer: true }),

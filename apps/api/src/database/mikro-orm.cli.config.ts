@@ -23,6 +23,12 @@ export default defineConfig({
   }),
 
   metadataProvider: TsMorphMetadataProvider,
+  // The production container's app tree is read-only to its unprivileged user.
+  ...(process.env.NODE_ENV === 'production' && {
+    metadataCache: {
+      options: { cacheDir: '/tmp/mikro-orm-metadata' },
+    },
+  }),
   discovery: {
     tsConfigPath: './tsconfig.mikro-cli.json',
   },

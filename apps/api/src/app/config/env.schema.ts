@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { z } from 'zod';
 
 import { baseEnvSchema } from '@/shared/types/env.base.schema';
@@ -29,6 +31,14 @@ export const envSchema = baseEnvSchema
       .transform(Number)
       .refine((value) => value > 0 && value < 65_536, {
         message: 'PORT must be between 1-65535',
+      }),
+
+    // Absolute path to the built SPA; unset disables static serving entirely.
+    SERVE_STATIC_DIR: z
+      .string()
+      .optional()
+      .refine((value) => value === undefined || path.isAbsolute(value), {
+        message: 'SERVE_STATIC_DIR must be an absolute path',
       }),
 
     AUTH_CLIENT_ID: z.string().optional(),

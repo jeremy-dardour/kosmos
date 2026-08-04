@@ -4,7 +4,7 @@
 
 ## Decision
 
-The API container entrypoint (`apps/api/deployment/entrypoint.app.sh`) runs
+The application container entrypoint (`deployment/entrypoint.app.sh`) runs
 `mikro-orm migration:up` before starting the app, unconditionally. The
 `@mikro-orm/cli` package therefore ships in the production image.
 

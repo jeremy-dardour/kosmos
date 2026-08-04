@@ -12,7 +12,7 @@
     "start": "pnpm db:start && turbo run start",
     "dev": "pnpm db:start && turbo run dev",
     "build": "turbo run build",
-    "build:api:docker": "DOCKER_BUILDKIT=1 docker build -f apps/api/deployment/Dockerfile -t template-api:local .",
+    "build:api:docker": "DOCKER_BUILDKIT=1 docker build -f deployment/Dockerfile -t template-api:local .",
     "run:api:docker": "docker run -p 3000:3000 --env-file apps/api/.env.docker.local template-api:local",
     "dependencies:check": "syncpack lint",
     "dependencies:fix": "syncpack fix",

@@ -30,6 +30,8 @@ Project knowledge — one home per fact. Read these to get oriented:
 | [apps/api/module-layout.md](./apps/api/module-layout.md)                                         | NestJS module structure and boundary rules                           |
 | [docs/specs/v1-tech-design.md](./docs/specs/v1-tech-design.md)                                   | V1 technical design — links schema, API, state machine, auth, deploy |
 | [docs/adr/](./docs/adr/)                                                                         | Technical/architectural decisions                                    |
+| [docs/provisioning.md](./docs/provisioning.md)                                                   | One-time production infrastructure provisioning                      |
+| [deployment/README.md](./deployment/README.md)                                                   | Production deploy, rollback, backup, and restore operations          |
 
 **Always loaded at session start** (imported so they're in context from the start):
 

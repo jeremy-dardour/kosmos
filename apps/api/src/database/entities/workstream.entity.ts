@@ -22,10 +22,11 @@ export enum WorkstreamLifecycle {
 }
 
 @Entity()
-// Ungrouped workstreams share one scope per project, but Postgres treats null
-// group ids as distinct, so only grouped scopes are constraint-enforced.
+// MikroORM cannot express `nulls not distinct`, which the ungrouped scope needs
+// to be enforced at all; the migration writes the constraint by hand and the
+// schema comparator sees no drift because it does not read that flag back.
 @Unique({
-  properties: ['group', 'position'],
+  properties: ['project', 'group', 'position'],
   deferMode: 'deferred',
 })
 export class Workstream {
