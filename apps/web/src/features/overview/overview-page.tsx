@@ -4,11 +4,13 @@ import { useParams } from 'react-router';
 
 import { useOverview } from '@/api/hooks/use-overview';
 import { useAuthState } from '@/auth/auth-context';
+import { formatToApiError } from '@/errors/format-error';
 import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
 import { GroupManagerDialog } from '@/features/overview/group-manager-dialog';
 import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewList } from '@/features/overview/overview-list';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
+import { ProjectNotFound } from '@/features/overview/project-not-found';
 import { ProjectSettingsDialog } from '@/features/overview/project-settings-dialog';
 import { WidgetSidebar } from '@/features/overview/widgets/widget-sidebar';
 import { WorkstreamFormDialog } from '@/features/overview/workstream-form-dialog';
@@ -134,6 +136,10 @@ export const OverviewPage = () => {
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }, []);
+
+  if (overview.isError && formatToApiError(overview.error)?.status === 404) {
+    return <ProjectNotFound />;
+  }
 
   // One clock read for the whole list, so every countdown, ring and date tick
   // on screen agrees on what "now" is.

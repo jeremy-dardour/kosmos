@@ -26,5 +26,8 @@ export function useOverview(projectId: string | undefined) {
   return useQuery({
     ...overviewQueryOptions(projectId ?? ''),
     enabled: Boolean(projectId),
+    // The page renders 404 itself as the "project not found" state
+    // (non-member or deleted project) — the global error dialog stays quiet.
+    meta: { localErrorStatuses: [404] },
   });
 }
