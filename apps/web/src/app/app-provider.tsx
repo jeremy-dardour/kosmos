@@ -8,6 +8,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React from 'react';
 
 import { isLocallyHandledError, queryConfig } from '@/api/react-query';
+import { AssistantProvider } from '@/app/components/assistant/assistant-provider';
 import { GlobalApiErrorDialog } from '@/app/components/error/global-api-error-dialog';
 import { AuthContext } from '@/auth';
 import { env } from '@/config/env';
@@ -70,7 +71,7 @@ export const AppProvider = ({
     <ApiErrorProvider>
       <QueryProvider>
         <GlobalApiErrorDialog />
-        {children}
+        <AssistantProvider>{children}</AssistantProvider>
       </QueryProvider>
     </ApiErrorProvider>
   </AuthContext>

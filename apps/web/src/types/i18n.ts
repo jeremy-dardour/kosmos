@@ -17,6 +17,12 @@ export interface Translations {
   'app.errorDialog.okButton': string;
   'app.logo.homeLink': string;
   'app.userMenu.logout': string;
+  'app.assistant.title': string;
+  'app.assistant.welcome': string;
+  'app.assistant.placeholder': string;
+  'app.assistant.panelLabel': string;
+  'app.assistant.show': string;
+  'app.assistant.hide': string;
   'projects.list.title': string;
   'projects.list.loading': string;
   'projects.list.empty.title': string;
