@@ -6,9 +6,6 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { setApiClient } from '@/api/api-client';
 import { configureApiClient } from '@/api/configure-api-client';
 import { AppProvider } from '@/app/app-provider';
-import { GlobalApiErrorDialog } from '@/app/components/error/global-api-error-dialog';
-import { AuthContext } from '@/auth';
-import { ApiErrorProvider } from '@/errors/api-error-provider';
 import en from '@/i18n/locales/en.json';
 import { createStubAuth } from '@/testing/stub-auth';
 
@@ -32,14 +29,7 @@ export function renderWithApp(ui: ReactElement) {
 
   return render(
     <I18nextProvider i18n={i18n}>
-      <AuthContext value={authSystem}>
-        <ApiErrorProvider>
-          <AppProvider>
-            <GlobalApiErrorDialog />
-            {ui}
-          </AppProvider>
-        </ApiErrorProvider>
-      </AuthContext>
+      <AppProvider authSystem={authSystem}>{ui}</AppProvider>
     </I18nextProvider>,
   );
 }
