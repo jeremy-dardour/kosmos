@@ -195,7 +195,11 @@ export const WorkstreamCard = ({
           )}
           <OwnerPicker
             users={users}
-            ownerId={workstream.ownerId}
+            owner={
+              workstream.ownerId
+                ? (usersById.get(workstream.ownerId) ?? null)
+                : null
+            }
             label={t('overview.card.changeOwner', { name: workstream.name })}
             clearLabel={t('overview.card.unassigned')}
             onSelect={(ownerId) => commit({ ownerId })}
@@ -266,6 +270,7 @@ export const WorkstreamCard = ({
             workstream={workstream}
             step={openedStep}
             users={users}
+            usersById={usersById}
             projectId={projectId}
             now={now}
             onOpenStep={(stepId) => {

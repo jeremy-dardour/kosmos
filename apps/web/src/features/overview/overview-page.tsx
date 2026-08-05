@@ -6,10 +6,16 @@ import {
   OVERVIEW_NOT_FOUND_STATUS,
   useOverview,
 } from '@/api/hooks/use-overview';
+import { useProjectMembers } from '@/api/hooks/use-project-members';
 import { useAuthState } from '@/auth/auth-context';
 import { formatToApiError } from '@/errors/format-error';
+import {
+  buildUsersById,
+  toAssignableUsers,
+} from '@/features/overview/assignment-directory';
 import { OWNER_FILTER_ALL } from '@/features/overview/filter-constants';
 import { GroupManagerDialog } from '@/features/overview/group-manager-dialog';
+import { MembersDialog } from '@/features/overview/members-dialog/members-dialog';
 import { OverviewHeader } from '@/features/overview/overview-header';
 import { OverviewList } from '@/features/overview/overview-list';
 import { OverviewSkeleton } from '@/features/overview/overview-skeleton';
@@ -53,6 +59,9 @@ export const OverviewPage = () => {
 
   const { projectId } = useParams<{ projectId: string }>();
   const overview = useOverview(projectId);
+  // Fired alongside the overview: membership drives the owner pickers and the
+  // ex-member owner marking, and the members dialog opens warm from cache.
+  const members = useProjectMembers(projectId);
   const authState = useAuthState();
 
   const [ownerFilter, setOwnerFilter] = useState(OWNER_FILTER_ALL);
@@ -62,6 +71,7 @@ export const OverviewPage = () => {
   const [isCreatingWorkstream, setIsCreatingWorkstream] = useState(false);
   const [groupManagerOpen, setGroupManagerOpen] = useState(false);
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
   const [openStep, setOpenStep] = useState<Selection | null>(null);
   const [openNotes, setOpenNotes] = useState<Selection | null>(null);
   const [highlightedWorkstreamId, setHighlightedWorkstreamId] = useState<
@@ -74,8 +84,12 @@ export const OverviewPage = () => {
     ownerFilter !== OWNER_FILTER_ALL || hiddenGroupIds.size > 0;
 
   const usersById = useMemo(
-    () => new Map((overview.data?.users ?? []).map((user) => [user.id, user])),
-    [overview.data?.users],
+    () => buildUsersById(overview.data?.users, members.data),
+    [overview.data?.users, members.data],
+  );
+  const assignableUsers = useMemo(
+    () => toAssignableUsers(members.data),
+    [members.data],
   );
 
   const filtered = useMemo<Overview | null>(() => {
@@ -170,6 +184,7 @@ export const OverviewPage = () => {
             onNewWorkstream={() => setIsCreatingWorkstream(true)}
             onManageGroups={() => setGroupManagerOpen(true)}
             onProjectSettings={() => setProjectSettingsOpen(true)}
+            onMembers={() => setMembersOpen(true)}
           />
         )}
 
@@ -188,6 +203,7 @@ export const OverviewPage = () => {
           {filtered && filtered.workstreams.length > 0 && (
             <OverviewList
               overview={filtered}
+              assignableUsers={assignableUsers}
               usersById={usersById}
               projectId={projectId}
               now={now}
@@ -219,7 +235,7 @@ export const OverviewPage = () => {
         <WorkstreamFormDialog
           projectId={projectId}
           groups={overview.data.groups}
-          users={overview.data.users}
+          users={assignableUsers}
           isOpen
           onOpenChange={(next) => !next && setIsCreatingWorkstream(false)}
         />
@@ -237,8 +253,18 @@ export const OverviewPage = () => {
       {overview.data && projectSettingsOpen && (
         <ProjectSettingsDialog
           project={overview.data.project}
+          currentUserId={currentUserId}
           isOpen={projectSettingsOpen}
           onOpenChange={setProjectSettingsOpen}
+        />
+      )}
+
+      {overview.data && membersOpen && (
+        <MembersDialog
+          project={overview.data.project}
+          currentUserId={currentUserId}
+          isOpen={membersOpen}
+          onOpenChange={setMembersOpen}
         />
       )}
     </div>

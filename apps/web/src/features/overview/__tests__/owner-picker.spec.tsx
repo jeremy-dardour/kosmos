@@ -13,13 +13,13 @@ const USERS: UserSummary[] = [
   { id: 'user-2', name: 'Grace Hopper' },
 ];
 
-function renderPicker(ownerId: string | null) {
+function renderPicker(owner: (UserSummary & { isMember?: boolean }) | null) {
   const onSelect = vi.fn();
 
   render(
     <OwnerPicker
       users={USERS}
-      ownerId={ownerId}
+      owner={owner}
       label={LABEL}
       clearLabel="Unassigned"
       onSelect={onSelect}
@@ -47,7 +47,7 @@ describe('ownerPicker', () => {
   });
 
   it('marks the current owner as selected', async () => {
-    const { agent } = renderPicker('user-2');
+    const { agent } = renderPicker(USERS[1]!);
 
     await agent.click(screen.getByRole('button', { name: LABEL }));
 
@@ -68,7 +68,7 @@ describe('ownerPicker', () => {
   });
 
   it('reports null when the clear option is picked', async () => {
-    const { agent, onSelect } = renderPicker('user-1');
+    const { agent, onSelect } = renderPicker(USERS[0]!);
 
     await agent.click(screen.getByRole('button', { name: LABEL }));
     await agent.click(
@@ -78,11 +78,20 @@ describe('ownerPicker', () => {
     expect(onSelect).toHaveBeenCalledExactlyOnceWith(null);
   });
 
-  it('falls back to the unassigned avatar for an unknown owner', () => {
-    renderPicker('user-gone');
+  it('falls back to the unassigned avatar without an owner', () => {
+    renderPicker(null);
 
     expect(
       screen.getByRole('img', { name: 'overview.card.unassigned' }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows an ex-member owner who is no longer an option', () => {
+    renderPicker({ id: 'user-gone', name: 'Casey Gone', isMember: false });
+
+    // Without an i18n provider `t` returns the key itself.
+    expect(
+      screen.getByRole('img', { name: 'overview.card.formerMemberOwner' }),
     ).toBeInTheDocument();
   });
 });

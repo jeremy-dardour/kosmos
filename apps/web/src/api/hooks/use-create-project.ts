@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 
 import { $api } from '@/api/api-client';
+import { invalidateProjectsList } from '@/api/hooks/use-projects';
 
 import type { dtos } from '@/types/openapi';
 
@@ -12,12 +13,7 @@ export function useCreateProject() {
   return $api.useMutation(
     'post',
     '/api/projects',
-    {
-      onSuccess: async () => {
-        const projects = $api.queryOptions('get', '/api/projects');
-        await queryClient.invalidateQueries({ queryKey: projects.queryKey });
-      },
-    },
+    { onSuccess: () => invalidateProjectsList(queryClient) },
     queryClient,
   );
 }

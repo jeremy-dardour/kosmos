@@ -32,7 +32,10 @@ import type { Step, UserSummary, Workstream } from '@/api/hooks/use-overview';
 interface StepEditorProperties {
   workstream: Workstream;
   step: Step;
+  /** Joined members — the owner options. */
   users: UserSummary[];
+  /** The users directory, for resolving owners who may no longer be members. */
+  usersById: Map<string, UserSummary>;
   projectId: string | undefined;
   now: Date;
   /** `null` closes the editor; another id moves it along the pipeline. */
@@ -48,6 +51,7 @@ export const StepEditor = ({
   workstream,
   step,
   users,
+  usersById,
   projectId,
   now,
   onOpenStep,
@@ -158,20 +162,13 @@ export const StepEditor = ({
         {isEditable ? (
           <OwnerPicker
             users={users}
-            ownerId={step.explicitOwnerId ?? step.effectiveOwnerId}
+            owner={resolveOwner(usersById, step)}
             label={t('overview.stepEditor.ownerLabel')}
             clearLabel={t('overview.stepEditor.inheritOwner')}
             onSelect={(ownerId) => patchStep({ ownerId })}
           />
         ) : (
-          <OwnerAvatar
-            owner={
-              users.find(
-                (user) =>
-                  user.id === (step.explicitOwnerId ?? step.effectiveOwnerId),
-              ) ?? null
-            }
-          />
+          <OwnerAvatar owner={resolveOwner(usersById, step)} />
         )}
 
         {/* Informational only: it never gates advancing (CONTEXT.md). */}
@@ -302,3 +299,12 @@ export const StepEditor = ({
     </section>
   );
 };
+
+function resolveOwner(
+  usersById: Map<string, UserSummary>,
+  step: Step,
+): UserSummary | null {
+  const ownerId = step.explicitOwnerId ?? step.effectiveOwnerId;
+
+  return ownerId ? (usersById.get(ownerId) ?? null) : null;
+}

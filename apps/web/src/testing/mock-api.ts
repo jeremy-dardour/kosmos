@@ -3,6 +3,7 @@ import { setupServer } from 'msw/node';
 
 import { STUB_USER } from '@/testing/stub-auth';
 
+import type { AddMemberInput } from '@/api/hooks/use-add-member';
 import type { CreateChecklistItemInput } from '@/api/hooks/use-create-checklist-item';
 import type { CreateProjectInput } from '@/api/hooks/use-create-project';
 import type { CreateStepInput } from '@/api/hooks/use-create-step';
@@ -14,6 +15,7 @@ import type {
   Step,
   Workstream,
 } from '@/api/hooks/use-overview';
+import type { Member } from '@/api/hooks/use-project-members';
 import type { ReorderGroupsInput } from '@/api/hooks/use-reorder-groups';
 import type { ReorderStepsInput } from '@/api/hooks/use-reorder-steps';
 import type { ReorderWorkstreamsInput } from '@/api/hooks/use-reorder-workstreams';
@@ -470,6 +472,24 @@ export function setupOverviewApi(initialOverview: Overview) {
       overviewFetches += 1;
       return HttpResponse.json(overview);
     }),
+    // The page fires the members query alongside the overview; by default the
+    // fixture's users double as joined members. `setupMembersApi` (registered
+    // later, so it wins) takes over when a test drives membership itself.
+    http.get(`${API_BASE}/api/projects/:id/members`, () =>
+      HttpResponse.json(
+        overview.users.map(
+          (user, index): Member => ({
+            id: `member-row-${index}`,
+            email: `${user.id}@example.com`,
+            userId: user.id,
+            name: user.name,
+            avatarUrl: user.avatarUrl ?? null,
+            isOwner: user.id === overview.project.ownerId,
+            createdAt: overview.project.createdAt,
+          }),
+        ),
+      ),
+    ),
     http.get(`${API_BASE}/api/workstreams/:id/notes`, () =>
       HttpResponse.json([]),
     ),
@@ -746,6 +766,63 @@ export function setupProjectsApi(initialProjects: Project[] = []) {
     getProjects: () => projects,
     mockCreateProjectError(status: number, problem: Record<string, unknown>) {
       nextCreateError = { status, problem };
+    },
+  };
+}
+
+export function setupMembersApi(initialMembers: Member[], projectId = 'p1') {
+  let members = initialMembers;
+  let generatedId = 0;
+  let isListGone = false;
+  let nextAddError: {
+    status: number;
+    problem: Record<string, unknown>;
+  } | null = null;
+
+  server.use(
+    http.get(`${API_BASE}/api/projects/${projectId}/members`, () =>
+      isListGone ? notFound() : HttpResponse.json(members),
+    ),
+    http.post(
+      `${API_BASE}/api/projects/${projectId}/members`,
+      async ({ request }) => {
+        if (nextAddError) {
+          const { status, problem } = nextAddError;
+          nextAddError = null;
+          return problemResponse(status, problem);
+        }
+
+        const input = (await request.json()) as AddMemberInput;
+        const created: Member = {
+          id: `mock-member-${++generatedId}`,
+          email: input.email.toLowerCase(),
+          userId: null,
+          name: null,
+          avatarUrl: null,
+          isOwner: false,
+          createdAt: new Date().toISOString(),
+        };
+        members = [...members, created];
+        return HttpResponse.json(created, { status: 201 });
+      },
+    ),
+    http.delete(
+      `${API_BASE}/api/projects/${projectId}/members/:memberId`,
+      ({ params }) => {
+        members = members.filter((member) => member.id !== params.memberId);
+        return new HttpResponse(null, { status: 204 });
+      },
+    ),
+  );
+
+  return {
+    getMembers: () => members,
+    mockAddMemberError(status: number, problem: Record<string, unknown>) {
+      nextAddError = { status, problem };
+    },
+    /** Subsequent list fetches 404 — access lost while the dialog is open. */
+    mockMembersGone() {
+      isListGone = true;
     },
   };
 }

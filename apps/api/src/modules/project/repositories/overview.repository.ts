@@ -3,7 +3,6 @@ import { SqlEntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 
 import { Group } from '@/database/entities/group.entity';
-import { ProjectMember } from '@/database/entities/project-member.entity';
 import { Project } from '@/database/entities/project.entity';
 import { Workstream } from '@/database/entities/workstream.entity';
 import { WORKSTREAM_GRAPH } from '@/modules/project/repositories/lock-workstream-graph.query';
@@ -29,10 +28,14 @@ export class OverviewRepository {
   }> {
     return this.em.transactional(
       async (em) => {
-        const project = await em.findOneOrFail(Project, {
-          id: projectId,
-          ...projectVisibleTo(currentUserId),
-        });
+        const project = await em.findOneOrFail(
+          Project,
+          {
+            id: projectId,
+            ...projectVisibleTo(currentUserId),
+          },
+          { populate: ['owner'] },
+        );
         const groups = await em.find(
           Group,
           { project: projectId },
@@ -48,16 +51,25 @@ export class OverviewRepository {
             orderBy: { position: 'asc', name: 'asc' },
           },
         );
-        // The users directory is the project's joined members — never the
-        // global user table.
-        const members = await em.find(
-          ProjectMember,
-          { project: projectId, user: { $ne: null } },
-          { populate: ['user'], orderBy: { user: { name: 'asc' } } },
-        );
-        const users = members
-          .map((member) => member.user)
-          .filter((user): user is User => user != null);
+        // The users directory resolves the aggregate's owner references —
+        // whoever is assigned somewhere plus the project owner, member or
+        // not (an ex-member's assignments survive removal). Membership
+        // itself is the members endpoint's fact.
+        const referencedOwners = [
+          project.owner,
+          ...workstreams.flatMap((workstream) => [
+            workstream.owner,
+            ...workstream.getSteps().map((step) => step.owner),
+          ]),
+        ].filter((owner): owner is User => owner != null);
+        const seenIds = new Set<string>();
+        const users = referencedOwners
+          .filter((owner) => {
+            if (seenIds.has(owner.id)) return false;
+            seenIds.add(owner.id);
+            return true;
+          })
+          .sort((a, b) => a.name.localeCompare(b.name));
         const noteCounts = await countNotesByStep(
           em,
           workstreams.flatMap((workstream) =>

@@ -36,6 +36,8 @@ const noSelectionHandler = (): void => undefined;
 
 interface OverviewListProperties {
   overview: Overview;
+  /** Joined members — the only users an owner picker may offer. */
+  assignableUsers: UserSummary[];
   usersById: Map<string, UserSummary>;
   projectId: string | undefined;
   now: Date;
@@ -59,6 +61,7 @@ interface OverviewListProperties {
  */
 export const OverviewList = ({
   overview,
+  assignableUsers,
   usersById,
   projectId,
   now,
@@ -119,7 +122,7 @@ export const OverviewList = ({
       key={workstream.id}
       workstream={workstream}
       groups={groups}
-      users={overview.users}
+      users={assignableUsers}
       usersById={usersById}
       projectId={projectId}
       now={now}

@@ -28,22 +28,23 @@ import type { Test as SuperTestType } from 'supertest';
 import type TestAgent from 'supertest/lib/agent';
 
 /**
- * The T-2 tenancy sweep (#54): two users, two projects, and every content
- * route asserted route-by-route — the member gets its normal success, the
- * non-member gets a 404 indistinguishable from a nonexistent id, and a
- * soft-deleted project 404s even for its owner.
+ * The tenancy sweep (#54, extended for #55): three actors — the owner
+ * (tenant A), a joined non-owner member (tenant C), a non-member (tenant B) —
+ * and every route asserted route-by-route. The non-member gets a 404
+ * indistinguishable from a nonexistent id, and a soft-deleted project 404s
+ * even for its owner.
  *
  * Pattern for later tickets: each route is one entry in `ROUTES`, described
- * by how to issue it against the shared fixture and the member's expected
- * status. Both the non-member matrix and the soft-deleted matrix iterate the
- * same table, so a new route added there is automatically swept by both.
- * Feature specs stay the proof of member-path behavior; this spec only proves
- * the authorization boundary.
- * T-4 will need per-axis expectations for restore and owner-only routes.
+ * by how to issue it against the shared fixture and the expected statuses.
+ * Both the non-member matrix and the soft-deleted matrix iterate the same
+ * table, so a new route added there is automatically swept by both. Feature
+ * specs stay the proof of member-path behavior; this spec only proves the
+ * authorization boundary.
  */
 
 const TENANT_A_EMAIL = 'tenant-a@example.com';
 const TENANT_B_EMAIL = 'tenant-b@example.com';
+const TENANT_C_EMAIL = 'tenant-c@example.com';
 const PENDING_EMAIL = 'tenant-pending@example.com';
 
 interface Fixture {
@@ -55,37 +56,53 @@ interface Fixture {
   futureStepIds: [string, string];
   checklistItemId: string;
   noteId: string;
+  pendingMemberId: string;
+  tenantCMemberId: string;
   tenantAUserId: string;
   tenantBUserId: string;
+  tenantCUserId: string;
 }
 
 interface RouteCase {
   name: string;
   issue: (agent: TestAgent<SuperTestType>, fixture: Fixture) => SuperTestType;
-  memberStatus: number;
+  /** Expected for the owner (tenant A), asserted last. */
+  ownerStatus: number;
+  /**
+   * Expected for the joined non-owner member (tenant C). Set on routes where
+   * the member outcome differs from the owner's (governance 403s) or where
+   * any-member access is the contract; asserted before the owner's call so a
+   * rejected attempt cannot consume the fixture.
+   */
+  memberStatus?: number;
+  /**
+   * Expected for the owner once the project is soft-deleted. Defaults to 404
+   * — restore is the one route that must succeed on a deleted project.
+   */
+  deletedOwnerStatus?: number;
 }
 
 const ROUTES: readonly RouteCase[] = [
   {
     name: 'GET /projects/:id',
     issue: (agent, f) => agent.get(`/projects/${f.projectId}`),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'PATCH /projects/:id',
     issue: (agent, f) =>
       agent.patch(`/projects/${f.projectId}`).send({ name: 'Renamed' }),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'GET /projects/:projectId/overview',
     issue: (agent, f) => agent.get(`/projects/${f.projectId}/overview`),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'GET /projects/:projectId/groups',
     issue: (agent, f) => agent.get(`/projects/${f.projectId}/groups`),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'POST /projects/:projectId/groups',
@@ -93,7 +110,7 @@ const ROUTES: readonly RouteCase[] = [
       agent
         .post(`/projects/${f.projectId}/groups`)
         .send({ name: 'New group', color: '#5a9e6f' }),
-    memberStatus: 201,
+    ownerStatus: 201,
   },
   {
     name: 'PUT /projects/:projectId/group-order',
@@ -101,18 +118,18 @@ const ROUTES: readonly RouteCase[] = [
       agent
         .put(`/projects/${f.projectId}/group-order`)
         .send({ ids: [f.groupId] }),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'PATCH /groups/:id',
     issue: (agent, f) =>
       agent.patch(`/groups/${f.groupId}`).send({ name: 'Renamed' }),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'DELETE /groups/:id',
     issue: (agent, f) => agent.delete(`/groups/${f.groupId}`),
-    memberStatus: 204,
+    ownerStatus: 204,
   },
   {
     name: 'POST /projects/:projectId/workstreams',
@@ -120,7 +137,7 @@ const ROUTES: readonly RouteCase[] = [
       agent
         .post(`/projects/${f.projectId}/workstreams`)
         .send({ name: 'Flowers', icon: '💐' }),
-    memberStatus: 201,
+    ownerStatus: 201,
   },
   {
     name: 'PUT /projects/:projectId/workstream-order',
@@ -129,7 +146,7 @@ const ROUTES: readonly RouteCase[] = [
         groupId: null,
         ids: [f.freshWorkstreamId, f.activeWorkstreamId],
       }),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'PATCH /workstreams/:id',
@@ -137,13 +154,13 @@ const ROUTES: readonly RouteCase[] = [
       agent
         .patch(`/workstreams/${f.activeWorkstreamId}`)
         .send({ name: 'Renamed' }),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'POST /workstreams/:id/advance',
     issue: (agent, f) =>
       agent.post(`/workstreams/${f.activeWorkstreamId}/advance`).send({}),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'POST /workstreams/:id/steps',
@@ -151,7 +168,7 @@ const ROUTES: readonly RouteCase[] = [
       agent
         .post(`/workstreams/${f.activeWorkstreamId}/steps`)
         .send({ name: 'Appended', position: 5 }),
-    memberStatus: 201,
+    ownerStatus: 201,
   },
   {
     name: 'PUT /workstreams/:id/step-order',
@@ -159,29 +176,29 @@ const ROUTES: readonly RouteCase[] = [
       agent.put(`/workstreams/${f.activeWorkstreamId}/step-order`).send({
         ids: [f.futureStepIds[1], f.futureStepIds[0]],
       }),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'DELETE /workstreams/:id',
     issue: (agent, f) => agent.delete(`/workstreams/${f.freshWorkstreamId}`),
-    memberStatus: 204,
+    ownerStatus: 204,
   },
   {
     name: 'GET /workstreams/:workstreamId/notes',
     issue: (agent, f) =>
       agent.get(`/workstreams/${f.activeWorkstreamId}/notes`),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'PATCH /steps/:id',
     issue: (agent, f) =>
       agent.patch(`/steps/${f.futureStepIds[0]}`).send({ name: 'Renamed' }),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'DELETE /steps/:id',
     issue: (agent, f) => agent.delete(`/steps/${f.futureStepIds[0]}`),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'POST /steps/:stepId/checklist-items',
@@ -189,7 +206,7 @@ const ROUTES: readonly RouteCase[] = [
       agent
         .post(`/steps/${f.currentStepId}/checklist-items`)
         .send({ name: 'Sub-task' }),
-    memberStatus: 201,
+    ownerStatus: 201,
   },
   {
     name: 'PATCH /checklist-items/:id',
@@ -197,29 +214,75 @@ const ROUTES: readonly RouteCase[] = [
       agent
         .patch(`/checklist-items/${f.checklistItemId}`)
         .send({ name: 'Renamed' }),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'DELETE /checklist-items/:id',
     issue: (agent, f) => agent.delete(`/checklist-items/${f.checklistItemId}`),
-    memberStatus: 204,
+    ownerStatus: 204,
   },
   {
     name: 'POST /steps/:stepId/notes',
     issue: (agent, f) =>
       agent.post(`/steps/${f.currentStepId}/notes`).send({ content: 'Hello' }),
-    memberStatus: 201,
+    ownerStatus: 201,
   },
   {
     name: 'PATCH /notes/:id',
     issue: (agent, f) =>
       agent.patch(`/notes/${f.noteId}`).send({ content: 'Edited' }),
-    memberStatus: 200,
+    ownerStatus: 200,
   },
   {
     name: 'DELETE /notes/:id',
     issue: (agent, f) => agent.delete(`/notes/${f.noteId}`),
-    memberStatus: 204,
+    ownerStatus: 204,
+  },
+  {
+    name: 'GET /projects/:projectId/members',
+    issue: (agent, f) => agent.get(`/projects/${f.projectId}/members`),
+    ownerStatus: 200,
+    memberStatus: 200,
+  },
+  {
+    name: 'POST /projects/:projectId/members',
+    issue: (agent, f) =>
+      agent
+        .post(`/projects/${f.projectId}/members`)
+        .send({ email: 'sweep-invitee@example.com' }),
+    ownerStatus: 201,
+    memberStatus: 403,
+  },
+  {
+    name: 'DELETE /projects/:projectId/members/:memberId',
+    issue: (agent, f) =>
+      agent.delete(`/projects/${f.projectId}/members/${f.pendingMemberId}`),
+    ownerStatus: 204,
+    memberStatus: 403,
+  },
+  {
+    name: 'POST /projects/:id/transfer-ownership',
+    issue: (agent, f) =>
+      agent
+        .post(`/projects/${f.projectId}/transfer-ownership`)
+        .send({ memberId: f.tenantCMemberId }),
+    ownerStatus: 200,
+    memberStatus: 403,
+  },
+  {
+    name: 'DELETE /projects/:id',
+    issue: (agent, f) => agent.delete(`/projects/${f.projectId}`),
+    ownerStatus: 204,
+    memberStatus: 403,
+  },
+  {
+    // On a live project the owner gets 409 project-not-deleted; on the
+    // soft-deleted axis this is the one route that must succeed.
+    name: 'POST /projects/:id/restore',
+    issue: (agent, f) => agent.post(`/projects/${f.projectId}/restore`),
+    ownerStatus: 409,
+    memberStatus: 403,
+    deletedOwnerStatus: 200,
   },
 ];
 
@@ -230,6 +293,7 @@ describe('Tenancy Enforcement E2E Tests', () => {
   let em: SqlEntityManager;
   let authA: string;
   let authB: string;
+  let authC: string;
   let fixture: Fixture;
 
   beforeAll(async () => {
@@ -244,10 +308,12 @@ describe('Tenancy Enforcement E2E Tests', () => {
 
     authA = `Bearer ${await tokenFactory.createToken({ email: TENANT_A_EMAIL })}`;
     authB = `Bearer ${await tokenFactory.createToken({ email: TENANT_B_EMAIL })}`;
+    authC = `Bearer ${await tokenFactory.createToken({ email: TENANT_C_EMAIL })}`;
     const userA = await signIn(app, authA);
     const userB = await signIn(app, authB);
+    const userC = await signIn(app, authC);
 
-    fixture = await buildFixture(userA.id, userB.id);
+    fixture = await buildFixture(userA.id, userB.id, userC.id);
   });
 
   afterEach(async () => {
@@ -269,21 +335,33 @@ describe('Tenancy Enforcement E2E Tests', () => {
   }
 
   /**
-   * Project A (owner: user A) with a group, a started workstream carrying
-   * past/current/future steps, a checklist item, a note by A and a pending
-   * invite; plus B's own project so the non-member is a fully valid current user.
+   * Project A (owner: user A, joined non-owner member: user C) with a group,
+   * a started workstream carrying past/current/future steps, a checklist
+   * item, a note by A and a pending invite; plus B's own project so the
+   * non-member is a fully valid current user.
    */
   async function buildFixture(
     tenantAUserId: string,
     tenantBUserId: string,
+    tenantCUserId: string,
   ): Promise<Fixture> {
     const projectId = await createProjectAs(authA, 'Tenant A Wedding');
     await createProjectAs(authB, 'Tenant B Wedding');
 
     const project = await em.findOneOrFail(Project, { id: projectId });
     const tenantA = await em.findOneOrFail(User, { id: tenantAUserId });
+    const tenantC = await em.findOneOrFail(User, { id: tenantCUserId });
 
-    em.create(ProjectMember, { project, email: PENDING_EMAIL, user: null });
+    const tenantCMember = em.create(ProjectMember, {
+      project,
+      email: TENANT_C_EMAIL,
+      user: tenantC,
+    });
+    const pendingMember = em.create(ProjectMember, {
+      project,
+      email: PENDING_EMAIL,
+      user: null,
+    });
 
     const group = em.create(Group, {
       project,
@@ -354,8 +432,11 @@ describe('Tenancy Enforcement E2E Tests', () => {
       futureStepIds: [future1.id, future2.id],
       checklistItemId: checklistItem.id,
       noteId: note.id,
+      pendingMemberId: pendingMember.id,
+      tenantCMemberId: tenantCMember.id,
       tenantAUserId,
       tenantBUserId,
+      tenantCUserId,
     };
   }
 
@@ -368,10 +449,17 @@ describe('Tenancy Enforcement E2E Tests', () => {
           .set('Authorization', authB)
           .expect(404);
 
+        if (route.memberStatus !== undefined) {
+          await route
+            .issue(createRequest(), fixture)
+            .set('Authorization', authC)
+            .expect(route.memberStatus);
+        }
+
         await route
           .issue(createRequest(), fixture)
           .set('Authorization', authA)
-          .expect(route.memberStatus);
+          .expect(route.ownerStatus);
       },
     );
 
@@ -401,18 +489,20 @@ describe('Tenancy Enforcement E2E Tests', () => {
         await route
           .issue(createRequest(), fixture)
           .set('Authorization', authA)
-          .expect(404);
+          .expect(route.deletedOwnerStatus ?? 404);
       },
     );
   });
 
   describe('users directory and owner assignment', () => {
-    it('lists only joined members in the overview users directory', async () => {
+    it('lists only referenced owners in the overview users directory', async () => {
       const response = await createRequest()
         .get(`/projects/${fixture.projectId}/overview`)
         .set('Authorization', authA)
         .expect(200);
 
+      // The project owner is the sole owner reference in the fixture: joined
+      // but unassigned members (tenant C) stay out, as does any other tenant.
       const users = (response.body as { users: { id: string }[] }).users;
       expect(users.map((user) => user.id)).toEqual([fixture.tenantAUserId]);
     });
