@@ -19,7 +19,7 @@ export class OverviewDto {
   @ApiProperty({
     type: [UserSummaryDto],
     description:
-      'Canonical display data for every user, keyed by owner IDs elsewhere in the aggregate',
+      'Display data for every user the aggregate references as an owner (project, workstream, or step), whether or not they are still a member — membership comes from the members endpoint',
   })
   users!: UserSummaryDto[];
 }

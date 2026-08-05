@@ -5,7 +5,7 @@ change — it always reflects _now_. History lives in
 [docs/sessions/](./sessions/); one line per merged PR below, details in the
 linked docs.
 
-_Last updated: 2026-08-04 (session 41)_
+_Last updated: 2026-08-05 (session 42 addendum)_
 
 ## What this is
 
@@ -20,16 +20,17 @@ overview where everything is edited inline. The specs are the source of truth:
   decisions in [docs/adr/](./adr/)
 - [Auth PRD](./specs/auth/PRD.md) — Google GIS + `.env` allow-list
 - [Multi-tenancy PRD](./specs/multi-tenancy/PRD.md) +
-  [tech design](./specs/multi-tenancy/tech-design.md) — in progress: T-1
-  (#53) shipped, T-2 (#54) in review, T-3/T-4 (#55/#56) remaining
+  [tech design](./specs/multi-tenancy/tech-design.md) — T-1 (#53) and T-2
+  (#54) shipped; T-3/T-4 (#55/#56) built on `feat/multi-tenancy-t3-t4`
+  ([plan](./specs/multi-tenancy/t3-t4-implementation-plan.md)), in review as [PR #64](https://github.com/jeremy-dardour/kosmos/pull/64)
 
 ## Phase
 
 **V1 is feature-complete and deployed** — Cloud Run + Neon shipped via PR #58,
 [#26](https://github.com/jeremy-dardour/kosmos/issues/26) closed.
-Current feature: multi-tenancy (T-1 shipped, T-2 in review, then #55 → #56).
-Deployment hardening shipped in PR #60; the Kosmos rename including the
-external cutover is complete.
+Current feature: multi-tenancy (T-1 and T-2 merged; T-3 + T-4 implemented on
+one branch, in review). Deployment hardening shipped in PR #60; the Kosmos
+rename including the external cutover is complete.
 
 ## Shipped (one line per PR)
 
@@ -56,18 +57,22 @@ external cutover is complete.
   reviewed twice ([PRD](./specs/kosmos-rename/PRD.md) +
   [implementation plan](./specs/kosmos-rename/implementation-plan.md)), incl.
   `deployment/provision.sh` and the allow-list moved to Secret Manager
+- PR #61 — multi-tenancy T-2: membership enforcement on every route,
+  member-only users directory, tenancy sweep + coverage meta-test
 
 ## In flight
 
-- **[PR #61](https://github.com/jeremy-dardour/kosmos/pull/61)** — T-2
-  (#54): membership enforcement on every route (non-member → 404), member-only
-  users directory, `owner-not-member` 422, web not-found state; full review
-  battery complete and all validation green. Review comments actioned in
-  session 41: current-user naming (`@CurrentUser()`, `projectVisibleTo` with
-  named `assertProjectVisible`/`assertWorkstreamVisible` pre-reads), globally
-  bound resolution interceptor with `@SkipUserResolution()` opt-out, and a
-  sweep-coverage meta-test guarding the tenancy e2e matrix. Rebased onto the
-  Kosmos-rebranded `main`.
+- **[PR #64](https://github.com/jeremy-dardour/kosmos/pull/64)** (`feat/multi-tenancy-t3-t4`) — T-3 (#55) + T-4 (#56) implemented per the
+  [review-amended plan](./specs/multi-tenancy/t3-t4-implementation-plan.md):
+  members endpoints + dialog (pending invites, leave, caps), transfer
+  ownership, soft delete/restore with settings danger zone and a Deleted
+  list section. Locked governance transactions (`lockVisibleProject`),
+  three-actor tenancy sweep with `deletedOwnerStatus` axis, decisions D6–D8
+  recorded. Per-ticket review batteries run and actioned. Jeremy's PR review
+  comments actioned (session 42 addendum): overview `users` is now the
+  assignment directory (referenced owners, member or not; ex-members render
+  greyed), membership is the members endpoint's fact alone, and pickers
+  offer joined members only. Awaiting merge.
 
 The Kosmos rename **including the external cutover is complete**: repository
 `jeremy-dardour/kosmos`, Cloud Run service `kosmos` (512Mi, serving),
@@ -83,6 +88,7 @@ verified, old-name resources deleted. The GCP project keeps its immutable ID
 
 ## Next steps
 
-1. Review and merge **T-2
-   ([PR #61](https://github.com/jeremy-dardour/kosmos/pull/61))**; then
-   build T-3 (#55) followed by T-4 (#56).
+1. Review and merge the **T-3 + T-4 PR ([#64](https://github.com/jeremy-dardour/kosmos/pull/64))**,
+   closing #55 and #56 — completing the multi-tenancy feature.
+2. Delete `docs/specs/multi-tenancy/t3-t4-implementation-plan.md` once
+   merged (point-in-time record; durable decisions live in the tech design).

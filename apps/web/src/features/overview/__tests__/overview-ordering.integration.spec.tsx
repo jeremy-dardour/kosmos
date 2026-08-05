@@ -89,6 +89,7 @@ function ListHarness({ isDragDisabled = false }: { isDragDisabled?: boolean }) {
   return (
     <OverviewList
       overview={overview.data}
+      assignableUsers={overview.data.users}
       usersById={new Map(overview.data.users.map((u) => [u.id, u]))}
       projectId={PROJECT_ID}
       now={NOW}

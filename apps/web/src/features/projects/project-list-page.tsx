@@ -1,20 +1,25 @@
-import { PlusIcon } from 'lucide-react';
+import { ChevronDownIcon, ChevronRightIcon, PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { useProjects } from '@/api/hooks/use-projects';
+import { useRestoreProject } from '@/api/hooks/use-restore-project';
 import { useAuthState } from '@/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatToApiError } from '@/errors/format-error';
 import { EventCountdown } from '@/features/overview/event-countdown';
 import { CreateProjectDialog } from '@/features/projects/create-project-dialog';
 
 export const ProjectListPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const projects = useProjects();
   const authState = useAuthState();
+  const restoreProject = useRestoreProject();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDeletedOpen, setIsDeletedOpen] = useState(false);
+  const [restoreErrorId, setRestoreErrorId] = useState<string | null>(null);
 
   if (projects.isPending) {
     return (
@@ -27,6 +32,28 @@ export const ProjectListPage = () => {
   const currentUserId =
     authState.status === 'authenticated' ? authState.user.id : null;
   const items = (projects.data ?? []).filter((project) => !project.deletedAt);
+  // The API only returns the current user's own deleted projects.
+  const deletedItems = (projects.data ?? []).filter(
+    (project) => project.deletedAt,
+  );
+
+  const restore = (projectId: string) => {
+    if (restoreProject.isPending) return;
+    setRestoreErrorId(null);
+    restoreProject.mutate(
+      { params: { path: { id: projectId } } },
+      {
+        onError: (error) => {
+          const problemType = formatToApiError(error)?.problemType;
+          if (problemType?.endsWith('/project-limit-reached')) {
+            setRestoreErrorId(projectId);
+          }
+        },
+      },
+    );
+  };
+
+  const DeletedChevron = isDeletedOpen ? ChevronDownIcon : ChevronRightIcon;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -76,6 +103,58 @@ export const ProjectListPage = () => {
               </Card>
             </Link>
           ))}
+        </div>
+      )}
+
+      {deletedItems.length > 0 && (
+        <div className="mt-8">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-expanded={isDeletedOpen}
+            onClick={() => setIsDeletedOpen((previous) => !previous)}
+          >
+            <DeletedChevron />
+            {t('projects.deleted.title', { total: deletedItems.length })}
+          </Button>
+
+          {isDeletedOpen && (
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              {deletedItems.map((project) => (
+                <Card key={project.id} className="bg-muted/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between gap-2">
+                      <span className="min-w-0">
+                        <span className="block truncate">{project.name}</span>
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {t('projects.deleted.deletedOn', {
+                            date: new Date(
+                              project.deletedAt!,
+                            ).toLocaleDateString(i18n.language),
+                          })}
+                        </span>
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={restoreProject.isPending}
+                        onClick={() => restore(project.id)}
+                      >
+                        {t('projects.deleted.restore')}
+                      </Button>
+                    </CardTitle>
+                    {restoreErrorId === project.id && (
+                      <p className="mt-1 text-xs text-destructive">
+                        {t('projects.deleted.limitReached')}
+                      </p>
+                    )}
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

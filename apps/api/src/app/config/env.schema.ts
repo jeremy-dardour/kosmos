@@ -49,6 +49,14 @@ export const envSchema = baseEnvSchema
         message: 'MAX_OWNED_PROJECTS must be a positive integer',
       }),
 
+    MAX_PROJECT_MEMBERS: z
+      .string()
+      .default('20')
+      .transform(Number)
+      .refine((value) => Number.isSafeInteger(value) && value > 0, {
+        message: 'MAX_PROJECT_MEMBERS must be a positive integer',
+      }),
+
     AUTH_CLIENT_ID: z.string().optional(),
     AUTH_OIDC_DISCOVERY_URL: z.url().optional(),
     AUTH_ALLOWED_EMAILS: allowedEmailsSchema,

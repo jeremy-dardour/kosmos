@@ -104,6 +104,10 @@ kind as the next numbered ADR.
   turbo's incremental buildinfo has false-passed a stale generated-type change.
 - After changing API routes, authentication, persistence, transactions, or
   concurrency behavior, also run `pnpm --filter api test:e2e`.
+- After `pnpm generate:api-types` with route/DTO changes, verify
+  `openapi.d.ts` actually changed — a zero diff means a **stale API server**
+  answered (a killed background dev task can leave its nest child holding
+  the port; kill the listener on the API port and regenerate).
 - After changing entities: regenerate and verify migrations (see
   [apps/api/README.md](./apps/api/README.md)).
 - After adding, removing, renaming, or changing API controllers, routes, DTOs,

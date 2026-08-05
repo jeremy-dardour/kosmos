@@ -18,9 +18,11 @@ interface ConfirmDialogProperties {
   cancelLabel: string;
   onConfirm: () => void;
   isPending?: boolean;
+  /** `default` for consequential-but-not-destructive actions (e.g. transfer). */
+  confirmVariant?: 'destructive' | 'default';
 }
 
-/** A minimal destructive-confirmation dialog shared by delete flows. */
+/** A minimal confirmation dialog shared by delete and governance flows. */
 export const ConfirmDialog = ({
   isOpen,
   onOpenChange,
@@ -30,6 +32,7 @@ export const ConfirmDialog = ({
   cancelLabel,
   onConfirm,
   isPending = false,
+  confirmVariant = 'destructive',
 }: ConfirmDialogProperties) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -44,7 +47,7 @@ export const ConfirmDialog = ({
           </DialogClose>
           <Button
             type="button"
-            variant="destructive"
+            variant={confirmVariant}
             size="sm"
             disabled={isPending}
             onClick={onConfirm}

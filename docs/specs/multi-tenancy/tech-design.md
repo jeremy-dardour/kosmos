@@ -271,14 +271,36 @@ no separate list-item DTO per the one-DTO-per-entity standard.
 | 409    | Removing the owner's member row / owner leaving     | `cannot-remove-owner`        |
 | 409    | Transfer target is not a joined member              | `transfer-target-not-member` |
 | 409    | Adding an email that is already a member            | `duplicate-member`           |
-| 409    | 21st owned non-deleted project                      | `project-limit-reached`      |
+| 409    | 21st owned non-deleted project (create or restore)  | `project-limit-reached`      |
 | 409    | `restore` on a project that isn't deleted           | `project-not-deleted`        |
 | 409    | 21st member row (joined + pending) on a project     | `member-limit-reached`       |
 | 422    | Workstream/step owner not a joined project member   | `owner-not-member`           |
 
-Caps are constants (20/20, PRD decision 10), checked in the service inside
-the same transaction as the insert (count under the project lock — the
-existing order-callback locking idiom already locks the project row).
+Caps are env-configured with default 20 (`MAX_OWNED_PROJECTS`,
+`MAX_PROJECT_MEMBERS` — D7 amends the original "constants" stance), checked
+in the service inside the same transaction as the write. The member-cap
+count runs under the project lock; the owned-project count is deliberately
+**best-effort** (no owner-wide lock, matching `createOwned`) — concurrent
+creates/restores of different projects can transiently exceed it (D6).
+
+### Governance concurrency (T-3/T-4 amendment, 2026-08-04)
+
+Every governance mutation (member add/remove, transfer, delete, restore) is
+one transaction that pessimistic-write-locks the project row and re-validates
+on the locked row — actor still owner, target membership state, `deletedAt` —
+via the shared `lockVisibleProject` query helper (ADR 0008 pattern). Restore
+is the one resolution allowed to see a deleted project (visible-to-user OR
+owned-by-user root).
+
+### Accepted information-exposure trade-offs (T-3 security review, 2026-08-04)
+
+- **Account-existence oracle on add-member**: attaching an existing account
+  immediately (PRD decision 7) means the owner learns whether an email has an
+  account (and its Google name/avatar via the members list). Accepted: only
+  allow-listed emails can have accounts, and the audience is a trusted circle
+  (PRD decision 1). Revisit if the allow-list gate is ever widened.
+- **Pending invitees' emails are visible to all members** in the members
+  list. Accepted: the members directory is the feature.
 
 ---
 
@@ -390,10 +412,13 @@ scoped list.
 
 ## Resolved decisions (2026-08-03)
 
-| #   | Decision                                               | Resolution                                                                               |
-| --- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| D1  | Membership enforcement seam and non-member status code | Repository-scoped predicate only → 404; guards stay authn-only                           |
-| D2  | Owner representation                                   | `Project.ownerId` FK + owner always has a joined member row                              |
-| D3  | Migration of existing data                             | None — schema-only migration; app pre-deployment, dev DBs reseeded                       |
-| D4  | Web URL shape                                          | `/` list + `/projects/:projectId` overview                                               |
-| D5  | Project deletion semantics (2026-08-04)                | Soft delete + restore-only trash, no purge; delete UI in the settings dialog danger zone |
+| #   | Decision                                               | Resolution                                                                                                           |
+| --- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| D1  | Membership enforcement seam and non-member status code | Repository-scoped predicate only → 404; guards stay authn-only                                                       |
+| D2  | Owner representation                                   | `Project.ownerId` FK + owner always has a joined member row                                                          |
+| D3  | Migration of existing data                             | None — schema-only migration; app pre-deployment, dev DBs reseeded                                                   |
+| D4  | Web URL shape                                          | `/` list + `/projects/:projectId` overview                                                                           |
+| D5  | Project deletion semantics (2026-08-04)                | Soft delete + restore-only trash, no purge; delete UI in the settings dialog danger zone                             |
+| D6  | Restore vs owned-project cap (2026-08-04)              | Restore re-checks the cap in-transaction → 409 `project-limit-reached`; counts stay best-effort (no owner-wide lock) |
+| D7  | Cap configuration (2026-08-04)                         | Env-configured with default 20: `MAX_OWNED_PROJECTS`, `MAX_PROJECT_MEMBERS`                                          |
+| D8  | Transfer vs target's cap (2026-08-04)                  | No cap check on transfer — the cap gates creating and restoring, not total ownership                                 |

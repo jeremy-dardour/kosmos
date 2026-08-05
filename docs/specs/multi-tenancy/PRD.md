@@ -74,7 +74,9 @@ create projects and belong to any number of projects (their own and others').
 
 Sanity caps apply (not monetization, just accident-bounding): at most 20
 projects per user and 20 members per project. Hitting a cap shows a plain
-"limit reached" message.
+"limit reached" message. The project cap gates **creating and restoring**
+projects, not total ownership — receiving a project via ownership transfer
+may exceed it (tech design D8).
 
 ### Sharing and membership
 
@@ -124,22 +126,23 @@ trusted people:
 
 ## Decisions Made
 
-| #   | Decision                                                                                   | Context                                                                                                                            |
-| --- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Audience is a trusted circle (friends/family), not an open product                         | Sets the polish/abuse bar; entry stays personally gated                                                                            |
-| 2   | Entry stays gated by the `.env` email allow-list; no signup page, no invites, no admin UI  | "Signup" is just first Google login by an allow-listed email — which already works today                                           |
-| 3   | Google-only identity                                                                       | No new auth surface; consistent with the existing GIS setup                                                                        |
-| 4   | Project is the tenancy unit; no org/team layer                                             | The generic Project seam was built for exactly this                                                                                |
-| 5   | User accounts are global; membership is per project                                        | Matches the existing model (User created on first login, identified by email)                                                      |
-| 6   | Two permission levels: owner + members                                                     | Members = full content access incl. settings; owner adds governance only                                                           |
-| 7   | Add member by email with pending memberships that attach on first sign-in                  | One flow covers existing and future users; no coordination on timing                                                               |
-| 8   | Ownership is transferable to a member; owner cannot leave without transferring or deleting | Covers the realistic "partner takes over" case cheaply                                                                             |
-| 9   | The app sends no email whatsoever                                                          | Pull-only notification stance survives; invitations are coordinated person-to-person                                               |
-| 10  | Sanity caps: 20 projects/user, 20 members/project                                          | Bounds accidents, not monetization; adjust numbers freely at implementation                                                        |
-| 11  | Landing = project list; direct project URLs supported                                      | Predictable entry point; deep links for daily use                                                                                  |
-| 12  | No data migration — fresh start                                                            | Superseded original "operator owns the existing project" plan: the app is pre-deployment, so no legacy data exists; dev DBs reseed |
-| 13  | Versioning is dropped from this feature                                                    | Was a "maybe"; no agreed problem it solves — revisit with real usage (templates most likely)                                       |
-| 14  | Project deletion is soft: restore-only trash, no purge                                     | Members lose access instantly; owner keeps a restorable card; deleted projects don't count toward the cap (2026-08-04)             |
+| #   | Decision                                                                                   | Context                                                                                                                                     |
+| --- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Audience is a trusted circle (friends/family), not an open product                         | Sets the polish/abuse bar; entry stays personally gated                                                                                     |
+| 2   | Entry stays gated by the `.env` email allow-list; no signup page, no invites, no admin UI  | "Signup" is just first Google login by an allow-listed email — which already works today                                                    |
+| 3   | Google-only identity                                                                       | No new auth surface; consistent with the existing GIS setup                                                                                 |
+| 4   | Project is the tenancy unit; no org/team layer                                             | The generic Project seam was built for exactly this                                                                                         |
+| 5   | User accounts are global; membership is per project                                        | Matches the existing model (User created on first login, identified by email)                                                               |
+| 6   | Two permission levels: owner + members                                                     | Members = full content access incl. settings; owner adds governance only                                                                    |
+| 7   | Add member by email with pending memberships that attach on first sign-in                  | One flow covers existing and future users; no coordination on timing                                                                        |
+| 8   | Ownership is transferable to a member; owner cannot leave without transferring or deleting | Covers the realistic "partner takes over" case cheaply                                                                                      |
+| 9   | The app sends no email whatsoever                                                          | Pull-only notification stance survives; invitations are coordinated person-to-person                                                        |
+| 10  | Sanity caps: 20 projects/user, 20 members/project                                          | Bounds accidents, not monetization; adjust numbers freely at implementation                                                                 |
+| 11  | Landing = project list; direct project URLs supported                                      | Predictable entry point; deep links for daily use                                                                                           |
+| 12  | No data migration — fresh start                                                            | Superseded original "operator owns the existing project" plan: the app is pre-deployment, so no legacy data exists; dev DBs reseed          |
+| 13  | Versioning is dropped from this feature                                                    | Was a "maybe"; no agreed problem it solves — revisit with real usage (templates most likely)                                                |
+| 14  | Project deletion is soft: restore-only trash, no purge                                     | Members lose access instantly; owner keeps a restorable card; deleted projects don't count toward the cap (2026-08-04)                      |
+| 15  | A removed member's owner assignments survive, visibly marked as ex-member                  | History stays truthful; assignments render greyed with a "no longer a member" hint, and pickers only ever offer joined members (2026-08-05) |
 
 ## Out of Scope
 

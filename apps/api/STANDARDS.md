@@ -138,6 +138,9 @@ See [ENTITIES_STANDARDS.md](./ENTITIES_STANDARDS.md).
 
 - E2E tests: `src/__e2e-tests__/`, named `*.e2e-spec.ts`, serial execution, real PostgreSQL
 - Vitest configs: `vitest.config.mts` (unit) and `vitest.e2e.config.mts` (e2e)
+- The serial e2e suite can flake under heavy machine load: rotating single
+  failures with boot-time 401/404s in unrelated specs. Re-run on an idle
+  machine before diagnosing a "failure" that moves between specs.
 
 ## Tenancy enforcement
 

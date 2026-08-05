@@ -80,17 +80,13 @@ describe('Overview E2E Tests', () => {
     const project = await createProjectFixture(em, {
       eventDate: calendarDay(10),
     });
-    // The users directory returns joined members only, so the owners the
-    // fixtures reference must be members to appear in it.
+    // The users directory lists referenced owners, member or not: the
+    // workstream owner stays a joined member; the step owner has no member
+    // row, standing in for an ex-member whose assignments survived removal.
     em.create(ProjectMember, {
       project,
       email: workstreamOwner.email,
       user: workstreamOwner,
-    });
-    em.create(ProjectMember, {
-      project,
-      email: stepOwner.email,
-      user: stepOwner,
     });
 
     const group = em.create(Group, {
@@ -400,11 +396,12 @@ describe('Overview E2E Tests', () => {
       expect(findWorkstream(overview, activeId).groupId).toBeNull();
     });
 
-    it('includes one canonical summary for every joined member', async () => {
+    it('includes one canonical summary per referenced owner, member or not', async () => {
       const overview = await fetchOverview();
 
       expect(overview.users).toEqual(
         expect.arrayContaining([
+          // No member row — assignments still resolve after a removal.
           {
             id: stepOwnerId,
             name: 'Step Owner',
@@ -415,8 +412,10 @@ describe('Overview E2E Tests', () => {
             name: 'Workstream Owner',
             avatarUrl: 'https://example.com/ws-owner.png',
           },
+          expect.objectContaining({ name: 'Project Owner' }),
         ]),
       );
+      expect(overview.users).toHaveLength(3);
       expect(overview.users[0]).not.toHaveProperty('email');
       expect(overview.users[0]).not.toHaveProperty('createdAt');
     });

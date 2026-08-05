@@ -1,4 +1,4 @@
-import { PlusIcon, SettingsIcon, TagsIcon } from 'lucide-react';
+import { PlusIcon, SettingsIcon, TagsIcon, UsersIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ interface OverviewHeaderProperties {
   onNewWorkstream: () => void;
   onManageGroups: () => void;
   onProjectSettings: () => void;
+  onMembers: () => void;
 }
 
 export const OverviewHeader = ({
@@ -34,6 +35,7 @@ export const OverviewHeader = ({
   onNewWorkstream,
   onManageGroups,
   onProjectSettings,
+  onMembers,
 }: OverviewHeaderProperties) => {
   const { t } = useTranslation();
 
@@ -50,6 +52,16 @@ export const OverviewHeader = ({
         onClick={onProjectSettings}
       >
         <SettingsIcon />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-label={t('overview.manage.members')}
+        title={t('overview.manage.members')}
+        onClick={onMembers}
+      >
+        <UsersIcon />
       </Button>
 
       <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">

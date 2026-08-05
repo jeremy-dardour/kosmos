@@ -14,8 +14,13 @@ import type { UserSummary } from '@/api/hooks/use-overview';
 const NO_OWNER = '';
 
 interface OwnerPickerProperties {
+  /** Joined members — the options an owner can be set to. */
   users: UserSummary[];
-  ownerId: string | null | undefined;
+  /**
+   * The current owner, resolved by the caller from the users directory — an
+   * ex-member owner is displayable even though they are no longer an option.
+   */
+  owner: (UserSummary & { isMember?: boolean }) | null;
   /** Accessible name for the trigger. */
   label: string;
   /** Copy for the clearing option — "Unassigned" or "Inherit workstream owner". */
@@ -26,14 +31,12 @@ interface OwnerPickerProperties {
 
 export const OwnerPicker = ({
   users,
-  ownerId,
+  owner,
   label,
   clearLabel,
   className,
   onSelect,
 }: OwnerPickerProperties) => {
-  const owner = users.find((user) => user.id === ownerId) ?? null;
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger

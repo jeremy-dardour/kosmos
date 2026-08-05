@@ -11,6 +11,8 @@ import { Workstream } from '@/database/entities/workstream.entity';
 import { ChecklistItemController } from '@/modules/project/checklist-item.controller';
 import { GroupController } from '@/modules/project/group.controller';
 import { GroupService } from '@/modules/project/group.service';
+import { MemberController } from '@/modules/project/member.controller';
+import { MemberService } from '@/modules/project/member.service';
 import { NoteController } from '@/modules/project/note.controller';
 import { NoteService } from '@/modules/project/note.service';
 import { OverviewController } from '@/modules/project/overview.controller';
@@ -19,6 +21,7 @@ import { ProjectController } from '@/modules/project/project.controller';
 import { ProjectService } from '@/modules/project/project.service';
 import { ChecklistItemRepository } from '@/modules/project/repositories/checklist-item.repository';
 import { GroupRepository } from '@/modules/project/repositories/group.repository';
+import { MemberRepository } from '@/modules/project/repositories/member.repository';
 import { NoteRepository } from '@/modules/project/repositories/note.repository';
 import { OverviewRepository } from '@/modules/project/repositories/overview.repository';
 import { ProjectRepository } from '@/modules/project/repositories/project.repository';
@@ -46,6 +49,7 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
   ],
   controllers: [
     ProjectController,
+    MemberController,
     OverviewController,
     GroupController,
     WorkstreamController,
@@ -55,12 +59,14 @@ import { WorkstreamService } from '@/modules/project/workstream.service';
   ],
   providers: [
     ProjectService,
+    MemberService,
     OverviewService,
     GroupService,
     WorkstreamService,
     WorkstreamStructureService,
     NoteService,
     ProjectRepository,
+    MemberRepository,
     OverviewRepository,
     GroupRepository,
     WorkstreamRepository,

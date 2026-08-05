@@ -6,7 +6,8 @@ import type { UserSummary } from '@/api/hooks/use-overview';
 import type { CSSProperties } from 'react';
 
 interface OwnerAvatarProperties {
-  owner?: UserSummary | null;
+  /** `isMember: false` marks an ex-member whose assignment survived removal. */
+  owner?: (UserSummary & { isMember?: boolean }) | null;
   className?: string;
 }
 
@@ -47,15 +48,22 @@ export const OwnerAvatar = ({ owner, className }: OwnerAvatarProperties) => {
     );
   }
 
+  const isFormerMember = owner.isMember === false;
+  const label = isFormerMember
+    ? t('overview.card.formerMemberOwner', { name: owner.name })
+    : owner.name;
+
   return (
     <span
       className={cn(
         'owner-avatar inline-flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
+        isFormerMember &&
+          'opacity-50 grayscale ring-1 ring-destructive/60 ring-offset-1',
         className,
       )}
       style={{ '--avatar-hue': hueFromId(owner.id) } as CSSProperties}
-      title={owner.name}
-      aria-label={owner.name}
+      title={label}
+      aria-label={label}
       role="img"
     >
       {initials(owner.name)}
