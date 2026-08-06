@@ -7,6 +7,8 @@ import {
   useOverview,
 } from '@/api/hooks/use-overview';
 import { useProjectMembers } from '@/api/hooks/use-project-members';
+import { AssistantScope } from '@/assistant/assistant-scope';
+import { OverviewAssistantFunctions } from '@/assistant/functions/overview-assistant-functions';
 import { useAuthState } from '@/auth/auth-context';
 import { formatToApiError } from '@/errors/format-error';
 import {
@@ -168,6 +170,11 @@ export const OverviewPage = () => {
 
   return (
     <div className="flex h-full min-h-0 gap-4">
+      {projectId && (
+        <AssistantScope>
+          <OverviewAssistantFunctions projectId={projectId} />
+        </AssistantScope>
+      )}
       {/* `min-w-0`: without it the column's automatic minimum width lets long
           card text push the widget panel off screen. */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">

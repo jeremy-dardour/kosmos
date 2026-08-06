@@ -8,8 +8,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React from 'react';
 
 import { isLocallyHandledError, queryConfig } from '@/api/react-query';
-import { AssistantProvider } from '@/app/components/assistant/assistant-provider';
 import { GlobalApiErrorDialog } from '@/app/components/error/global-api-error-dialog';
+import { AssistantProvider } from '@/assistant/assistant-provider';
 import { AuthContext } from '@/auth';
 import { env } from '@/config/env';
 import { ApiErrorProvider } from '@/errors/api-error-provider';
