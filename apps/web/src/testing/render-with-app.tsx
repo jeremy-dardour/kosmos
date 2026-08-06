@@ -9,6 +9,7 @@ import { AppProvider } from '@/app/app-provider';
 import en from '@/i18n/locales/en.json';
 import { createStubAuth } from '@/testing/stub-auth';
 
+import type { AuthState } from '@/auth';
 import type { ReactElement } from 'react';
 
 await i18n.use(initReactI18next).init({
@@ -22,8 +23,8 @@ await i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
-export function renderWithApp(ui: ReactElement) {
-  const { authSystem } = createStubAuth();
+export function renderWithApp(ui: ReactElement, authState?: AuthState) {
+  const { authSystem } = createStubAuth(authState);
 
   setApiClient(configureApiClient(authSystem.session));
 

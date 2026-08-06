@@ -31,8 +31,6 @@ export default defineConfig({
         // Runtime config / i18n setup — environment-dependent
         'src/config/**',
         'src/i18n/**',
-        // Routing / shell — not unit-testable
-        'src/app/router.tsx',
         // Barrel files
         '**/index.ts',
         '**/index.tsx',
