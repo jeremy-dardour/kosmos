@@ -8,8 +8,8 @@ import {
 } from '@/api/hooks/use-overview';
 import { useProjectMembers } from '@/api/hooks/use-project-members';
 import { AssistantScope } from '@/assistant/assistant-scope';
-import { OverviewAssistantFunctions } from '@/assistant/functions/overview-assistant-functions';
 import { OverviewAssistantContext } from '@/assistant/overview-assistant-context';
+import { OverviewAssistantFunctions } from '@/assistant/overview-assistant-functions';
 import { OverviewAssistantPageState } from '@/assistant/overview-assistant-page-state';
 import { useAuthState } from '@/auth/auth-context';
 import { formatToApiError } from '@/errors/format-error';

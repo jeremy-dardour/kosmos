@@ -19,11 +19,21 @@ export function setApiClient(fetchClient: TypedFetchClient) {
   $api = createClient<paths>(fetchClient);
 }
 
+type ApiData<TResult> = TResult extends { data?: infer TData }
+  ? Exclude<TData, undefined>
+  : never;
+
 /**
  * A rejected request carries the Problem Details body itself, not an `Error` —
  * what `$api`'s own query and mutation functions throw, and what
- * `formatToApiError` normalizes. `$fetch` callers fail the same way.
+ * `formatToApiError` normalizes. Throwing the error verbatim is what makes
+ * `$fetch` callers fail the same way as the hooks.
  */
-export function throwApiFailure(error: unknown): never {
-  throw error;
+export function unwrapApiResult<
+  TResult extends { data?: unknown; error?: unknown },
+>(result: TResult): ApiData<TResult> {
+  // eslint-disable-next-line @typescript-eslint/only-throw-error
+  if (result.error) throw result.error;
+
+  return (result as { data: ApiData<TResult> }).data;
 }

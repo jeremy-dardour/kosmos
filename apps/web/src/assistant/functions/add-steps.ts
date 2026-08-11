@@ -1,4 +1,5 @@
 import { fetchOverview, refreshOverview } from '@/api/hooks/use-overview';
+import { requireWorkstream } from '@/assistant/functions/entity-lookup';
 import { asFunctionParameters } from '@/assistant/functions/function-parameters';
 import { resolveInsertionPosition } from '@/assistant/functions/pipeline-mutability';
 import {
@@ -40,16 +41,10 @@ export const addStepsFunction = (
   ...definition,
   handler: async (arguments_) => {
     const overview = await fetchOverview(queryClient, projectId);
-    const workstream = overview.workstreams.find(
-      (candidate) => candidate.id === arguments_.workstreamId,
-    );
-    if (!workstream) {
-      return {
-        success: false,
-        error: `No workstream with id "${String(arguments_.workstreamId)}" in this project. Ids come from the workstreams context.`,
-      };
-    }
+    const found = requireWorkstream(overview, arguments_.workstreamId);
+    if (!found.ok) return { success: false, error: found.error };
 
+    const { workstream } = found;
     const resolved = resolveStepInputs(
       arguments_.steps,
       overview.project.eventDate,

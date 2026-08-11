@@ -198,6 +198,30 @@ describe('createWorkstream', () => {
     ]);
   });
 
+  it('counts the checklist items of the later steps it never attempted', async () => {
+    vi.mocked(createStep)
+      .mockResolvedValueOnce(insertedAt('One', 1))
+      .mockRejectedValueOnce({ detail: 'Step limit reached' });
+
+    const result = await call({
+      name: 'Catering',
+      icon: '🍽️',
+      steps: [
+        { name: 'One' },
+        { name: 'Two', checklist: ['Chateau A'] },
+        { name: 'Three', checklist: ['Menu', 'Wine'] },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      failed: { step: 'Two' },
+      notAttempted: {
+        steps: ['Three'],
+        checklistItems: ['Chateau A', 'Menu', 'Wine'],
+      },
+    });
+  });
+
   it('lists every step as never attempted when the workstream itself fails', async () => {
     vi.mocked(createWorkstream).mockRejectedValueOnce({
       detail: 'Icon is required',

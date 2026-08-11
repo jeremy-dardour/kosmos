@@ -4,13 +4,14 @@ export type InsertionResolution =
   | { ok: true; position: number }
   | { ok: false; error: string };
 
-const currentStepOf = (workstream: Workstream): Step | undefined =>
+export const currentStepOf = (workstream: Workstream): Step | undefined =>
   workstream.steps.find((step) => step.id === workstream.currentStepId);
 
 /**
- * The first 1-indexed position that accepts a new step and free edits: one past
- * the pointer, which is 0 while a workstream is NotStarted. A Complete
- * workstream has no such position.
+ * The first 1-indexed position that accepts a new step: one past the pointer,
+ * which is 0 while a workstream is NotStarted. A Complete workstream has no
+ * such position. This is the insertion boundary only — the current step is
+ * still editable in place, just never movable.
  */
 export function editableFrom(workstream: Workstream): number | null {
   if (workstream.lifecycle === 'complete') return null;

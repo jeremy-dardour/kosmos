@@ -1,3 +1,4 @@
+import { sanitizeLine } from '@/assistant/context/sanitize-line';
 import { daysUntil } from '@/features/overview/days-until';
 
 import type { Group, Project } from '@/api/hooks/use-overview';
@@ -12,7 +13,7 @@ export interface ProjectContextInput {
   currentUserId: string | undefined;
 }
 
-const toIsoDay = (date: Date): string =>
+const toLocalIsoDay = (date: Date): string =>
   [
     date.getFullYear(),
     String(date.getMonth() + 1).padStart(2, '0'),
@@ -25,10 +26,14 @@ const toMemberLine = (member: Member, currentUserId?: string): string => {
     ...(member.userId === currentUserId ? ['you'] : []),
   ];
   const suffix = marks.length > 0 ? ` (${marks.join(', ')})` : '';
-  return `${member.userId!} ${member.name ?? member.email}${suffix}`;
+  // Never the email as a fallback: an address is not the assistant backend's
+  // to receive.
+  const name = member.name ? sanitizeLine(member.name) : '(unnamed)';
+  return `${member.userId!} ${name}${suffix}`;
 };
 
-const toGroupLine = (group: Group): string => `${group.id} ${group.name}`;
+const toGroupLine = (group: Group): string =>
+  `${group.id} ${sanitizeLine(group.name)}`;
 
 export function buildProjectContext({
   project,
@@ -47,8 +52,8 @@ export function buildProjectContext({
       'The project whose overview is on screen. Member lines lead with the user id to pass as an owner id, group lines with the group id. The member marked (you) is the signed-in user you are assisting — resolve "me" and "my" to that id. Dates are calendar days (YYYY-MM-DD); trust `today` over your own sense of the date.',
     data: {
       id: project.id,
-      name: project.name,
-      today: toIsoDay(today),
+      name: sanitizeLine(project.name),
+      today: toLocalIsoDay(today),
       eventDate: project.eventDate ?? 'no event date',
       ...(project.eventDate && {
         daysUntilEvent: daysUntil(project.eventDate, today),

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { $fetch, throwApiFailure } from '@/api/api-client';
+import { $fetch, unwrapApiResult } from '@/api/api-client';
 import { useOverviewCache } from '@/api/overview-cache';
 
 import type { dtos } from '@/types/openapi';
@@ -13,13 +13,12 @@ interface CreateStepVariables {
 }
 
 export async function createStep(workstreamId: string, input: CreateStepInput) {
-  const result = await $fetch.POST('/api/workstreams/{id}/steps', {
-    params: { path: { id: workstreamId } },
-    body: input,
-  });
-  if (result.error) throwApiFailure(result.error);
-
-  return result.data;
+  return unwrapApiResult(
+    await $fetch.POST('/api/workstreams/{id}/steps', {
+      params: { path: { id: workstreamId } },
+      body: input,
+    }),
+  );
 }
 
 export function useCreateStep(projectId: string | undefined) {

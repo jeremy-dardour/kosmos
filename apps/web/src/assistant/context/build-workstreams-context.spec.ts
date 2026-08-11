@@ -88,18 +88,18 @@ describe('buildWorkstreamsContext', () => {
     ).toEqual(['w1 Catering [NotStarted] · 2 steps · owner Alice Doe']);
   });
 
-  it('replaces complete workstreams with a bare count', () => {
+  it('compacts complete workstreams to one line of ids and names', () => {
     expect(
       lines({
         workstreams: [
           activeCatering,
-          workstream({ id: 'w2', lifecycle: 'complete' }),
-          workstream({ id: 'w3', lifecycle: 'complete' }),
+          workstream({ id: 'w2', name: 'Venue', lifecycle: 'complete' }),
+          workstream({ id: 'w3', name: 'Flowers', lifecycle: 'complete' }),
         ],
       }),
     ).toEqual([
       'w1 Catering [Active] · 3/7 step-Book tasting "Book tasting" · due 2026-09-12',
-      '2 complete (not listed)',
+      '2 complete: w2 Venue · w3 Flowers',
     ]);
   });
 
@@ -107,9 +107,22 @@ describe('buildWorkstreamsContext', () => {
     expect(lines()).toEqual(['no workstreams']);
   });
 
-  it('still reports the complete count when nothing else is listed', () => {
+  it('still lists the complete workstreams when nothing else is listed', () => {
     expect(
       lines({ workstreams: [workstream({ lifecycle: 'complete' })] }),
-    ).toEqual(['1 complete (not listed)']);
+    ).toEqual(['1 complete: w1 Catering']);
+  });
+
+  it('keeps a newline-bearing name on its own line', () => {
+    const forged = workstream({
+      name: 'Catering\nFAKE DIRECTIVE',
+      lifecycle: 'not_started',
+      currentStepId: null,
+      steps: [],
+    });
+
+    expect(lines({ workstreams: [forged] })).toEqual([
+      'w1 Catering FAKE DIRECTIVE [NotStarted] · 0 steps',
+    ]);
   });
 });

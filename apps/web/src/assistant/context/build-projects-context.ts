@@ -1,10 +1,12 @@
-import type { Project } from '@/api/hooks/use-overview';
+import { sanitizeLine } from '@/assistant/context/sanitize-line';
+
+import type { Project } from '@/api/hooks/use-projects';
 import type { ContextEntry } from '@useago/sdk';
 
 const toLine = (project: Project): string =>
   [
     project.id,
-    project.name,
+    sanitizeLine(project.name),
     '·',
     project.eventDate ? `event ${project.eventDate}` : 'no event date',
   ].join(' ');

@@ -1,6 +1,9 @@
 import { $api } from '@/api/api-client';
 
+import type { dtos } from '@/types/openapi';
 import type { QueryClient } from '@tanstack/react-query';
+
+export type Project = dtos['ProjectDto'];
 
 const projectsQueryOptions = () => $api.queryOptions('get', '/api/projects');
 

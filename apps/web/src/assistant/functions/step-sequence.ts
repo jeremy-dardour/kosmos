@@ -149,11 +149,18 @@ interface CreateStepsArguments {
 const notAttemptedAfter = (
   steps: readonly ResolvedStepInput[],
   index: number,
-  remainingChecklistItems: string[],
-) => ({
-  steps: steps.slice(index + 1).map((step) => step.name),
-  checklistItems: remainingChecklistItems,
-});
+  remainingChecklistItems: readonly string[],
+) => {
+  const laterSteps = steps.slice(index + 1);
+
+  return {
+    steps: laterSteps.map((step) => step.name),
+    checklistItems: [
+      ...remainingChecklistItems,
+      ...laterSteps.flatMap((step) => step.checklist),
+    ],
+  };
+};
 
 /**
  * Creates the steps in order at contiguous positions, then each step's

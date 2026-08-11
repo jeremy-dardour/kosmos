@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { $fetch, throwApiFailure } from '@/api/api-client';
+import { $fetch, unwrapApiResult } from '@/api/api-client';
 import { useInvalidateOverview } from '@/api/hooks/use-invalidate-overview';
 
 import type { dtos } from '@/types/openapi';
@@ -16,13 +16,12 @@ export async function createWorkstream(
   projectId: string,
   input: CreateWorkstreamInput,
 ) {
-  const result = await $fetch.POST('/api/projects/{projectId}/workstreams', {
-    params: { path: { projectId } },
-    body: input,
-  });
-  if (result.error) throwApiFailure(result.error);
-
-  return result.data;
+  return unwrapApiResult(
+    await $fetch.POST('/api/projects/{projectId}/workstreams', {
+      params: { path: { projectId } },
+      body: input,
+    }),
+  );
 }
 
 export function useCreateWorkstream(projectId: string | undefined) {

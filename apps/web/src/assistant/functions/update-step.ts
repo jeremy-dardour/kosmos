@@ -6,10 +6,12 @@ import {
   DEADLINE_SCHEMA,
   resolveDeadline,
 } from '@/assistant/functions/deadline';
+import { requireStep } from '@/assistant/functions/entity-lookup';
 import { asFunctionParameters } from '@/assistant/functions/function-parameters';
 import { resolveChecklistNames } from '@/assistant/functions/step-sequence';
+import { isStepEditable } from '@/features/overview/step-mutability';
 
-import type { Step, Workstream } from '@/api/hooks/use-overview';
+import type { Step } from '@/api/hooks/use-overview';
 import type { UpdateStepInput } from '@/api/hooks/use-update-step';
 import type { QueryClient } from '@tanstack/react-query';
 import type { ClientFunctionDefinition } from '@useago/sdk';
@@ -47,16 +49,61 @@ const definition: Omit<ClientFunctionDefinition, 'handler'> = {
   }),
 };
 
-const findStep = (
-  workstreams: readonly Workstream[],
-  stepId: unknown,
-): { workstream: Workstream; step: Step } | undefined => {
-  for (const workstream of workstreams) {
-    const step = workstream.steps.find((candidate) => candidate.id === stepId);
-    if (step) return { workstream, step };
+interface StepWrite {
+  step: Step;
+  update: UpdateStepInput;
+  checklistItems: readonly string[];
+  isCurrentStep: boolean;
+}
+
+async function writeStepChanges({
+  step,
+  update,
+  checklistItems,
+  isCurrentStep,
+}: StepWrite) {
+  if (Object.keys(update).length > 0) {
+    try {
+      await updateStep(step.id, update);
+    } catch (error) {
+      return {
+        success: false,
+        stepUpdated: false,
+        error: describeFailure(error),
+        notAttempted: { checklistItems },
+      };
+    }
   }
-  return undefined;
-};
+
+  const checklistItemsCreated: string[] = [];
+  for (const [index, item] of checklistItems.entries()) {
+    try {
+      await createChecklistItem(step.id, { name: item });
+      checklistItemsCreated.push(item);
+    } catch (error) {
+      return {
+        success: false,
+        stepUpdated: true,
+        checklistItemsCreated,
+        failed: { checklistItem: item, reason: describeFailure(error) },
+        notAttempted: { checklistItems: checklistItems.slice(index + 1) },
+        message:
+          'The step change and the checklist items listed as created are on screen; nothing was rolled back.',
+      };
+    }
+  }
+
+  return {
+    success: true,
+    stepId: step.id,
+    updated: Object.keys(update),
+    checklistItemsCreated,
+    ...(update.blocked !== undefined &&
+      !isCurrentStep && {
+        note: `"${step.name}" is not the step in progress, so its blocked flag has no effect until the workstream reaches it.`,
+      }),
+  };
+}
 
 export const updateStepFunction = (
   queryClient: QueryClient,
@@ -65,16 +112,11 @@ export const updateStepFunction = (
   ...definition,
   handler: async (arguments_) => {
     const overview = await fetchOverview(queryClient, projectId);
-    const found = findStep(overview.workstreams, arguments_.stepId);
-    if (!found) {
-      return {
-        success: false,
-        error: `No step with id "${String(arguments_.stepId)}" in this project. Step ids come from getWorkstream.`,
-      };
-    }
+    const found = requireStep(overview, arguments_.stepId);
+    if (!found.ok) return { success: false, error: found.error };
 
     const { workstream, step } = found;
-    if (step.status === 'done' || step.status === 'skipped') {
+    if (!isStepEditable(step)) {
       return {
         success: false,
         error: `"${step.name}" is already ${step.status === 'done' ? 'done' : 'skipped'}, and past steps are frozen. Nothing was changed.`,
@@ -128,50 +170,14 @@ export const updateStepFunction = (
       };
     }
 
-    if (Object.keys(update).length > 0) {
-      try {
-        await updateStep(step.id, update);
-      } catch (error) {
-        await refreshOverview(queryClient, projectId);
-        return {
-          success: false,
-          stepUpdated: false,
-          error: describeFailure(error),
-          notAttempted: { checklistItems: checklist.names },
-        };
-      }
-    }
-
-    const checklistItemsCreated: string[] = [];
-    for (const [index, item] of checklist.names.entries()) {
-      try {
-        await createChecklistItem(step.id, { name: item });
-        checklistItemsCreated.push(item);
-      } catch (error) {
-        await refreshOverview(queryClient, projectId);
-        return {
-          success: false,
-          stepUpdated: true,
-          checklistItemsCreated,
-          failed: { checklistItem: item, reason: describeFailure(error) },
-          notAttempted: { checklistItems: checklist.names.slice(index + 1) },
-          message:
-            'The step change and the checklist items listed as created are on screen; nothing was rolled back.',
-        };
-      }
-    }
-
+    const outcome = await writeStepChanges({
+      step,
+      update,
+      checklistItems: checklist.names,
+      isCurrentStep: workstream.currentStepId === step.id,
+    });
     await refreshOverview(queryClient, projectId);
 
-    return {
-      success: true,
-      stepId: step.id,
-      updated: Object.keys(update),
-      checklistItemsCreated,
-      ...(update.blocked !== undefined &&
-        workstream.currentStepId !== step.id && {
-          note: `"${step.name}" is not the step in progress, so its blocked flag has no effect until the workstream reaches it.`,
-        }),
-    };
+    return outcome;
   },
 });

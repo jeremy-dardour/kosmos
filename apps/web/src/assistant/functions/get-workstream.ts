@@ -1,15 +1,12 @@
 import { fetchOverview } from '@/api/hooks/use-overview';
+import { requireWorkstream } from '@/assistant/functions/entity-lookup';
+import { asFunctionParameters } from '@/assistant/functions/function-parameters';
 import { editableFrom } from '@/assistant/functions/pipeline-mutability';
+import { LIFECYCLE_LABEL } from '@/assistant/lifecycle-label';
 
 import type { Overview, Step, Workstream } from '@/api/hooks/use-overview';
 import type { QueryClient } from '@tanstack/react-query';
 import type { ClientFunctionDefinition } from '@useago/sdk';
-
-const LIFECYCLE_LABEL = {
-  not_started: 'NotStarted',
-  active: 'Active',
-  complete: 'Complete',
-} as const;
 
 const STATUS_LABEL = {
   not_started: 'NotStarted',
@@ -61,8 +58,8 @@ export function toWorkstreamDetail(workstream: Workstream, overview: Overview) {
 const definition: Omit<ClientFunctionDefinition, 'handler'> = {
   name: 'getWorkstream',
   description:
-    'Read one workstream of the project on screen in full: every step with its status, deadline, owner, blocked flag, checklist items and note count, plus `editableFrom` — the first position that accepts new steps and edits (null when the workstream is complete, so nothing can be added). Use it before adding to or changing a workstream, and to reach a complete one, which the context only counts. Note bodies are never returned.',
-  parameters: {
+    'Read one workstream of the project on screen in full: every step with its status, deadline, owner, blocked flag, checklist items and note count, plus `editableFrom` — the first position that accepts new steps (null when the workstream is complete, so none can be added). Editing is wider than insertion: the step in progress can be edited, never moved, and only steps already done or skipped are frozen. Use it before adding to or changing a workstream, and to read a complete one, which the context only names. Note bodies are never returned.',
+  parameters: asFunctionParameters({
     type: 'object',
     properties: {
       workstreamId: {
@@ -72,7 +69,7 @@ const definition: Omit<ClientFunctionDefinition, 'handler'> = {
       },
     },
     required: ['workstreamId'],
-  },
+  }),
 };
 
 export const getWorkstreamFunction = (
@@ -81,18 +78,10 @@ export const getWorkstreamFunction = (
 ): ClientFunctionDefinition => ({
   ...definition,
   handler: async (arguments_) => {
-    const workstreamId = arguments_.workstreamId;
     const overview = await fetchOverview(queryClient, projectId);
-    const workstream = overview.workstreams.find(
-      (candidate) => candidate.id === workstreamId,
-    );
+    const found = requireWorkstream(overview, arguments_.workstreamId);
+    if (!found.ok) return { error: found.error };
 
-    if (!workstream) {
-      return {
-        error: `No workstream with id "${String(workstreamId)}" in this project. Ids come from the workstreams context.`,
-      };
-    }
-
-    return toWorkstreamDetail(workstream, overview);
+    return toWorkstreamDetail(found.workstream, overview);
   },
 });

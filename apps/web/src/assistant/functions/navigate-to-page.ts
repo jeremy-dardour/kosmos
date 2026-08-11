@@ -1,5 +1,7 @@
 import { NAVIGABLE_ROUTES } from '@/app/nav-routes';
+import { asFunctionParameters } from '@/assistant/functions/function-parameters';
 
+import type { JsonSchema } from '@/assistant/functions/function-parameters';
 import type { ClientFunctionDefinition } from '@useago/sdk';
 import type { AgoRoute } from '@useago/sdk/react';
 
@@ -32,7 +34,7 @@ const buildProperties = (routes: readonly AgoRoute[]) => {
     }
   }
 
-  const properties: Record<string, { type: string; description: string }> = {
+  const properties: Record<string, JsonSchema> = {
     page: {
       type: 'string',
       description: `The page to navigate to: ${routes.map((route) => `"${route.name}"`).join(' or ')}.`,
@@ -58,11 +60,11 @@ const definition: Omit<ClientFunctionDefinition, 'handler'> = {
     NAVIGABLE_ROUTES.map((route) => routeLine(route)).join('\n'),
     END_TURN_INSTRUCTION,
   ].join('\n'),
-  parameters: {
+  parameters: asFunctionParameters({
     type: 'object',
     properties: buildProperties(NAVIGABLE_ROUTES),
     required: ['page'],
-  },
+  }),
 };
 
 export const navigateToPageFunction = (

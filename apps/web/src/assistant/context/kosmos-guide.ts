@@ -18,7 +18,7 @@ Read from it: four to eight steps; every name verb-led and specific to this proj
 
 Rules:
 - Lifecycle is NotStarted → Active → Complete. Only an Active workstream has a current step.
-- Past steps are frozen. The current step can be edited but never moved. New steps go only in the future zone: \`getWorkstream\` returns \`editableFrom\`, the first position you may write at.
+- Past steps are frozen. The current step can still be edited — name, deadline, owner, blocked flag, checklist — but never moved. New steps go only in the future zone: \`getWorkstream\` returns \`editableFrom\`, the first position that accepts a new step.
 - Deadlines are calendar days, YYYY-MM-DD. You may instead pass {daysBeforeEvent: n} and the app counts back from the project's event date. Take today's date from context, never from your own sense of the date.
 - A step with no owner inherits the workstream's owner. Give a step its own owner only to override that.
 - Checklist sub-items are informational: name and done flag only, they gate nothing and they never advance a step.

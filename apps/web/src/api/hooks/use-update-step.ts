@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { $fetch, throwApiFailure } from '@/api/api-client';
+import { $fetch, unwrapApiResult } from '@/api/api-client';
 import { useOverviewCache } from '@/api/overview-cache';
 
 import type { dtos } from '@/types/openapi';
@@ -13,13 +13,12 @@ interface UpdateStepVariables {
 }
 
 export async function updateStep(stepId: string, input: UpdateStepInput) {
-  const result = await $fetch.PATCH('/api/steps/{id}', {
-    params: { path: { id: stepId } },
-    body: input,
-  });
-  if (result.error) throwApiFailure(result.error);
-
-  return result.data;
+  return unwrapApiResult(
+    await $fetch.PATCH('/api/steps/{id}', {
+      params: { path: { id: stepId } },
+      body: input,
+    }),
+  );
 }
 
 export function useUpdateStep(projectId: string | undefined) {

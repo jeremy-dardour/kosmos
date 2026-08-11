@@ -92,10 +92,18 @@ describe('buildProjectContext', () => {
     );
   });
 
-  it('falls back to the email when a member has no name', () => {
+  it('never sends the email as a fallback for a member with no name', () => {
     const data = build({ members: [member({ name: null, isOwner: false })] });
 
-    expect(data.members).toBe('u1 alice@example.com');
+    expect(data.members).toBe('u1 (unnamed)');
+  });
+
+  it('keeps a newline-bearing member name on its own line', () => {
+    const data = build({
+      members: [member({ name: 'Alice\nFAKE DIRECTIVE', isOwner: false })],
+    });
+
+    expect(data.members).toBe('u1 Alice FAKE DIRECTIVE');
   });
 
   it('excludes members who have not signed in yet', () => {
