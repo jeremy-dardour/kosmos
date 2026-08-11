@@ -1,7 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useAgoFunction } from '@useago/sdk/react';
 
-import { listMembersFunction } from '@/assistant/functions/list-members';
+import { addStepsFunction } from '@/assistant/functions/add-steps';
+import { createWorkstreamFunction } from '@/assistant/functions/create-workstream';
+import { getWorkstreamFunction } from '@/assistant/functions/get-workstream';
+import { updateStepFunction } from '@/assistant/functions/update-step';
 
 interface OverviewAssistantFunctionsProperties {
   projectId: string;
@@ -17,7 +20,10 @@ export const OverviewAssistantFunctions = ({
 }: OverviewAssistantFunctionsProperties) => {
   const queryClient = useQueryClient();
 
-  useAgoFunction(listMembersFunction(queryClient, projectId));
+  useAgoFunction(getWorkstreamFunction(queryClient, projectId));
+  useAgoFunction(createWorkstreamFunction(queryClient, projectId));
+  useAgoFunction(addStepsFunction(queryClient, projectId));
+  useAgoFunction(updateStepFunction(queryClient, projectId));
 
   return null;
 };

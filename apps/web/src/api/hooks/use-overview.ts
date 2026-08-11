@@ -35,6 +35,19 @@ export async function fetchOverview(
   return queryClient.ensureQueryData(overviewQueryOptions(projectId));
 }
 
+/**
+ * Awaits the refetch, not just the invalidation: assistant write handlers
+ * return only once their result is on screen and in the next turn's context.
+ */
+export async function refreshOverview(
+  queryClient: QueryClient,
+  projectId: string,
+) {
+  await queryClient.invalidateQueries({
+    queryKey: overviewQueryOptions(projectId).queryKey,
+  });
+}
+
 /** The whole overview aggregate in one request; idle until the id is known. */
 export function useOverview(projectId: string | undefined) {
   return useQuery({

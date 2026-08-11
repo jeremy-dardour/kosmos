@@ -15,7 +15,7 @@ export const paths = {
  * The pages the assistant may navigate to. `description` is what the agent
  * reads to pick a page, so it is written for the agent, not the UI. `:projectId`
  * becomes a `projectId` argument the agent fills per project (ids come from the
- * `listProjects` function).
+ * `projects` context entry).
  */
 export const NAVIGABLE_ROUTES: AgoRoute[] = [
   {

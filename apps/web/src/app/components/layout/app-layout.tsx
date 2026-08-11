@@ -3,7 +3,6 @@ import { Outlet } from 'react-router';
 import { AssistantGuide } from '@/assistant/assistant-guide';
 import { AssistantNavigation } from '@/assistant/assistant-navigation';
 import { AssistantPanel } from '@/assistant/assistant-panel';
-import { GlobalAssistantFunctions } from '@/assistant/functions/global-assistant-functions';
 import { useAssistant } from '@/assistant/use-assistant';
 
 import { LayoutHeader } from './layout-header';
@@ -22,7 +21,6 @@ export const AppLayout = () => {
           <>
             <AssistantGuide />
             <AssistantNavigation />
-            <GlobalAssistantFunctions />
           </>
         )}
         {isOpen && <AssistantPanel />}
