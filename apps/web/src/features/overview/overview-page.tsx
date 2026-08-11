@@ -9,6 +9,8 @@ import {
 import { useProjectMembers } from '@/api/hooks/use-project-members';
 import { AssistantScope } from '@/assistant/assistant-scope';
 import { OverviewAssistantFunctions } from '@/assistant/functions/overview-assistant-functions';
+import { OverviewAssistantContext } from '@/assistant/overview-assistant-context';
+import { OverviewAssistantPageState } from '@/assistant/overview-assistant-page-state';
 import { useAuthState } from '@/auth/auth-context';
 import { formatToApiError } from '@/errors/format-error';
 import {
@@ -28,7 +30,6 @@ import { WorkstreamFormDialog } from '@/features/overview/workstream-form-dialog
 
 import type { Overview, Workstream } from '@/api/hooks/use-overview';
 import type { Selection } from '@/features/overview/selection.types';
-import type { DeadlineEntry } from '@/features/overview/widgets/collect-deadline-entries';
 
 function applyOwnerFilter(
   workstreams: Workstream[],
@@ -142,7 +143,7 @@ export const OverviewPage = () => {
     return parts.length > 0 ? parts.join(' · ') : null;
   }, [t, ownerFilter, usersById, hiddenGroupIds]);
 
-  const handleEntryClick = useCallback((entry: DeadlineEntry) => {
+  const handleEntryClick = useCallback((entry: Selection) => {
     setOpenNotes(null);
     setOpenStep({ workstreamId: entry.workstreamId, stepId: entry.stepId });
     // After the commit, so the scroll measures the layout with the previous
@@ -170,11 +171,23 @@ export const OverviewPage = () => {
 
   return (
     <div className="flex h-full min-h-0 gap-4">
-      {projectId && (
-        <AssistantScope>
-          <OverviewAssistantFunctions projectId={projectId} />
-        </AssistantScope>
-      )}
+      <AssistantScope>
+        {projectId && (
+          <>
+            <OverviewAssistantContext projectId={projectId} />
+            <OverviewAssistantFunctions projectId={projectId} />
+          </>
+        )}
+        <OverviewAssistantPageState
+          workstreams={overview.data?.workstreams ?? []}
+          ownerFilter={ownerFilter}
+          onOwnerFilterChange={setOwnerFilter}
+          hiddenGroupIds={hiddenGroupIds}
+          onHiddenGroupIdsChange={setHiddenGroupIds}
+          openStep={openStep}
+          onExpandStep={handleEntryClick}
+        />
+      </AssistantScope>
       {/* `min-w-0`: without it the column's automatic minimum width lets long
           card text push the widget panel off screen. */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
