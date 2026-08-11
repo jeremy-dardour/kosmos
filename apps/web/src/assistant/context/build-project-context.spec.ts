@@ -25,6 +25,7 @@ const build = (overrides: Partial<ProjectContextInput> = {}) =>
     members: [member()],
     groups: [group()],
     today: TODAY,
+    currentUserId: undefined,
     ...overrides,
   }).data!;
 
@@ -64,6 +65,31 @@ describe('buildProjectContext', () => {
       'u1 Alice (owner)',
       'u2 Bob',
     ]);
+  });
+
+  it('marks the signed-in user, combining with the owner mark', () => {
+    const data = build({
+      members: [
+        member(),
+        member({
+          id: 'm2',
+          userId: 'u2',
+          email: 'bob@example.com',
+          name: 'Bob',
+          isOwner: false,
+        }),
+      ],
+      currentUserId: 'u2',
+    });
+
+    expect(String(data.members).split('\n')).toEqual([
+      'u1 Alice (owner)',
+      'u2 Bob (you)',
+    ]);
+
+    expect(String(build({ currentUserId: 'u1' }).members)).toBe(
+      'u1 Alice (owner, you)',
+    );
   });
 
   it('falls back to the email when a member has no name', () => {

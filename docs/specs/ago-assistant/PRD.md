@@ -86,6 +86,9 @@ steps rather than on every step.
   deadline and owner, whether it is blocked, and which group it belongs to.
   Completed workstreams are counted, not listed; the assistant can still pull
   one up by name if asked.
+- **Who it is talking to**: the signed-in member is marked in what the
+  assistant sees, so "assign it to me" resolves to the right person without
+  asking.
 - **Its view stays current**, including immediately after its own writes.
 
 ### Steering the view

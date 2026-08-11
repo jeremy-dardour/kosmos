@@ -121,12 +121,12 @@ Budget: 6 against the SDK's soft ceiling of 10 functions per message.
 
 ## Context entries — 4
 
-| Key            | Scope        | `stable` | Contents                                                                                             |
-| -------------- | ------------ | -------- | ---------------------------------------------------------------------------------------------------- |
-| `kosmos-guide` | app-wide     | yes      | ~400 words: domain rules, authoring taste, one worked example, explicit cannot-list                  |
-| `projects`     | project list | no       | `[{id, name, eventDate}]`, soft-deleted excluded                                                     |
-| `project`      | overview     | no       | `{id, name, eventDate, daysUntilEvent, today, members: [{id, name, isOwner}], groups: [{id, name}]}` |
-| `workstreams`  | overview     | no       | non-complete workstreams, one line each, plus a count of completed                                   |
+| Key            | Scope        | `stable` | Contents                                                                                                                                                                      |
+| -------------- | ------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kosmos-guide` | app-wide     | yes      | ~400 words: domain rules, authoring taste, one worked example, explicit cannot-list                                                                                           |
+| `projects`     | project list | no       | `[{id, name, eventDate}]`, soft-deleted excluded                                                                                                                              |
+| `project`      | overview     | no       | `{id, name, eventDate, daysUntilEvent, today, members: [{id, name, isOwner}], groups: [{id, name}]}`; the signed-in member's line is marked `(you)` so "me" resolves to an id |
+| `workstreams`  | overview     | no       | non-complete workstreams, one line each, plus a count of completed                                                                                                            |
 
 `groups` sits in the `project` entry for the same reason members do:
 `createWorkstream` takes a `groupId` and cannot fill it otherwise.

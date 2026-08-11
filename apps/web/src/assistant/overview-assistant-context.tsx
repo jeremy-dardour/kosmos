@@ -4,6 +4,7 @@ import { useOverview } from '@/api/hooks/use-overview';
 import { useProjectMembers } from '@/api/hooks/use-project-members';
 import { buildProjectContext } from '@/assistant/context/build-project-context';
 import { buildWorkstreamsContext } from '@/assistant/context/build-workstreams-context';
+import { useAuthState } from '@/auth/auth-context';
 
 interface OverviewAssistantContextProperties {
   projectId: string;
@@ -21,6 +22,9 @@ export const OverviewAssistantContext = ({
 }: OverviewAssistantContextProperties) => {
   const overview = useOverview(projectId);
   const members = useProjectMembers(projectId);
+  const authState = useAuthState();
+  const currentUserId =
+    authState.status === 'authenticated' ? authState.user.id : undefined;
 
   useAgoContext(() => {
     if (!overview.data) return null;
@@ -30,6 +34,7 @@ export const OverviewAssistantContext = ({
       members: members.data,
       groups: overview.data.groups,
       today: new Date(),
+      currentUserId,
     });
   }, 'project');
 
