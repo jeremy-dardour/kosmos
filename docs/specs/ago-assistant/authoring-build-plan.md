@@ -34,12 +34,14 @@ Acceptable because the overview page already holds both queries warm, so it is
 a subscription to loaded data rather than a new request.
 
 **T3 — Context payloads are compact lines, not JSON.**
-`<workstreamId> Catering [Active] · 3/7 "Book tasting" · due 2026-09-12 ·
-owner <name> · group Vendors` is roughly 40% cheaper than the equivalent JSON
-and reads better to a model. Every line leads with the entity's id, and the
-`project` entry carries member and group ids — T4 depends on the agent always
-holding ids, so they are part of the format, not an optimization casualty. Complete workstreams are excluded and replaced by a bare count
-(`12 complete (not listed)`); `getWorkstream` still reaches one by id.
+`<workstreamId> Catering [Active] · 3/7 <stepId> "Book tasting" · due
+2026-09-12 · owner <name> · group Vendors` is roughly 40% cheaper than the
+equivalent JSON and reads better to a model. Every line leads with the entity's
+id, and the `project` entry carries member and group ids — T4 depends on the
+agent always holding ids, so they are part of the format, not an optimization
+casualty. Complete workstreams compact to a single trailing line of id and name
+pairs (`2 complete: w3 Venue · w9 Flowers`) — enough for the agent to reach one
+with `getWorkstream`, which name lookup (T4) would not allow.
 
 **T4 — Every reference is an id, never a name.**
 `expandedStep`, `getWorkstream`, and `addSteps`' anchor all take ids.
@@ -97,7 +99,9 @@ journey). The branch's `useAgoNavigation` auto-continue can resume the agent
 before the destination page's functions and context have registered, making it
 report that it cannot create. Rather than shipping authoring on top of that
 race, navigation ends the turn: `navigateToPage`'s result tells the model to
-say it has navigated and to continue on the user's next message. Revisit if
+say it has navigated and to continue on the user's next message. This is why
+`navigateToPage` is hand-rolled from the `nav-routes` manifest rather than
+using the SDK's `useAgoNavigation`, whose own wording is baked in. Revisit if
 the two-turn journey grates and a registration-complete signal exists to gate
 on.
 
@@ -126,7 +130,7 @@ Budget: 6 against the SDK's soft ceiling of 10 functions per message.
 | `kosmos-guide` | app-wide     | yes      | ~400 words: domain rules, authoring taste, one worked example, explicit cannot-list                                                                                           |
 | `projects`     | project list | no       | `[{id, name, eventDate}]`, soft-deleted excluded                                                                                                                              |
 | `project`      | overview     | no       | `{id, name, eventDate, daysUntilEvent, today, members: [{id, name, isOwner}], groups: [{id, name}]}`; the signed-in member's line is marked `(you)` so "me" resolves to an id |
-| `workstreams`  | overview     | no       | non-complete workstreams, one line each, plus a count of completed                                                                                                            |
+| `workstreams`  | overview     | no       | non-complete workstreams, one line each, plus one line of id and name pairs for the completed                                                                                 |
 
 `groups` sits in the `project` entry for the same reason members do:
 `createWorkstream` takes a `groupId` and cannot fill it otherwise.
@@ -182,8 +186,10 @@ carries the confirmation requirement (T6).
 **6 — `addSteps` and `updateStep`.**
 `addSteps` resolves its `after: stepId | "end"` anchor to a position in the
 handler — the agent never emits an integer. Both re-check the future-zone rule
-against fresh data before writing, return the same outcome report on partial
-failure (T9), and await the overview refetch before returning (T2).
+before writing against the cached overview, which assistant writes keep fresh
+through the awaited refetch (T2) and which the server re-validates on every
+operation anyway; both return the same outcome report on partial failure (T9),
+and await the overview refetch before returning.
 
 **7 — Page state** (`overview-assistant-page-state.tsx`).
 `useAgoPageState` with the three controls. `OverviewPage` must expose
@@ -221,7 +227,8 @@ against the overview's widget rail.
 ## Risks
 
 - **`editableFrom` derivation.** Wrong, and the agent confidently proposes
-  edits to frozen steps. Unit-tested across all three lifecycle states.
+  inserting steps into the frozen zone. Unit-tested across all three lifecycle
+  states.
 - **Two-turn navigation friction.** Without auto-continue (T10) the wrong-page
   journey needs a user nudge after navigating. If that grates in practice,
   auto-continue returns only with a registration-complete signal to gate on.
@@ -231,7 +238,7 @@ against the overview's widget rail.
 - **`icon` is required** on `CreateWorkstreamDto`. Omitted, creation fails
   outright; the guide must say so.
 - **Context growth.** Roughly 1k tokens per message on a 40-workstream project,
-  on every send. The completed-count exclusion is the main lever.
+  on every send. Compacting the completed workstreams is the main lever.
 - **Silent cache invalidation** if anything dynamic reaches the `stable: true`
   guide.
 

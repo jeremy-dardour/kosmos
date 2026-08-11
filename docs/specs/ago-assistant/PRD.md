@@ -84,8 +84,8 @@ steps rather than on every step.
 - **On a project**: its members, its groups, its event countdown, and every
   workstream that is not yet complete — with its current step, that step's
   deadline and owner, whether it is blocked, and which group it belongs to.
-  Completed workstreams are counted, not listed; the assistant can still pull
-  one up by name if asked.
+  Completed workstreams compact to a single line of names rather than a full
+  entry each; the assistant can still pull one up in full if asked.
 - **Who it is talking to**: the signed-in member is marked in what the
   assistant sees, so "assign it to me" resolves to the right person without
   asking.
