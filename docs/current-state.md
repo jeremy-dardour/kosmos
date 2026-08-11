@@ -5,7 +5,7 @@ change — it always reflects _now_. History lives in
 [docs/sessions/](./sessions/); one line per merged PR below, details in the
 linked docs.
 
-_Last updated: 2026-08-06 (session 44)_
+_Last updated: 2026-08-11 (session 45)_
 
 ## What this is
 
@@ -65,17 +65,20 @@ complete. Current work: trialling the AGO assistant SDK in the web app.
 ## In flight
 
 - **`feat/ago-sdk`** — trialling the [AGO](https://useago.com) assistant SDK
-  in the web app. Shipped so far: the shared web provider stack folded into one
-  `AppProvider`; the assistant itself — provider + `ChatWidget` in a togglable
-  right-hand panel in `AppLayout` (signed-in only, gated on `VITE_AGO_BASE_URL`);
-  then the agency layer — router navigation (`useAgoNavigation` + auto-continue,
-  off a pure-data `nav-routes` manifest) and callable client functions
-  (`listProjects` app-wide, `listMembers` on the overview) built as render-free
-  factories bound in lifecycle-scoped components, handlers fetching cache-first
-  at invocation. Whole subsystem now lives under `src/assistant/`. Not yet
-  viewed in a browser. See
-  [session 43](./sessions/session-43-2026-08-05-ago-assistant.md),
-  [session 44](./sessions/session-44-2026-08-06-ago-navigation-functions.md).
+  in the web app. Shipped: provider + `ChatWidget` panel; then **workstream
+  authoring** per the [AGO assistant PRD](./specs/ago-assistant/PRD.md) and
+  [build plan](./specs/ago-assistant/authoring-build-plan.md) — page-scoped
+  dynamic context (projects / project incl. a `(you)` marker for the signed-in
+  member / workstreams as compact id-led lines) plus an app-wide stable guide,
+  and six functions (`navigateToPage` hand-rolled without auto-continue,
+  `setPageState`, `getWorkstream`, `createWorkstream`, `addSteps`,
+  `updateStep`) over an imperative mutation seam, with outcome reports instead
+  of rollback and awaited overview refetch on every write. Full review battery
+  (standards, spec, security, simplification) run and actioned. Still not
+  viewed in a browser. See sessions
+  [43](./sessions/session-43-2026-08-05-ago-assistant.md),
+  [44](./sessions/session-44-2026-08-06-ago-navigation-functions.md),
+  [45](./sessions/session-45-2026-08-11-ago-authoring.md).
 
 The Kosmos rename **including the external cutover is complete**: repository
 `jeremy-dardour/kosmos`, Cloud Run service `kosmos` (512Mi, serving),
@@ -91,11 +94,14 @@ verified, old-name resources deleted. The GCP project keeps its immutable ID
 
 ## Next steps
 
-1. Look at the assistant in a browser: panel width against the overview's
-   widget rail, and exercise navigation + `listProjects`/`listMembers`
-   end-to-end. Decide whether `pageContext="auto"` (sends URL + tab title to
-   the AGO backend) is wanted, and whether the split gating (shell inline
-   `isAvailable` vs feature `AssistantScope`) is unified.
-2. Delete `docs/specs/multi-tenancy/t3-t4-implementation-plan.md` — PR #64 is
+1. Browser pass (build-plan step 10): exercise authoring end to end, the
+   two-turn cross-page journey, and panel width against the overview's widget
+   rail. Then decide on `pageContext="auto"` (sends URL + tab title to the AGO
+   backend) and whether the split gating (shell inline `isAvailable` vs
+   feature `AssistantScope`) is unified.
+2. [#68](https://github.com/jeremy-dardour/kosmos/issues/68) — owner-filter
+   semantics (current step vs workstream) and whether overview filters become
+   URL params.
+3. Delete `docs/specs/multi-tenancy/t3-t4-implementation-plan.md` — PR #64 is
    merged, so the plan is a spent point-in-time record (durable decisions live
    in the tech design).
