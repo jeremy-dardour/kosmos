@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { $api } from '@/api/api-client';
 
 import type { dtos } from '@/types/openapi';
+import type { QueryClient } from '@tanstack/react-query';
 
 export type Project = dtos['ProjectDto'];
 export type Overview = dtos['OverviewDto'];
@@ -21,6 +22,17 @@ export function overviewQueryOptions(projectId: string) {
   return $api.queryOptions('get', '/api/projects/{projectId}/overview', {
     params: { path: { projectId } },
   });
+}
+
+/**
+ * Cache-first read for imperative callers (e.g. assistant functions): returns
+ * the cached aggregate when present, fetching only when it is absent.
+ */
+export async function fetchOverview(
+  queryClient: QueryClient,
+  projectId: string,
+) {
+  return queryClient.ensureQueryData(overviewQueryOptions(projectId));
 }
 
 /** The whole overview aggregate in one request; idle until the id is known. */
