@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router';
 
+import { AssistantGuide } from '@/assistant/assistant-guide';
 import { AssistantNavigation } from '@/assistant/assistant-navigation';
 import { AssistantPanel } from '@/assistant/assistant-panel';
 import { GlobalAssistantFunctions } from '@/assistant/functions/global-assistant-functions';
@@ -19,6 +20,7 @@ export const AppLayout = () => {
         </main>
         {isAvailable && (
           <>
+            <AssistantGuide />
             <AssistantNavigation />
             <GlobalAssistantFunctions />
           </>
