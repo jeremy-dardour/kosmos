@@ -150,7 +150,7 @@ describe('workstreamCard', () => {
     expect(bodies).toEqual([]);
   });
 
-  it('commits a typed icon on blur', async () => {
+  it('commits an icon picked from the grid', async () => {
     setupOverviewApi(overviewOf(catering));
     const bodies = capturePatch({ ...catering, icon: '💐' });
     const agent = userEvent.setup();
@@ -159,36 +159,12 @@ describe('workstreamCard', () => {
     await agent.click(
       await screen.findByRole('button', { name: 'Change icon of Catering' }),
     );
-    const field = screen.getByRole('textbox', {
-      name: 'Change icon of Catering',
-    });
-    await agent.clear(field);
-    await agent.type(field, '💐');
-    await agent.tab();
+    await agent.click(await screen.findByRole('menuitem', { name: '💐' }));
 
     await waitFor(() => expect(bodies).toEqual([{ icon: '💐' }]));
-  });
-
-  it('reverts an emptied icon field without committing', async () => {
-    setupOverviewApi(overviewOf(catering));
-    const bodies = capturePatch(catering);
-    const agent = userEvent.setup();
-    renderWithApp(<CardHarness workstreamId="w-catering" />);
-
-    await agent.click(
-      await screen.findByRole('button', { name: 'Change icon of Catering' }),
-    );
-    await agent.clear(
-      screen.getByRole('textbox', { name: 'Change icon of Catering' }),
-    );
-    await agent.tab();
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: 'Change icon of Catering' }),
-      ).toHaveTextContent('🍽️'),
-    );
-    expect(bodies).toEqual([]);
+    expect(
+      screen.getByRole('button', { name: 'Change icon of Catering' }),
+    ).toHaveTextContent('💐');
   });
 
   it('commits a group change and an ungrouping', async () => {
