@@ -118,9 +118,6 @@ kind as the next numbered ADR.
   project, including its connection to the configured local API.
 - Creating GitHub pull requests for this repository and posting top-level PR
   conversation comments is always authorized.
-- When a follow-up ticket continues on an open PR's branch, its build plan is
-  posted as a top-level PR comment, not committed as a docs file (the PR is
-  the point-in-time record; `docs/` keeps only durable facts).
 - An implementation phase closes with a review battery before the session
   log: two-axis `/code-review` (standards + spec), a security-review
   subagent over the whole branch diff, and a simplification subagent using

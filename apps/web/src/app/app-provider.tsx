@@ -8,14 +8,23 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React from 'react';
 
 import { isLocallyHandledError, queryConfig } from '@/api/react-query';
+import { GlobalApiErrorDialog } from '@/app/components/error/global-api-error-dialog';
+import { AssistantProvider } from '@/assistant/assistant-provider';
+import { AuthContext } from '@/auth';
 import { env } from '@/config/env';
+import { ApiErrorProvider } from '@/errors/api-error-provider';
 import { useApiError } from '@/errors/use-api-error';
 
-interface AppProviderProperties {
+import type { AuthSystem } from '@/auth';
+
+interface QueryProviderProperties {
   children: React.ReactNode;
 }
 
-export const AppProvider = ({ children }: AppProviderProperties) => {
+// Separate component so the QueryClient can capture showError from the
+// ApiErrorProvider rendered above it. showError must stay referentially
+// stable: the client holds the first render's closure forever.
+const QueryProvider = ({ children }: QueryProviderProperties) => {
   const { showError } = useApiError();
 
   const [queryClient] = React.useState(
@@ -43,3 +52,27 @@ export const AppProvider = ({ children }: AppProviderProperties) => {
     </QueryClientProvider>
   );
 };
+
+interface AppProviderProperties {
+  authSystem: AuthSystem;
+  children: React.ReactNode;
+}
+
+/**
+ * The provider stack shared by the real app (main.tsx) and the integration
+ * test harness (render-with-app.tsx). What differs per environment — router,
+ * i18n wiring, the auth system value — stays at the call sites.
+ */
+export const AppProvider = ({
+  authSystem,
+  children,
+}: AppProviderProperties) => (
+  <AuthContext value={authSystem}>
+    <ApiErrorProvider>
+      <QueryProvider>
+        <GlobalApiErrorDialog />
+        <AssistantProvider>{children}</AssistantProvider>
+      </QueryProvider>
+    </ApiErrorProvider>
+  </AuthContext>
+);

@@ -1,13 +1,14 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AppLayout } from '@/app/components/layout/app-layout';
 import { ProtectedRoute } from '@/app/components/protected-route';
+import { paths } from '@/app/nav-routes';
 import { OverviewPage } from '@/features/overview/overview-page';
 import { ProjectListPage } from '@/features/projects/project-list-page';
 
 import type { RouteObject } from 'react-router';
 
-const routes: RouteObject[] = [
+export const routes: RouteObject[] = [
   {
     element: (
       <ProtectedRoute>
@@ -20,8 +21,14 @@ const routes: RouteObject[] = [
         element: <ProjectListPage />,
       },
       {
-        path: 'projects/:projectId',
+        path: paths.projectOverview,
         element: <OverviewPage />,
+      },
+      // Nested under the protected layout so an unknown URL only redirects once
+      // the visitor is signed in — a top-level sibling would rewrite it first.
+      {
+        path: '*',
+        element: <Navigate to="/" replace />,
       },
     ],
   },

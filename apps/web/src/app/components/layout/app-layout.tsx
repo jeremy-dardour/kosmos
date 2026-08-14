@@ -1,16 +1,30 @@
 import { Outlet } from 'react-router';
 
+import { AssistantGuide } from '@/assistant/assistant-guide';
+import { AssistantNavigation } from '@/assistant/assistant-navigation';
+import { AssistantPanel } from '@/assistant/assistant-panel';
+import { useAssistant } from '@/assistant/use-assistant';
+
 import { LayoutHeader } from './layout-header';
 
 export const AppLayout = () => {
+  const { isAvailable, isOpen, onToggle } = useAssistant();
+
   return (
-    // h-screen, not min-h-screen: the card list scrolls inside its own panel,
-    // which needs a definite height here.
     <div className="flex h-screen flex-col">
-      <LayoutHeader />
-      <main className="min-h-0 flex-1 overflow-hidden bg-muted/40 p-4">
-        <Outlet />
-      </main>
+      <LayoutHeader isAssistantOpen={isOpen} onToggleAssistant={onToggle} />
+      <div className="flex min-h-0 flex-1">
+        <main className="min-h-0 flex-1 overflow-hidden bg-muted/40 p-4">
+          <Outlet />
+        </main>
+        {isAvailable && (
+          <>
+            <AssistantGuide />
+            <AssistantNavigation />
+          </>
+        )}
+        {isOpen && <AssistantPanel />}
+      </div>
     </div>
   );
 };

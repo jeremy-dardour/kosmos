@@ -5,6 +5,8 @@ import { Link } from 'react-router';
 
 import { useProjects } from '@/api/hooks/use-projects';
 import { useRestoreProject } from '@/api/hooks/use-restore-project';
+import { AssistantScope } from '@/assistant/assistant-scope';
+import { ProjectListAssistantContext } from '@/assistant/project-list-assistant-context';
 import { useAuthState } from '@/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,6 +59,9 @@ export const ProjectListPage = () => {
 
   return (
     <div className="mx-auto max-w-3xl">
+      <AssistantScope>
+        <ProjectListAssistantContext />
+      </AssistantScope>
       <div className="mb-4 flex items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">{t('projects.list.title')}</h1>
         <Button type="button" size="sm" onClick={() => setIsCreateOpen(true)}>

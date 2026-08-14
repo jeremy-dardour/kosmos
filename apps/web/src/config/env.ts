@@ -9,6 +9,8 @@ const envSchema = z.object({
     .transform((v) => v === 'true')
     .optional()
     .default(false),
+  VITE_AGO_BASE_URL: z.url().optional(),
+  VITE_AGO_AGENT: z.string().optional(),
 });
 
 type ValidatedEnv = z.infer<typeof envSchema>;
@@ -50,6 +52,14 @@ export const env = {
   },
   get fakeAuth() {
     return getEnv().VITE_FAKE_AUTH;
+  },
+  /** `null` when unconfigured — the assistant is then absent from the UI. */
+  get assistant() {
+    const { VITE_AGO_BASE_URL, VITE_AGO_AGENT } = getEnv();
+
+    return VITE_AGO_BASE_URL
+      ? { baseUrl: VITE_AGO_BASE_URL, agent: VITE_AGO_AGENT }
+      : null;
   },
   get googleClientId() {
     const clientId = getEnv().VITE_GOOGLE_CLIENT_ID;

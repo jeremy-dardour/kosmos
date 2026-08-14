@@ -8,8 +8,9 @@ import { AuthContext } from '@/auth';
 import { createStubAuth } from '@/testing/stub-auth';
 
 import type { AuthSession } from '@/auth';
+import type { ComponentProps } from 'react';
 
-const setup = () => {
+const setup = (properties: ComponentProps<typeof LayoutHeader> = {}) => {
   const { auth, authSystem } = createStubAuth({
     status: 'authenticated',
     user: {
@@ -22,7 +23,7 @@ const setup = () => {
   render(
     <MemoryRouter initialEntries={['/projects/p1']}>
       <AuthContext value={authSystem}>
-        <LayoutHeader />
+        <LayoutHeader {...properties} />
       </AuthContext>
     </MemoryRouter>,
   );
@@ -69,5 +70,38 @@ describe('layoutHeader', () => {
     const title = screen.getByRole('link', { name: 'app.logo.homeLink' });
 
     expect(title).toHaveAttribute('href', '/');
+  });
+});
+
+describe('layoutHeader assistant toggle', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should omit the toggle when no handler is given', () => {
+    setup();
+
+    expect(
+      screen.queryByRole('button', { name: 'app.assistant.show' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should call the handler when the toggle is clicked', async () => {
+    const onToggleAssistant = vi.fn();
+    setup({ onToggleAssistant });
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'app.assistant.show' }),
+    );
+
+    expect(onToggleAssistant).toHaveBeenCalledOnce();
+  });
+
+  it('should mark the toggle pressed and offer to hide while open', () => {
+    setup({ isAssistantOpen: true, onToggleAssistant: vi.fn() });
+
+    expect(
+      screen.getByRole('button', { name: 'app.assistant.hide' }),
+    ).toHaveAttribute('aria-pressed', 'true');
   });
 });

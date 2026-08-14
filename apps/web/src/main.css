@@ -202,6 +202,19 @@
     background-color: oklch(0.33 0.055 var(--avatar-hue));
     color: oklch(0.86 0.085 var(--avatar-hue));
   }
+
+  /* The AGO widget paints its own dark chrome through inline styles, so only
+     !important reaches it. Its `--ago-*` variables are vanilla-widget-only. */
+  .ago-chat-widget {
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  .ago-chat-widget__header,
+  .ago-chat-widget__messages {
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
+  }
 }
 
 @layer base {

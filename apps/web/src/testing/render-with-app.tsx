@@ -6,12 +6,10 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { setApiClient } from '@/api/api-client';
 import { configureApiClient } from '@/api/configure-api-client';
 import { AppProvider } from '@/app/app-provider';
-import { GlobalApiErrorDialog } from '@/app/components/error/global-api-error-dialog';
-import { AuthContext } from '@/auth';
-import { ApiErrorProvider } from '@/errors/api-error-provider';
 import en from '@/i18n/locales/en.json';
 import { createStubAuth } from '@/testing/stub-auth';
 
+import type { AuthState } from '@/auth';
 import type { ReactElement } from 'react';
 
 await i18n.use(initReactI18next).init({
@@ -25,21 +23,14 @@ await i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
-export function renderWithApp(ui: ReactElement) {
-  const { authSystem } = createStubAuth();
+export function renderWithApp(ui: ReactElement, authState?: AuthState) {
+  const { authSystem } = createStubAuth(authState);
 
   setApiClient(configureApiClient(authSystem.session));
 
   return render(
     <I18nextProvider i18n={i18n}>
-      <AuthContext value={authSystem}>
-        <ApiErrorProvider>
-          <AppProvider>
-            <GlobalApiErrorDialog />
-            {ui}
-          </AppProvider>
-        </ApiErrorProvider>
-      </AuthContext>
+      <AppProvider authSystem={authSystem}>{ui}</AppProvider>
     </I18nextProvider>,
   );
 }

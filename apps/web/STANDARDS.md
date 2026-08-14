@@ -55,7 +55,12 @@ them) and all widget data derives client-side.
   each child.
 - Store selected entity IDs, then derive the selected entity from query data;
   do not keep a copied response object that can become stale.
-- Mutations touch only queries whose response can change, via one of two
+- **Imperative mutation seam.** Writes also issued from outside React (assistant
+  handlers) live as plain `async` functions next to their hook, sharing one
+  `$fetch` + `unwrapApiResult` implementation. Their hook then uses a raw
+  `useMutation` with an explicit `mutationFn` rather than the
+  `openapi-react-query` wrapper, which cannot delegate to a shared function.
+- Mutations touch only queries whose response can change, via one of three
   deliberate refresh models:
   - **Inline overview mutations commit through the cache seam**
     (`src/api/overview-cache.ts`): the hook merges its response into the
@@ -67,6 +72,10 @@ them) and all widget data derives client-side.
     create/delete, group CRUD, project settings — flows whose responses are
     not patchable into the aggregate and where a full refetch after a dialog
     closes is the right cost.
+  - **Imperative writes await a refresh.** Assistant handlers call
+    `refreshOverview` and await it before returning: their result must already
+    be on screen, and in the next turn's context, by the time the call returns —
+    which invalidate-and-return would race.
   - One sanctioned crossover: reorder mutations commit through the seam but
     recover from a rejected drag by invalidating in `onError` — the stale
     optimistic order is forgotten whole and the server's order re-renders.
@@ -102,6 +111,9 @@ them) and all widget data derives client-side.
 - MSW responses must match the real API contract, including RFC 9457 Problem
   Details fields. Do not substitute transport fields such as `statusText` for
   response-body fields such as `title`.
+- Render-free assistant handler factories are unit-tested against mocked seam
+  functions (`fetchOverview`, `createStep`, …): the no-mocking rule above
+  targets UI integration tests, not handlers that never render.
 - For journeys involving multiple requests and server-side state transitions,
   encapsulate state in a focused test adapter instead of repeating raw route
   handlers in each test.

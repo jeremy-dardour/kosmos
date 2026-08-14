@@ -5,6 +5,7 @@ import { $api } from '@/api/api-client';
 import { invalidateProjectsList } from '@/api/hooks/use-projects';
 
 import type { dtos } from '@/types/openapi';
+import type { QueryClient } from '@tanstack/react-query';
 
 export type Member = dtos['MemberDto'];
 
@@ -15,6 +16,17 @@ export function projectMembersQueryOptions(projectId: string) {
   return $api.queryOptions('get', '/api/projects/{projectId}/members', {
     params: { path: { projectId } },
   });
+}
+
+/**
+ * Cache-first read for imperative callers (e.g. assistant functions): returns
+ * the cached members when present, fetching only when they are absent.
+ */
+export async function fetchProjectMembers(
+  queryClient: QueryClient,
+  projectId: string,
+) {
+  return queryClient.ensureQueryData(projectMembersQueryOptions(projectId));
 }
 
 /**
