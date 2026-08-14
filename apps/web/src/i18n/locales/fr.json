@@ -54,6 +54,8 @@
   "overview.card.deleteTitle": "Supprimer {{name}} ?",
   "overview.card.deleteDescription": "Ses étapes, listes et notes seront supprimées avec lui. Action irréversible.",
   "overview.card.deleteConfirm": "Supprimer",
+  "overview.iconPicker.customLabel": "Icône personnalisée",
+  "overview.iconPicker.customPlaceholder": "Saisir un emoji…",
   "overview.deadline.late": "{{count}}j de retard",
   "overview.deadline.today": "aujourd'hui",
   "overview.deadline.tomorrow": "demain",

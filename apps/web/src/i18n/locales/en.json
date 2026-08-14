@@ -54,6 +54,8 @@
   "overview.card.deleteTitle": "Delete {{name}}?",
   "overview.card.deleteDescription": "Its steps, checklists and notes go with it. This cannot be undone.",
   "overview.card.deleteConfirm": "Delete",
+  "overview.iconPicker.customLabel": "Custom icon",
+  "overview.iconPicker.customPlaceholder": "Type any emoji…",
   "overview.deadline.late": "{{count}}d late",
   "overview.deadline.today": "today",
   "overview.deadline.tomorrow": "tomorrow",
