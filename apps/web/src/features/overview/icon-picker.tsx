@@ -66,7 +66,6 @@ interface IconPickerProperties {
   value: string;
   /** Accessible name for the trigger. */
   label: string;
-  /** Stands in for an empty value, muted. */
   placeholder?: string;
   id?: string;
   className?: string;

@@ -22,10 +22,10 @@ function renderPicker(value: string) {
 }
 
 describe('iconPicker', () => {
-  it('shows the current icon on the trigger', () => {
-    renderPicker('🍽️');
+  it('shows the current icon on the trigger, curated or not', () => {
+    renderPicker('🦖');
 
-    expect(screen.getByRole('button', { name: LABEL })).toHaveTextContent('🍽️');
+    expect(screen.getByRole('button', { name: LABEL })).toHaveTextContent('🦖');
   });
 
   it('falls back to the placeholder without an icon', () => {
