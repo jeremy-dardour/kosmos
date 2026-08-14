@@ -5,6 +5,7 @@ import { useCreateWorkstream } from '@/api/hooks/use-create-workstream';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { IconPicker } from '@/features/overview/icon-picker';
 
 import type { Group, UserSummary } from '@/api/hooks/use-overview';
 
@@ -87,13 +88,13 @@ export const WorkstreamFormDialog = ({
         <Label htmlFor="workstream-icon">
           {t('overview.manage.form.iconLabel')}
         </Label>
-        <Input
+        <IconPicker
           id="workstream-icon"
           value={icon}
-          placeholder={t('overview.manage.form.iconPlaceholder')}
-          maxLength={255}
-          className="w-20 text-center"
-          onChange={(event) => setIcon(event.target.value)}
+          placeholder={t('overview.manage.form.iconPickerEmpty')}
+          label={t('overview.manage.form.iconLabel')}
+          className="mx-0 h-8 w-20 rounded-lg border border-input text-center text-base"
+          onSelect={setIcon}
         />
       </div>
 

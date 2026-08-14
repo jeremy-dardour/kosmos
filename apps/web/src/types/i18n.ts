@@ -153,7 +153,7 @@ export interface Translations {
   'overview.manage.form.nameLabel': string;
   'overview.manage.form.namePlaceholder': string;
   'overview.manage.form.iconLabel': string;
-  'overview.manage.form.iconPlaceholder': string;
+  'overview.manage.form.iconPickerEmpty': string;
   'overview.manage.form.groupLabel': string;
   'overview.manage.form.noGroup': string;
   'overview.manage.form.ownerLabel': string;
