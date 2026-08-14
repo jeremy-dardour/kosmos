@@ -5,7 +5,7 @@ change — it always reflects _now_. History lives in
 [docs/sessions/](./sessions/); one line per merged PR below, details in the
 linked docs.
 
-_Last updated: 2026-08-05 (session 42 addendum)_
+_Last updated: 2026-08-14 (session 43)_
 
 ## What this is
 
@@ -20,17 +20,17 @@ overview where everything is edited inline. The specs are the source of truth:
   decisions in [docs/adr/](./adr/)
 - [Auth PRD](./specs/auth/PRD.md) — Google GIS + `.env` allow-list
 - [Multi-tenancy PRD](./specs/multi-tenancy/PRD.md) +
-  [tech design](./specs/multi-tenancy/tech-design.md) — T-1 (#53) and T-2
-  (#54) shipped; T-3/T-4 (#55/#56) built on `feat/multi-tenancy-t3-t4`
-  ([plan](./specs/multi-tenancy/t3-t4-implementation-plan.md)), in review as [PR #64](https://github.com/jeremy-dardour/kosmos/pull/64)
+  [tech design](./specs/multi-tenancy/tech-design.md) — all four tickets
+  shipped (T-1 #53, T-2 #54, T-3 #55, T-4 #56); feature complete
 
 ## Phase
 
 **V1 is feature-complete and deployed** — Cloud Run + Neon shipped via PR #58,
 [#26](https://github.com/jeremy-dardour/kosmos/issues/26) closed.
-Current feature: multi-tenancy (T-1 and T-2 merged; T-3 + T-4 implemented on
-one branch, in review). Deployment hardening shipped in PR #60; the Kosmos
-rename including the external cutover is complete.
+Multi-tenancy is complete (all four tickets merged, PR #64 landed
+2026-08-05). Deployment hardening shipped in PR #60; the Kosmos rename
+including the external cutover is complete. Current work: UX fixes (icon
+picker, in review).
 
 ## Shipped (one line per PR)
 
@@ -59,20 +59,17 @@ rename including the external cutover is complete.
   `deployment/provision.sh` and the allow-list moved to Secret Manager
 - PR #61 — multi-tenancy T-2: membership enforcement on every route,
   member-only users directory, tenancy sweep + coverage meta-test
+- PR #64 — multi-tenancy T-3 + T-4 (#55, #56): members management, transfer
+  ownership, soft delete/restore, three-actor tenancy sweep; decisions D6–D8
 
 ## In flight
 
-- **[PR #64](https://github.com/jeremy-dardour/kosmos/pull/64)** (`feat/multi-tenancy-t3-t4`) — T-3 (#55) + T-4 (#56) implemented per the
-  [review-amended plan](./specs/multi-tenancy/t3-t4-implementation-plan.md):
-  members endpoints + dialog (pending invites, leave, caps), transfer
-  ownership, soft delete/restore with settings danger zone and a Deleted
-  list section. Locked governance transactions (`lockVisibleProject`),
-  three-actor tenancy sweep with `deletedOwnerStatus` axis, decisions D6–D8
-  recorded. Per-ticket review batteries run and actioned. Jeremy's PR review
-  comments actioned (session 42 addendum): overview `users` is now the
-  assignment directory (referenced owners, member or not; ex-members render
-  greyed), membership is the members endpoint's fact alone, and pickers
-  offer joined members only. Awaiting merge.
+- **[PR #69](https://github.com/jeremy-dardour/kosmos/pull/69)** (`feat/fix-icon`) —
+  in-app workstream icon picker replacing the free-text inputs that depended
+  on the macOS emoji palette (broken on some Chrome/macOS combinations):
+  `IconPicker` popover with free-text entry + 120-emoji grid, new
+  `components/ui/popover.tsx` primitive. Two-axis reviews run and actioned.
+  Awaiting merge.
 
 The Kosmos rename **including the external cutover is complete**: repository
 `jeremy-dardour/kosmos`, Cloud Run service `kosmos` (512Mi, serving),
@@ -88,7 +85,7 @@ verified, old-name resources deleted. The GCP project keeps its immutable ID
 
 ## Next steps
 
-1. Review and merge the **T-3 + T-4 PR ([#64](https://github.com/jeremy-dardour/kosmos/pull/64))**,
-   closing #55 and #56 — completing the multi-tenancy feature.
-2. Delete `docs/specs/multi-tenancy/t3-t4-implementation-plan.md` once
-   merged (point-in-time record; durable decisions live in the tech design).
+1. Review and merge the **icon picker PR ([#69](https://github.com/jeremy-dardour/kosmos/pull/69))**.
+2. Delete `docs/specs/multi-tenancy/t3-t4-implementation-plan.md` — #64 is
+   merged, so the point-in-time record is due for cleanup (durable decisions
+   live in the tech design).
