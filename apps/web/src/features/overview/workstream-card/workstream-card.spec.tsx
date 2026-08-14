@@ -159,7 +159,7 @@ describe('workstreamCard', () => {
     await agent.click(
       await screen.findByRole('button', { name: 'Change icon of Catering' }),
     );
-    await agent.click(await screen.findByRole('menuitem', { name: '💐' }));
+    await agent.click(await screen.findByRole('button', { name: '💐' }));
 
     await waitFor(() => expect(bodies).toEqual([{ icon: '💐' }]));
     expect(

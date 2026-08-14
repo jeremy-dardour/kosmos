@@ -1,65 +1,140 @@
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { Input } from '@/components/ui/input';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 /**
- * A fixed set beats free text here: the OS emoji palette steals window focus
- * on some Chrome/macOS builds, leaving the inline editor with nothing to
- * insert into.
+ * A curated grid rather than the OS emoji palette: the palette steals window
+ * focus on some Chrome/macOS builds, leaving an inline editor with nothing to
+ * insert into. The free-text field covers anything not listed here.
  */
 const ICONS = [
   '📋',
   '📝',
   '📅',
+  '🗓️',
+  '🗒️',
+  '📌',
+  '📎',
+  '🗂️',
   '✅',
   '🎯',
-  '🚀',
-  '📣',
-  '🎨',
-  '🖥️',
-  '🔧',
-  '🧪',
   '📊',
-  '💰',
-  '🧾',
-  '⚖️',
-  '🔑',
-  '✉️',
-  '📞',
+  '📈',
+  '📉',
+  '🏷️',
+  '⏰',
+  '⏳',
+  '🚀',
+  '🔧',
+  '🔨',
+  '🪛',
+  '⚙️',
+  '🧰',
+  '🧱',
+  '🧪',
+  '🖥️',
+  '💻',
+  '📱',
+  '⌨️',
+  '🔌',
+  '🖨️',
   '🌐',
+  '🧩',
+  '📣',
+  '📢',
+  '💬',
+  '✉️',
+  '📨',
+  '📞',
+  '🔔',
+  '📰',
+  '🎨',
   '📸',
   '🎬',
+  '📺',
+  '🖼️',
+  '🎧',
   '🎵',
   '🎤',
   '🎪',
+  '🎉',
+  '🎊',
+  '🎈',
+  '🎀',
+  '🎫',
+  '🏆',
+  '🥳',
   '🎁',
-  '🎂',
-  '🍰',
-  '🍽️',
-  '🍷',
-  '☕',
   '💐',
   '🌸',
   '🕯️',
+  '🥂',
+  '🍾',
+  '⭐',
+  '🔥',
+  '🎂',
+  '🍰',
+  '🧁',
+  '🍽️',
+  '🍷',
+  '☕',
+  '🍕',
+  '🍔',
+  '🥗',
+  '🍫',
+  '🥤',
+  '🍳',
+  '🌿',
+  '🌞',
+  '💡',
+  '🪴',
   '💍',
-  '👗',
+  '👰',
   '🤵',
+  '👗',
+  '👔',
+  '👠',
+  '💄',
+  '🧵',
   '⛪',
+  '💒',
   '🏰',
   '🏠',
   '🏨',
+  '🛋️',
+  '🛏️',
   '🪑',
+  '🚿',
+  '🧹',
+  '🧺',
   '📦',
   '🚚',
+  '🚌',
+  '🚕',
+  '🚲',
   '🚗',
   '✈️',
+  '🛳️',
+  '🧳',
   '🗺️',
   '🐕',
-  '⭐',
+  '🐾',
+  '🔒',
+  '💰',
+  '💳',
+  '🧾',
+  '🏦',
+  '📑',
+  '✍️',
+  '⚖️',
+  '🔑',
 ];
 
 interface IconPickerProperties {
@@ -80,9 +155,23 @@ export const IconPicker = ({
   className,
   onSelect,
 }: IconPickerProperties) => {
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const [custom, setCustom] = useState('');
+
+  const setOpen = (shouldOpen: boolean) => {
+    setIsOpen(shouldOpen);
+    if (!shouldOpen) setCustom('');
+  };
+
+  const pick = (icon: string) => {
+    onSelect(icon);
+    setOpen(false);
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
+    <Popover open={isOpen} onOpenChange={setOpen}>
+      <PopoverTrigger
         render={
           <button
             type="button"
@@ -98,18 +187,36 @@ export const IconPicker = ({
         }
       >
         {value || placeholder}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="grid w-auto min-w-0 grid-cols-8 gap-0.5 p-1.5">
-        {ICONS.map((icon) => (
-          <DropdownMenuItem
-            key={icon}
-            className="size-7 justify-center px-0 py-0 text-base"
-            onClick={() => onSelect(icon)}
-          >
-            {icon}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-1.5">
+        <Input
+          value={custom}
+          aria-label={t('overview.iconPicker.customLabel')}
+          placeholder={t('overview.iconPicker.customPlaceholder')}
+          maxLength={16}
+          className="mb-1.5 h-7 text-sm"
+          onChange={(event) => setCustom(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter') return;
+            // The dialog usage sits inside a <form>; Enter must not submit it.
+            event.preventDefault();
+            const trimmed = custom.trim();
+            if (trimmed) pick(trimmed);
+          }}
+        />
+        <div className="grid max-h-56 grid-cols-8 gap-0.5 overflow-y-auto">
+          {ICONS.map((icon) => (
+            <button
+              key={icon}
+              type="button"
+              className="flex size-7 items-center justify-center rounded-md text-base hover:bg-accent"
+              onClick={() => pick(icon)}
+            >
+              {icon}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };

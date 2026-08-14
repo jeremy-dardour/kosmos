@@ -54,6 +54,8 @@ export interface Translations {
   'overview.card.deleteTitle': string;
   'overview.card.deleteDescription': string;
   'overview.card.deleteConfirm': string;
+  'overview.iconPicker.customLabel': string;
+  'overview.iconPicker.customPlaceholder': string;
   'overview.deadline.late': string;
   'overview.deadline.today': string;
   'overview.deadline.tomorrow': string;

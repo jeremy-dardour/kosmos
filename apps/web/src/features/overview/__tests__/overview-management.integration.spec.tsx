@@ -23,7 +23,10 @@ describe('workstream management', () => {
     const dialog = await screen.findByRole('dialog');
     await agent.type(within(dialog).getByLabelText('Name'), 'Music');
     await agent.click(within(dialog).getByLabelText('Icon'));
-    await agent.click(await screen.findByRole('menuitem', { name: '🎵' }));
+    await agent.type(
+      await screen.findByRole('textbox', { name: 'Custom icon' }),
+      '🎶{Enter}',
+    );
     await agent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     const ungrouped = await screen.findByRole('region', { name: 'Ungrouped' });
@@ -37,7 +40,7 @@ describe('workstream management', () => {
     const dialog = await screen.findByRole('dialog');
     await agent.type(within(dialog).getByLabelText('Name'), 'Cake');
     await agent.click(within(dialog).getByLabelText('Icon'));
-    await agent.click(await screen.findByRole('menuitem', { name: '🎂' }));
+    await agent.click(await screen.findByRole('button', { name: '🎂' }));
     await agent.selectOptions(within(dialog).getByLabelText('Group'), 'g1');
     await agent.click(within(dialog).getByRole('button', { name: 'Create' }));
 

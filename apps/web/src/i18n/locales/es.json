@@ -54,6 +54,8 @@
   "overview.card.deleteTitle": "¿Eliminar {{name}}?",
   "overview.card.deleteDescription": "Sus pasos, listas y notas se eliminan con ella. Esta acción no se puede deshacer.",
   "overview.card.deleteConfirm": "Eliminar",
+  "overview.iconPicker.customLabel": "Icono personalizado",
+  "overview.iconPicker.customPlaceholder": "Escribe un emoji…",
   "overview.deadline.late": "{{count}}d de retraso",
   "overview.deadline.today": "hoy",
   "overview.deadline.tomorrow": "mañana",

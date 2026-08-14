@@ -1,15 +1,16 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { IconPicker } from '@/features/overview/icon-picker';
+import { renderWithApp } from '@/testing/render-with-app';
 
 const LABEL = 'Workstream icon';
 
 function renderPicker(value: string) {
   const onSelect = vi.fn();
 
-  render(
+  renderWithApp(
     <IconPicker
       value={value}
       label={LABEL}
@@ -40,9 +41,37 @@ describe('iconPicker', () => {
     const { agent, onSelect } = renderPicker('');
 
     await agent.click(screen.getByRole('button', { name: LABEL }));
-    await agent.click(await screen.findByRole('menuitem', { name: '💐' }));
+    await agent.click(await screen.findByRole('button', { name: '💐' }));
 
     expect(onSelect).toHaveBeenCalledExactlyOnceWith('💐');
-    expect(screen.queryByRole('menuitem')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '💐' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('reports a trimmed custom icon typed in and closes', async () => {
+    const { agent, onSelect } = renderPicker('');
+
+    await agent.click(screen.getByRole('button', { name: LABEL }));
+    await agent.type(
+      await screen.findByRole('textbox', { name: 'Custom icon' }),
+      ' 🦖 {Enter}',
+    );
+
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith('🦖');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('ignores an empty custom icon', async () => {
+    const { agent, onSelect } = renderPicker('');
+
+    await agent.click(screen.getByRole('button', { name: LABEL }));
+    await agent.type(
+      await screen.findByRole('textbox', { name: 'Custom icon' }),
+      '  {Enter}',
+    );
+
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '💐' })).toBeVisible();
   });
 });
