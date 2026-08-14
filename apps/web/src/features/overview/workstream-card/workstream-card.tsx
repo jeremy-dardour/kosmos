@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/features/overview/confirm-dialog';
 import { DotCaret } from '@/features/overview/dot-caret';
 import { GhostStep } from '@/features/overview/ghost-step';
 import { HOVER_REVEAL } from '@/features/overview/hover-reveal';
+import { IconPicker } from '@/features/overview/icon-picker';
 import { isInsideCard } from '@/features/overview/is-inside-card';
 import { OwnerPicker } from '@/features/overview/owner-picker';
 import { PipelineRow } from '@/features/overview/pipeline-row/pipeline-row';
@@ -156,17 +157,11 @@ export const WorkstreamCard = ({
         )}
       >
         {dragHandle}
-        <ClickToEdit
+        <IconPicker
           value={workstream.icon}
           label={t('overview.card.changeIcon', { name: workstream.name })}
-          placeholder={workstream.icon}
           className="w-8 shrink-0 text-center text-base leading-none"
-          onCommit={(value) => {
-            // The API rejects an empty icon, so an emptied field reverts
-            // instead of committing.
-            const icon = value.trim();
-            if (icon) commit({ icon });
-          }}
+          onSelect={(icon) => commit({ icon })}
         />
         <ClickToEdit
           value={workstream.name}
