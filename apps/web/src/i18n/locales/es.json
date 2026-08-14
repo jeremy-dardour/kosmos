@@ -153,7 +153,7 @@
   "overview.manage.form.nameLabel": "Nombre",
   "overview.manage.form.namePlaceholder": "p. ej. Lugar",
   "overview.manage.form.iconLabel": "Icono",
-  "overview.manage.form.iconPlaceholder": "💐",
+  "overview.manage.form.iconPickerEmpty": "Elegir…",
   "overview.manage.form.groupLabel": "Grupo",
   "overview.manage.form.noGroup": "Ninguno",
   "overview.manage.form.ownerLabel": "Responsable por defecto",

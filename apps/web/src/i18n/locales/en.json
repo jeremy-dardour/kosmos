@@ -153,7 +153,7 @@
   "overview.manage.form.nameLabel": "Name",
   "overview.manage.form.namePlaceholder": "e.g. Venue",
   "overview.manage.form.iconLabel": "Icon",
-  "overview.manage.form.iconPlaceholder": "💐",
+  "overview.manage.form.iconPickerEmpty": "Choose…",
   "overview.manage.form.groupLabel": "Group",
   "overview.manage.form.noGroup": "None",
   "overview.manage.form.ownerLabel": "Default owner",
