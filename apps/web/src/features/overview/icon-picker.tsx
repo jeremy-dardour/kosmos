@@ -159,18 +159,18 @@ export const IconPicker = ({
   const [isOpen, setIsOpen] = useState(false);
   const [custom, setCustom] = useState('');
 
-  const setOpen = (shouldOpen: boolean) => {
+  const handleOpenChange = (shouldOpen: boolean) => {
     setIsOpen(shouldOpen);
     if (!shouldOpen) setCustom('');
   };
 
   const pick = (icon: string) => {
     onSelect(icon);
-    setOpen(false);
+    handleOpenChange(false);
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
           <button
@@ -193,6 +193,7 @@ export const IconPicker = ({
           value={custom}
           aria-label={t('overview.iconPicker.customLabel')}
           placeholder={t('overview.iconPicker.customPlaceholder')}
+          // 16 UTF-16 units fits any single emoji, ZWJ sequences included.
           maxLength={16}
           className="mb-1.5 h-7 text-sm"
           onChange={(event) => setCustom(event.target.value)}
@@ -209,7 +210,7 @@ export const IconPicker = ({
             <button
               key={icon}
               type="button"
-              className="flex size-7 items-center justify-center rounded-md text-base hover:bg-accent"
+              className="flex size-7 items-center justify-center rounded-md text-base hover:bg-accent focus-visible:bg-accent"
               onClick={() => pick(icon)}
             >
               {icon}
