@@ -39,8 +39,8 @@
 ## Learnings
 
 - The owner's instinct was toward AWS (familiarity + existing account), but the
-  cost difference at this scale is stark. The research report's explicit
-  callout about over-architecture bias helped land the decision quickly.
+  cost difference at this scale is stark. Judging each option against the
+  project's actual scale helped land the decision quickly.
 - Splitting large slices early (before they become implementation tickets)
   saves rework — the owner caught slice 1 being too big before it was written up.
 

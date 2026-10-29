@@ -10,8 +10,8 @@ home.
   handoff; found 7 inconsistencies (stale timeline concept, reversed dependency
   display, stale open-question lists, wrong persistence suggestion, missing
   `icon`, broken links, and a purpose contradiction with global constraints).
-- Confirmed the project is a real personal tool, **separate** from any
-  portfolio-framed project (see [project-purpose.md](../project-purpose.md)).
+- Confirmed the project is a real tool for active use (see
+  [project-purpose.md](../project-purpose.md)).
 - Reconciled `CONTEXT.md` with the chosen prototype and captured the reasoning
   in a dedicated [domain-decisions.md](../domain-decisions.md) (the single home
   for domain decisions + rationale), including new Decisions 20–25 and marking
