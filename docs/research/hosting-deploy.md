@@ -131,11 +131,6 @@ manage TLS/DNS for.
   wherever the API container runs); at 2–6 users this is irrelevant —
   there's no meaningful latency or bandwidth cost difference at this traffic
   level. Slightly bigger container image (bundles both builds).
-- **Portfolio signal:** Reads as "knows how to ship a real fullstack app
-  simply" — not a knock against sophistication, since the reasoning ("no
-  CORS, one deploy, matches project scale") is itself the interesting
-  engineering signal for an interview, especially paired with the ADR 0001
-  reasoning about deploy simplicity.
 
 ### Option B — Split (containerized API + frontend on a CDN/static host)
 
@@ -164,12 +159,9 @@ where auth cookies/tokens live (cross-origin cookie handling needs
   for a solo dev shipping both together every time, it's two things to keep
   in sync (API URL config, CORS allow-list, coordinated releases) rather than
   one atomic deploy.
-- **Portfolio signal:** Demonstrates CDN/edge familiarity and is the more
-  "expected" pattern for a split SPA+API architecture — but for a 2-person
-  personal tool, choosing it _because it's more standard_ rather than because
-  it's needed is exactly the over-architecture instinct worth watching for
-  here (matches the known EM-background bias toward more infra than the
-  problem calls for).
+- **Fit:** The more conventional pattern for a split SPA+API architecture,
+  but for a small-team tool, choosing it _because it's more standard_ rather
+  than because it's needed adds infrastructure the problem doesn't call for.
 
 **Verdict for this project's scale:** Option A (single deployable) is the
 better fit — zero incremental hosting cost either way, but it removes a whole
@@ -254,13 +246,10 @@ fit for this project's stated constraints (cost-sensitive, solo dev, 2–6
 users, containers, no ops appetite) — both halves have an _indefinite_ free
 tier at this traffic level, not a 12-month clock like the AWS options, and
 the single-deployable frontend removes a whole category of setup (CORS,
-second DNS/TLS, two pipelines) for zero cost. The AWS free-tier account is
-real and worth using for learning/portfolio AWS exposure, but every
-container-native AWS path here (Fargate especially) is pricier and more
-moving-parts than the GCP/Fly equivalents once judged on this project's
-actual scale rather than "enterprise-readiness" — the over-architecture
-instinct flagged in the owner's background notes is the thing to watch for
-in this specific decision.
+second DNS/TLS, two pipelines) for zero cost. Every container-native AWS
+path here (Fargate especially) is pricier and has more moving parts than the
+GCP/Fly equivalents once judged on this project's actual scale rather than
+"enterprise-readiness".
 
 ---
 
